@@ -1,9 +1,12 @@
 const express = require('express');
 const app = express();
-const port = 3000
+const port = process.env.PORT || 80;
 const io = require('socket.io')();
+const path = require('path')
+
+
 
 
 app.get('/', (req, res) => res.send('Hello World'))
 
-app.listen(port, () => console.log('Listening on port ${port}'))
+app.listen(port)
