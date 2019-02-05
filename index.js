@@ -7,7 +7,7 @@ const path = require('path')
 var numPeople = 0;
 
 app.get('/', (req, res) => {
-  res.send('Hello World'))
+  res.send('Hello World')
   count++;
   console.log(count);
 }
