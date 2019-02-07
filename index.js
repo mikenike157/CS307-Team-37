@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
         return;
       }
     }
-    res.send("You are player " + roomArray[x].numPlayers + " in room " + roomArray.roomName);
+    res.send("You are player " + (roomArray[x].numPlayers + 1) + " in room " + roomArray[x].roomName);
     roomArray[x].numPlayers++;
     console.log(roomArray[x].roomName + ": " + roomArray[x].numPlayers);
 });
