@@ -17,7 +17,7 @@ for (var i = 0; i < 100; i++) {
 }
 
 app.get('/', (req, res) => {
-    var x = 99;
+    var x = 0;
     while (roomArray[x].numPlayers > 7) {
       console.log(roomArray[x].numPlayers)
       x++;
@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
         return;
       }
     }
-    res.send("Hello World")
+    res.send("You are player " + roomArray[x].numPlayers + " in room " + roomArray.roomName);
     roomArray[x].numPlayers++;
     console.log(roomArray[x].roomName + ": " + roomArray[x].numPlayers);
 });
