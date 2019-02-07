@@ -8,9 +8,7 @@ var numPeople = 0;
 
 app.get('/', (req, res) => {
   res.send('Hello World')
-  count++;
-  console.log(count);
-}
+});
 
 io.on('connection', function(socket) {
   console.log("User connected");
