@@ -17,10 +17,14 @@ for (var i = 0; i < 100; i++) {
 }
 
 app.get('/', (req, res) => {
-    var x = 0;
+    var x = 99;
     while (roomArray[x].numPlayers > 7) {
       console.log(roomArray[x].numPlayers)
       x++;
+      if (x == 100) {
+        res.send("Sorry all rooms are full")
+        return;
+      }
     }
     res.send("Hello World")
     roomArray[x].numPlayers++;
