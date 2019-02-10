@@ -1,27 +1,28 @@
 -- To run:
--- start mysql connection as a user that can create databases
+-- start postgresql connection on an empty database
 -- type the following:
--- \. sql/init_db.sql
+-- \i sql/init_db.sql
 
-CREATE DATABASE PokerUniversity;
-USE PokerUniversity;
+CREATE TYPE GameMode AS ENUM ('tutorial', 'practice', 'ranked');
+CREATE TYPE BanType AS ENUM ('ban', 'silence');
 
 CREATE TABLE Users (
-  user_id INT UNIQUE NOT NULL AUTO_INCREMENT,
+  user_id BIGSERIAL UNIQUE NOT NULL,
   username VARCHAR(40) UNIQUE NOT NULL,
-  password BLOB NOT NULL, -- argon2 hash?
+  password BYTEA NOT NULL, -- argon2 hash?
   security_question VARCHAR(100) NOT NULL,
   security_answer VARCHAR(100) NOT NULL,
-  profile_picture BLOB,
+  profile_picture BYTEA,
   chips INT NOT NULL,
-  PRIMARY KEY (user_id),
-  INDEX username_index (username)
+  PRIMARY KEY (user_id)
 );
 
+CREATE INDEX UsernameIndex ON Users (username);
+
 CREATE TABLE Games (
-  game_id INT UNIQUE NOT NULL AUTO_INCREMENT,
+  game_id BIGSERIAL UNIQUE NOT NULL,
   name VARCHAR(50),
-  game_mode ENUM('tutorial', 'practice', 'ranked') NOT NULL,
+  game_mode GameMode NOT NULL,
   ante_amount INT NOT NULL,
   small_blind_amount INT NOT NULL,
   big_blind_amount INT NOT NULL,
@@ -30,7 +31,7 @@ CREATE TABLE Games (
 );
 
 CREATE TABLE GameLog (
-  game_log_id INT UNIQUE NOT NULL AUTO_INCREMENT,
+  game_log_id BIGSERIAL UNIQUE NOT NULL,
   game_id INT NOT NULL,
   action INT NOT NULL,
   user_id INT,
@@ -62,11 +63,11 @@ CREATE TABLE MuteList (
 );
 
 CREATE TABLE BanList (
-  ban_id INT UNIQUE NOT NULL AUTO_INCREMENT,
+  ban_id BIGSERIAL UNIQUE NOT NULL,
   user_id INT NOT NULL,
   reason TEXT,
   expiry DATE,
-  type ENUM('ban', 'silence'),
+  type BanType,
   PRIMARY KEY (ban_id),
   FOREIGN KEY (user_id) REFERENCES Users(user_id)
     ON DELETE CASCADE
