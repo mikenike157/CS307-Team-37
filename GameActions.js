@@ -17,9 +17,9 @@ var gameActions = {
         N; 
     },
  
-    const SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds"),
-    const VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"),
-    const STATES: new Array("NOTREADY", "READY", "FOLDED"),
+    SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds"),
+    VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"),
+    STATES: new Array("NOTREADY", "READY", "FOLDED"),
 
     startGame: function(players) 
     {
