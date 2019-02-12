@@ -52,16 +52,26 @@ var gameActions = {
     playerCheck: function(player)
     {
         // Pass player without folding 
+        return 1; 
     }
      
     playerFold: function(player)
     {
         // End user (enter fold state)  
+        return 1; 
     }
     
     playerRaise: function(player, amount)
     {
         // Increase current bet 
+        if (player.chips >= amount)
+        {
+           // subtract from player
+           // add chips to pot
+           // update player state to READY
+           return 1; 
+        }
+        return 0; 
     }
     
     endGame: function()
