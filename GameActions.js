@@ -1,5 +1,9 @@
 var gameActions = {
 
+    SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds"),
+    VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"),
+    STATES: new Array("NOTREADY", "READY", "FOLDED"),
+
     var gameInfo: {
         // Length N array of Player objects
         // Each Player object contains chip information, current state
@@ -16,10 +20,6 @@ var gameActions = {
         pot;
         N; 
     },
- 
-    SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds"),
-    VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"),
-    STATES: new Array("NOTREADY", "READY", "FOLDED"),
 
     startGame: function(players) 
     {
