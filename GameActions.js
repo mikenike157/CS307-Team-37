@@ -7,16 +7,19 @@ var gameActions = {
         
         // Legnth 2N+5 array of unique integers 
         // Syntax gameActions.gameInfo.array = [];
-        numbers: []; // size is 2N+5
+        numbers: []; 
         playerCards: [[],[]];
         
+        // Track current bet and pot
         currentBet; 
         pot;
+        N; 
     }
     
     startGame: function(players) 
     {
         this.allPlayers = players; 
+        this.N = players.length; 
         this.currentBet = 0;
         this.pot = 0;
         
@@ -35,8 +38,8 @@ var gameActions = {
         // Ante, blinds? Consider later 
         
         // RETURN TO SERVER: 
-        // Array of player cards
-        // Array of table cards 
+        // Array of player cards (first 2N cards)
+        // Array of table cards ()
     } 
     
     playerCall: function(player)
