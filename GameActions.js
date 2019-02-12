@@ -14,6 +14,9 @@ var gameActions = {
         currentBet; 
         pot;
         N; 
+    
+        SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds");
+        VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King")
     }
     
     startGame: function(players) 
@@ -30,8 +33,8 @@ var gameActions = {
             numbers[i] = k;
             if (i > 0) // check for and eliminate repeats
             { while (k == a[i-1]) { k++; } }
-            playerCards[0][i] = (k%13)+1; // value
-            playerCards[1][i] = k/13; // suit
+            // value = (k%13)+1; 
+            // suit = Math.floor(k/13); 
         }
         
         // Do other stuff here
