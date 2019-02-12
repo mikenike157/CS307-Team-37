@@ -12,7 +12,8 @@ var gameActions = {
         // Legnth 2N+5 array of unique integers 
         // Syntax gameActions.gameInfo.array = [];
         numbers: []; 
-        playerCards: [[],[]];
+        playerCards: [[],[], [], [], [], [], [], []]; // maximum of eight players
+        tableCards: [];
         
         // Track current bet and pot
         currentBet; 
@@ -36,6 +37,15 @@ var gameActions = {
             { while (k == a[i-1]) { k++; } }
             // value = (k%13)+1; 
             // suit = Math.floor(k/13); 
+        }
+        for (i = 0; i < (2*N); i+=2)
+        {
+            playerCards[i][0] = new Card(numbers[i]);
+            playerCards[i][1] = new Card(numbers[i+1]);
+        }
+        for (i = (2*N); i < (2*N+5); i++)
+        {
+            tableCards[i] = new Card(numbers[i]);
         }
         
         // Do other stuff here
