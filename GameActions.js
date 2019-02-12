@@ -39,25 +39,33 @@ var gameActions = {
         
         // RETURN TO SERVER: 
         // Array of player cards (first 2N cards)
-        // Array of table cards ()
+        // Array of table cards (last 5 cards)
     } 
     
     playerCall: function(player)
     {
         // Match current bet, if able 
-        // update player state as applicable 
-        // return 0 for error, 1 for success 
+        if (player.chips >= currentBet)
+        {
+            player.chips -= currentBet;
+            player.state = "READY";
+            pot += currentBet; 
+            return 1;
+        }
+        return 0; 
     }
     
     playerCheck: function(player)
     {
         // Pass player without folding 
+        player.state = "NOTREADY";
         return 1; 
     }
      
     playerFold: function(player)
     {
-        // End user (enter fold state)  
+        // End user (enter fold state) 
+        player.state = "FOLDED"; 
         return 1; 
     }
     
@@ -66,10 +74,11 @@ var gameActions = {
         // Increase current bet 
         if (player.chips >= amount)
         {
-           // subtract from player
-           // add chips to pot
-           // update player state to READY
-           return 1; 
+            player.chips -= amount;
+            player.state = "READY"; 
+            pot += amount; 
+            currentBet = amount; 
+            return 1; 
         }
         return 0; 
     }
