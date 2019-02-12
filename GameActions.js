@@ -1,5 +1,9 @@
 var gameActions = {
 
+    const SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds"),
+    const VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"),
+    const STATES: new Array("NOTREADY", "READY", "FOLDED"),
+
     var gameInfo: {
         // Length N array of Player objects
         // Each Player object contains chip information, current state
@@ -14,10 +18,7 @@ var gameActions = {
         currentBet; 
         pot;
         N; 
-    
-        SUITS: new Array("Spades", "Hearts", "Clubs", "Diamonds");
-        VALUES: new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King")
-    }
+    },
     
     startGame: function(players) 
     {
@@ -43,7 +44,7 @@ var gameActions = {
         // RETURN TO SERVER: 
         // Array of player cards (first 2N cards)
         // Array of table cards (last 5 cards)
-    } 
+    },
     
     playerCall: function(player)
     {
@@ -56,21 +57,21 @@ var gameActions = {
             return 1;
         }
         return 0; 
-    }
+    },
     
     playerCheck: function(player)
     {
         // Pass player without folding 
         player.state = "NOTREADY";
         return 1; 
-    }
+    },
      
     playerFold: function(player)
     {
         // End user (enter fold state) 
         player.state = "FOLDED"; 
         return 1; 
-    }
+    },
     
     playerRaise: function(player, amount)
     {
@@ -84,10 +85,10 @@ var gameActions = {
             return 1; 
         }
         return 0; 
-    }
+    },
     
     endGame: function()
     {
-    }
+    },
 
 }
