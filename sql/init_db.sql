@@ -67,7 +67,7 @@ CREATE TABLE BanList (
   ban_id BIGSERIAL UNIQUE NOT NULL,
   user_id INT NOT NULL,
   reason TEXT,
-  expiry DATE,
+  expiry TIMESTAMP,
   issuer_id INT,
   type BanType,
   PRIMARY KEY (ban_id),
