@@ -1,7 +1,6 @@
 'use strict';
 
 const express = require('express');
-const app = express();
 const port = process.env.PORT || 80;
 const path = require('path')
 const sio = require('socket.io')
@@ -22,10 +21,6 @@ const server = express()
 const io = sio(server);
 
 var roomArray = new Array(101)
-
-app.get('/', function(req, res) => {
-  res.sendFile(__dirname + 'chat.html');
-});
 
 var usernames = {};
 
