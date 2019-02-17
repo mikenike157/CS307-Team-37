@@ -33,6 +33,7 @@ io.sockets.on('connection', function (socket) {
 	// when the client emits 'adduser', this listens and executes
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
+    username = validator.escape(username);
 		socket.username = username;
 		// store the room name in the socket session for this client
 		socket.room = 'room1';
@@ -56,7 +57,9 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatechat', socket.username, "Congrats youve bet " + parsed[1] + " chips.")
     }
     else {
-      io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+      if (data != "") {
+        io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+      }
     }
 	});
 
