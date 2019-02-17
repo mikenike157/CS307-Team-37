@@ -49,9 +49,13 @@ io.sockets.on('connection', function (socket) {
 	// when the client emits 'sendchat', this listens and executes
 	socket.on('sendchat', function (data) {
 		// we tell the client to execute 'updatechat' with 2 parameters
-    console.log("!!!!!!!!!!!!!!!!!!!    "  + data + "!!!!!!!!!!!!!!!");
-		io.sockets.in(socket.room).emit('updatechat', socket.username, data);
-
+    var parsed = data.split(" ");
+    if (parsed[0] == "bet") {
+      io.sockets.in(socket.room).emit('updatechat', socket.username, "Congrats youve bet " + parsed[1] + " chips.")
+    } 
+    else {
+      io.sockets.in(socket.room).emit('updatechat', socket.username, data);
+    }
 	});
 
 
