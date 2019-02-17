@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const validator = require('validator');
 const port = process.env.PORT || 80;
 const path = require('path')
 const sio = require('socket.io')
@@ -48,13 +49,14 @@ io.sockets.on('connection', function (socket) {
 
 	// when the client emits 'sendchat', this listens and executes
 	socket.on('sendchat', function (data) {
+    var newdata = validator.escape(data)
 		// we tell the client to execute 'updatechat' with 2 parameters
-    var parsed = data.split(" ");
+    var parsed = [1, 2]// = newdata.split(" ");
     if (parsed[0] == "bet") {
       io.sockets.in(socket.room).emit('updatechat', socket.username, "Congrats youve bet " + parsed[1] + " chips.")
-    } 
+    }
     else {
-      io.sockets.in(socket.room).emit('updatechat', socket.username, data);
+      io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
     }
 	});
 
