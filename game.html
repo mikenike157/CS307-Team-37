@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Poker Game</title>
+</head>
+<body>
+	<canvas id="pokerDisplay">
+		
+	</canvas>
+	<div id="gameBar">
+		<div class="sub-container" id="chatBox">
+			<div class="tab-select">
+				<div class="tab" id="chat">
+					Chat
+				</div>
+				<div class="tab" id="history">
+					history
+				</div>
+				<div class="tab" id="hintLog">
+					Hint Log
+				</div>
+			</div>
+			<div id="chatDisplay">
+				
+			</div>
+			<div id="chatInputField">
+				<form>
+					<input type="text" name="chatMessage">
+					<input type="submit" name="chatSubmit" value="submit">
+				</form>
+			</div>
+		</div>
+		<div class="sub-container" id="hintBox">
+			<input type="button" name="hint" value="HINT">
+		</div>
+		<div class="sub-container" id="playerActions">
+			<div class="tab-select">
+				<div class="tab" id="halfPotTab">
+					1/2 Pot
+				</div>
+				<div class="tab" id="fullPotTab">
+					Pot
+				</div>
+				<div class="tab" id="allInTab">
+					All In
+				</div>
+				<div class="tab" id="customTab">
+					Custom Amount
+				</div>
+			</div>
+			<div id="playerActionButtons">
+				<input type="button" name="Fold" value="Fold">
+				<input type="button" name="Call" value="Call">
+				<input type="button" name="Raise" value="Raise">	
+			</div>
+		</div>
+	</div>
+</body>
+</html>
