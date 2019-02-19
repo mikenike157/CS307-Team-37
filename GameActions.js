@@ -64,8 +64,9 @@ var gameActions = {
         // 2. 0th player = dealer, 1st = small blind, 2nd = big blind 
         
         // RETURN TO SERVER: 
-        // Array of player cards (first 2N cards)
-        // Array of table cards (last 5 cards)
+        // gameInfo
+            // Array of player cards (first 2N cards)
+            // Array of table cards (last 5 cards)
     },
     
     playerCall: function(player)
