@@ -15,14 +15,15 @@ var gameActions = {
         playerCards: [[],[], [], [], [], [], [], []]; // maximum of eight players
         playerOrder: []; // allPlayers[playerOrder[0]] to get 0th player
         tableCards: [];
+        playerChips: []; 
         
         // Track current bet and pot
         currentBet; 
-        pot;
+        pot; 
         N; 
     },
 
-    startGame: function(players) 
+    startGame: function(players) // change to pass game object instead, gameInfo
     {
         this.allPlayers = players; 
         this.N = players.length; 
