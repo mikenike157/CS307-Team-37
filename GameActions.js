@@ -13,6 +13,7 @@ var gameActions = {
         // Syntax gameActions.gameInfo.array = [];
         numbers: []; 
         playerCards: [[],[], [], [], [], [], [], []]; // maximum of eight players
+        playerOrder: []; // allPlayers[playerOrder[0]] to get 0th player
         tableCards: [];
         
         // Track current bet and pot
@@ -34,7 +35,7 @@ var gameActions = {
             k = Math.random()*51; 
             numbers[i] = k;
             if (i > 0) // check for and eliminate repeats
-            { while (k == a[i-1]) { k++; } }
+            { while (k == numbers[i-1]) { k++; } }
             // value = (k%13)+1; 
             // suit = Math.floor(k/13); 
         }
@@ -50,6 +51,16 @@ var gameActions = {
         
         // Do other stuff here
         // Ante, blinds? Consider later 
+        // 1. Assign random order for players
+        for (i = 0; i < 8; i++)
+        {
+            k = Math.random()*7; 
+            playerOrders[i] = k;
+            if (i > 0) // check for and eliminate repeats
+            { while (k == playerOrders[i-1]) { k++; } }
+        }
+        
+        // 2. 0th player = dealer, 1st = small blind, 2nd = big blind 
         
         // RETURN TO SERVER: 
         // Array of player cards (first 2N cards)
