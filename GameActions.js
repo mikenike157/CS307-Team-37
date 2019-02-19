@@ -11,7 +11,7 @@ var gameActions = {
         
         // Legnth 2N+5 array of unique integers 
         // Syntax gameActions.gameInfo.array = [];
-        numbers: []; 
+        numbers: [];  // 21 (2N+5) unique integers corresponding to cards dealt
         playerCards: [[],[], [], [], [], [], [], []]; // maximum of eight players
         playerOrder: []; // allPlayers[playerOrder[0]] to get 0th player
         tableCards: [];
