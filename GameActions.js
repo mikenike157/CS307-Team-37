@@ -68,6 +68,8 @@ var gameActions = {
             // Array of player cards (first 2N cards)
             // Array of table cards (last 5 cards)
     },
+        
+    // TODO: Inner game loop
     
     playerCall: function(player)
     {
