@@ -14,6 +14,7 @@ CREATE TABLE Users (
   security_answer VARCHAR(100) NOT NULL,
   profile_picture BYTEA,
   chips INT NOT NULL,
+  is_admin BOOL,
   PRIMARY KEY (user_id)
 );
 
@@ -66,9 +67,12 @@ CREATE TABLE BanList (
   ban_id BIGSERIAL UNIQUE NOT NULL,
   user_id INT NOT NULL,
   reason TEXT,
-  expiry DATE,
+  expiry TIMESTAMP,
+  issuer_id INT,
   type BanType,
   PRIMARY KEY (ban_id),
   FOREIGN KEY (user_id) REFERENCES Users(user_id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (issuer_id) REFERENCES Users(user_id)
     ON DELETE CASCADE
 );

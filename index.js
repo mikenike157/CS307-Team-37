@@ -3,17 +3,20 @@
 const express = require('express');
 const game = require('./GameActions.js');
 const validator = require('validator');
-const port = process.env.PORT || 80;
 const path = require('path')
 const sio = require('socket.io')
 const pg = require('pg');
 const hf = require('./handFinder.js')
+
+
+const port = process.env.PORT || 80;
+
 const pool = new pg.Pool({
-  user: 'uvqmfjuwtlhurl',
-  host: 'ec2-54-227-246-152.compute-1.amazonaws.com',
-  database: 'dajkjt3t4o0mtt',
-  password: 'aeae6293fd321e7d1eb3b1c95b3dcc93dd9878948aba3f1271b83a52472068b0',
-  port: '5432',
+  user: "uvqmfjuwtlhurl",
+  host: "ec2-54-227-246-152.compute-1.amazonaws.com",
+  database: "dajkjt3t4o0mtt",
+  password: "aeae6293fd321e7d1eb3b1c95b3dcc93dd9878948aba3f1271b83a52472068b0",
+  port: "5432",
   ssl: true
 });
 
