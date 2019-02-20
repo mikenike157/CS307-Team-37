@@ -19,13 +19,23 @@ var currentBet;
 var pot;
 var N;
 
-//function gameActions() {
-/*
-    // Q: Is this used? 
-    this.value = function(element) {
-      return element
+class Player {
+    constructor(playerID, order, chips) 
+    {
+        this.playerID = playerID; 
+        this.order = order; 
+        this.lastBet = 0;
+        this.playerState = "NOTREADY";
+        this.playerChips = chips; 
+        this.cards = [-1, -1];
     }
-*/ 
+}
+    this.testPlayer = function()
+    {
+        var player0 = new Player(0, 0, 100);
+        return player0;
+    }
+    
     this.startGame = function() // change to pass game object instead, gameInfo
     {
         N = 8;
