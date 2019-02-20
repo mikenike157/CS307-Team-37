@@ -12,6 +12,7 @@ var tableCards = [];
 var playerOrder = []; // not currently used; assign N values on [0, N-1]  
 var playerChips = [];
 var playerStates = [];
+var lastBet = [];
 
 // Track current bet and pot
 var currentBet;
@@ -71,6 +72,10 @@ var N;
         for (var i = 0; i < N; i++)
         { playerChips[i] = defaultChips; } 
         
+        // Assign lastBet to zero
+        for (var i = 0; i < N; i++)
+        { lastBets[i] = 0; }
+        
         // Later: Assign random order for players
          
         // 0th player = dealer, 1st = small blind, 2nd = big blind
@@ -79,7 +84,7 @@ var N;
         return [playerCards, tableCards];
     }        
 
-    // TODO #1: Test this
+    // TODO #1: Test this. Raise /to/ amount
     playerRaise: function(pIndex, amount)
     {
         // Increase current bet
@@ -98,14 +103,14 @@ var N;
 /*
     // TODO: Inner game loop
 
-    playerCall: function(player)
+    playerCall: function(pIndex)
     {
         // Match current bet, if able
         if (player.chips >= currentBet)
         {
-            player.chips -= currentBet;
+            player.chips -= (currentBet-lastBet[pIndex]);
             player.state = "READY";
-            pot += currentBet;
+            pot += (currentBet-lastBet[pIndex]);
             return 1;
         }
         return 0;
@@ -125,7 +130,7 @@ var N;
         return 1;
     },
 
-    playerRaise: function(player, amount)
+    //playerRaise: function(player, amount)
     {
         // Increase current bet
         if (player.chips >= amount)
