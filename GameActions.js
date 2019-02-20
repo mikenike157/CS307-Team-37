@@ -7,9 +7,9 @@ var STATES = new Array("NOTREADY", "READY", "FOLDED")
 var allPlayers = [];
 var numbers = []; // 2N+5 unique random integers on [0, 51] 
 var playerCards = [[],[], [], [], [], [], [], []]; // maximum of eight players
-var playerOrder = []; // allPlayers[playerOrder[0]] to get 0th player
 var tableCards = [];
 
+var playerOrder = []; // not currently used; assign N values on [0, N-1]  
 var playerChips = [];
 var playerStates = [];
 
@@ -19,15 +19,18 @@ var pot;
 var N;
 
 //function gameActions() {
+/*
+    // Q: Is this used? 
     this.value = function(element) {
       return element
     }
-
+*/ 
     this.startGame = function() // change to pass game object instead, gameInfo
     {
         N = 8;
         currentBet = 0;
         pot = 0;
+        defaultChips = 100; 
 
         // Deal
         var m = 0; // 1. Random numbers
@@ -35,7 +38,7 @@ var N;
         {
           var k = Math.floor(Math.random()*51);
           numbers[i] = k;
-          var j = i-1;
+          var j = i-1; // check for and eliminate repeats
           while (j >= 0)
           {
             if (numbers[i] == numbers[j])
@@ -53,36 +56,30 @@ var N;
             playerCards[k][1] = numbers[i+1];
             k++;
         }
-        k=0 // 3. Assign table cards 
+        k = 0; // 3. Assign table cards 
         for (var i = (2*N); i < (2*N+5); i++)
         {
             tableCards[k] = numbers[i];
-            k++
+            k++;
         }
-        return [playerCards, tableCards];
-        // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]  
         
-        // Do other stuff here
-        // Ante, blinds? Consider later
-        // 1. Assign random order for players/
-        /*
-        for (var i = 0; i < 8; i++)
-        {
-            k = Math.random()*7;
-            playerOrders[i] = k;
-            if (i > 0) // check for and eliminate repeats
-            { while (k == playerOrders[i-1]) { k++; } }
-        }
-*/
-        // 2. 0th player = dealer, 1st = small blind, 2nd = big blind
+        // Set all states to not ready
+        for (var i = 0; i < N; i++)
+        { playerStates[i] = "NOTREADY"; }
+        
+        // Temp for testing: Assign default number of chips 
+        for (var i = 0; i < N; i++)
+        { playerChips[i] = defaultChips; } 
+        
+        // Later: Assign random order for players
+         
+        // 0th player = dealer, 1st = small blind, 2nd = big blind
+        // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]  
 
-        // RETURN TO SERVER:
-        // gameInfo
-            // Array of player cards (first 2N cards)
-            // Array of table cards (last 5 cards)
-    }
+        return [playerCards, tableCards];
+    }        
 
-    // TODO: Test this
+    // TODO #1: Test this
     playerRaise: function(pIndex, amount)
     {
         // Increase current bet
