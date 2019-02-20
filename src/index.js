@@ -21,7 +21,7 @@ const pool = new pg.Pool({
 });
 
 const server = express()
-  .use((req, res) => res.sendFile(path.join(__dirname, "chat.html")))
+  .use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
   .listen(port, () => console.log(`Listening on ${ port }`));
 
 const io = sio(server);
