@@ -1,15 +1,12 @@
 
 this.finalhand = function(a, b){
+  // Logic that makes these arrays look like what I want them to look like
 
-  //Logic that makes these arrays look like what I want them to look like
-
-  //Make master Array
+  // Make master Array
   let x = new Array(4);
   for (let i = 0; i < x.length; i++) {
     x[i] = new Array(13);
   }
-
-
 
   for (let j = 0; j < x.length; j++){
     for (let k = 0; k < x[j].length; k++){
@@ -17,22 +14,21 @@ this.finalhand = function(a, b){
     }
   }
 
-  //find what cards are in users hand and setting them
+  // find what cards are in users hand and setting them
   for (let i = 0; i < a.length; i++){
-    holder_a_number = a[i] % 13;
-    holder_a_suit = Math.floor(a[i] / 13);
+    const holder_a_number = a[i] % 13;
+    const holder_a_suit = Math.floor(a[i] / 13);
     x[holder_a_suit][holder_a_number] = 1;
   }
 
-  //find what cards are on the table and setting them
+  // find what cards are on the table and setting them
   for (let i = 0; i < b.length; i++){
-    holder_b_number = b[i] % 13;
-    holder_b_suit   = Math.floor(b[i] / 13);
+    const holder_b_number = b[i] % 13;
+    const holder_b_suit   = Math.floor(b[i] / 13);
     x[holder_b_suit][holder_b_number] = 1;
   }
 
-
-  return (x);
+  return x;
 };
 
 
@@ -83,11 +79,7 @@ this.findWinner = function(handArray) {
   return finalArr;
 };
 
-
-
-
 this.kinds = function(matchArray){
-
   let highCard = -1;
 
   let fourCounter = 0;
@@ -103,7 +95,6 @@ this.kinds = function(matchArray){
   let twoPair = false;
 
   for (let k = 0; k < matchArray.length; k++){
-
     //What is the High Card
     if (matchArray[k] != 0){
       highCard = k;
@@ -136,6 +127,8 @@ this.kinds = function(matchArray){
       doubleCounter = doubleCounter + 1;
     }
   }
+	
+  let fullHouseArray = undefined;
 
   //Is there a Full House
   if (tripleCounter >= 1 && doubleCounter >= 1){

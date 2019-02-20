@@ -43,8 +43,7 @@ this.testPlayer = function() {
   return player0;
 };
 
-this.startGame = function() // change to pass game object instead, gameInfo
-{
+this.startGame = function() { // change to pass game object instead, gameInfo
   const N = 2;
   let currentBet = 0;
   let pot = 0;
