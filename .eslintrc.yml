@@ -17,3 +17,14 @@ rules:
   semi:
     - error
     - always
+  keyword-spacing:
+    - error
+    - after: true
+  brace-style:
+    - error
+    - 1tbs
+  comma-spacing:
+    - error
+    - after: true
+  no-var:
+    - error
