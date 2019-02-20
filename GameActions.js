@@ -47,19 +47,10 @@ class Player {
 
     this.startGame = function() // change to pass game object instead, gameInfo
     {
-        N = 8;
+        N = 2;
         currentBet = 0;
         pot = 0;
         defaultChips = 100;
-
-        for (var i = 0; i < N; i++)
-        {
-          allPlayers[i] = new Player(0, i, 100);
-        }
-
-        return allPlayers;
-        /*
-
         // Deal
         var m = 0; // 1. Random numbers
         for (var i = 0; i < (2*N+5); i++)
@@ -96,7 +87,7 @@ class Player {
         // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]
 
         return [playerCards, tableCards];
-    */}
+    }
 
     // TODO #1: Test this. Raise /to/ amount
     this.playerRaise = function(pIndex, amount)

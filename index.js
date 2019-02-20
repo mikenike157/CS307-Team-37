@@ -66,6 +66,8 @@ io.sockets.on('connection', function (socket) {
       var cards = game.startGame();
       var playerCards = cards[0];
       var tableCards = cards[1];
+      console.log(playerCards);
+      console.log(tableCards);
       var handRanks = [];
       for (var i = 0; i < playerCards.length; i++) {
         var hand = hf.finalhand(playerCards[i], tableCards)
@@ -80,9 +82,11 @@ io.sockets.on('connection', function (socket) {
       }
       var winner = hf.findWinner(handRanks)
       for (var i = 0; i < availSockets.length; i++) {
-        console.log(availSockets[i]);
+        players[i].cards = playerCards[i];
         io.to(availSockets[i]).emit('updatechat', "Your Cards: ", playerCards[i]);
       }
+      console.log(players)
+
       var newdata = validator.escape(data)
       //io.sockets.in(socket.room).emit('updatechat', "Player Cards: ", playerCards);
       //io.sockets.in(socket.room).emit('updatechat', "Table Cards: ", tableCards)
