@@ -1,11 +1,13 @@
 'use strict';
 
 const express = require('express');
+const game = require('./GameActions.js');
 const validator = require('validator');
 const port = process.env.PORT || 80;
 const path = require('path')
 const sio = require('socket.io')
 const pg = require('pg');
+const hf = require('./handFinder.js')
 const pool = new pg.Pool({
   user: 'uvqmfjuwtlhurl',
   host: 'ec2-54-227-246-152.compute-1.amazonaws.com',
@@ -27,12 +29,14 @@ var usernames = {};
 
 // rooms which are currently available in chat
 var rooms = ['room1'];
-
+var availSockets = [];
 io.sockets.on('connection', function (socket) {
 
 	// when the client emits 'adduser', this listens and executes
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
+    console.log(socket.id)
+    availSockets.push(socket.id);
     username = validator.escape(username);
 		socket.username = username;
 		// store the room name in the socket session for this client
@@ -50,14 +54,43 @@ io.sockets.on('connection', function (socket) {
 
 	// when the client emits 'sendchat', this listens and executes
 	socket.on('sendchat', function (data) {
-    var newdata = validator.escape(data)
 		// we tell the client to execute 'updatechat' with 2 parameters
-    var parsed = [1, 2]// = newdata.split(" ");
-    if (parsed[0] == "bet") {
+    var parsed = data.split(" ");
+    if (data == "/start") {
+      var cards = game.startGame();
+      var playerCards = cards[0];
+      var tableCards = cards[1];
+      var handRanks = [];
+      for (var i = 0; i < playerCards.length; i++) {
+        var hand = hf.finalhand(playerCards[i], tableCards)
+        var matchArray = hf.match(hand);
+        var handArray0 = hf.kinds(matchArray);
+        var handArray1 = hf.flushAndStraight(hand,matchArray);
+        if(handArray0[0]>handArray1[0]){
+          handRanks.push(handArray0);
+        }else{
+          handRanks.push(handArray1);
+        }
+      }
+      var winner = hf.findWinner(handRanks)
+      for (var i = 0; i < availSockets.length; i++) {
+        console.log(availSockets[i]);
+        io.to(availSockets[i]).emit('updatechat', "Your Cards: ", playerCards[i]);
+      }
+      var newdata = validator.escape(data)
+      //io.sockets.in(socket.room).emit('updatechat', "Player Cards: ", playerCards);
+      //io.sockets.in(socket.room).emit('updatechat', "Table Cards: ", tableCards)
+      return;
+    }
+
+    if (parsed[0] == "/bet") {
+      var newdata = validator.escape(data)
       io.sockets.in(socket.room).emit('updatechat', socket.username, "Congrats youve bet " + parsed[1] + " chips.")
     }
     else {
       if (data != "") {
+        var newdata = validator.escape(data)
+
         io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
       }
     }
@@ -75,3 +108,10 @@ io.sockets.on('connection', function (socket) {
 		socket.leave(socket.room);
 	});
 });
+
+function getSockets(room) { // will return all sockets with room name
+  return Object.entries(io.sockets.adapter.rooms[room] === undefined ?
+  {} : io.sockets.adapter.rooms[room].sockets )
+    .filter(([id, status]) => status) // get only status = true sockets
+    .map(([id]) => io.sockets.connected[id])
+}
