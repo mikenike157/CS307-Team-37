@@ -5,11 +5,11 @@ var STATES = new Array("NOTREADY", "READY", "FOLDED")
 // Length N array of Player objects
 // Each Player object contains chip information, current state
 var allPlayers = [];
-var numbers = []; // 2N+5 unique random integers on [0, 51] 
+var numbers = []; // 2N+5 unique random integers on [0, 51]
 var playerCards = [[],[], [], [], [], [], [], []]; // maximum of eight players
 var tableCards = [];
 
-var playerOrder = []; // not currently used; assign N values on [0, N-1]  
+var playerOrder = []; // not currently used; assign N values on [0, N-1]
 var playerChips = [];
 var playerStates = [];
 var lastBet = [];
@@ -20,28 +20,45 @@ var pot;
 var N;
 
 class Player {
-    constructor(playerID, order, chips) 
+    constructor(playerID, order, chips)
     {
-        this.playerID = playerID; 
-        this.order = order; 
+        this.playerID = playerID;
+        this.order = order;
         this.lastBet = 0;
         this.playerState = "NOTREADY";
-        this.playerChips = chips; 
+        this.playerChips = chips;
         this.cards = [-1, -1];
     }
 }
+
+
+    this.addPlayer = function(socketid, n) {
+      var player = new Player(socketid, n, 100);
+      //allPlayers[n] = player;
+      return player;
+    }
+
+
     this.testPlayer = function()
     {
         var player0 = new Player(0, 0, 100);
         return player0;
     }
-    
+
     this.startGame = function() // change to pass game object instead, gameInfo
     {
         N = 8;
         currentBet = 0;
         pot = 0;
-        defaultChips = 100; 
+        defaultChips = 100;
+
+        for (var i = 0; i < N; i++)
+        {
+          allPlayers[i] = new Player(0, i, 100);
+        }
+
+        return allPlayers;
+        /*
 
         // Deal
         var m = 0; // 1. Random numbers
@@ -67,35 +84,22 @@ class Player {
             playerCards[k][1] = numbers[i+1];
             k++;
         }
-        k = 0; // 3. Assign table cards 
+        k = 0; // 3. Assign table cards
         for (var i = (2*N); i < (2*N+5); i++)
         {
             tableCards[k] = numbers[i];
             k++;
         }
-        
-        // Set all states to not ready
-        for (var i = 0; i < N; i++)
-        { playerStates[i] = "NOTREADY"; }
-        
-        // Temp for testing: Assign default number of chips 
-        for (var i = 0; i < N; i++)
-        { playerChips[i] = defaultChips; } 
-        
-        // Assign lastBet to zero
-        for (var i = 0; i < N; i++)
-        { lastBets[i] = 0; }
-        
         // Later: Assign random order for players
-         
+
         // 0th player = dealer, 1st = small blind, 2nd = big blind
-        // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]  
+        // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]
 
         return [playerCards, tableCards];
-    }        
+    */}
 
     // TODO #1: Test this. Raise /to/ amount
-    playerRaise: function(pIndex, amount)
+    this.playerRaise = function(pIndex, amount)
     {
         // Increase current bet
         if (playerChips[pIndex] >= amount)
@@ -106,10 +110,10 @@ class Player {
             currentBet = amount;
             return 1;
         }
-        // Fail to raise 
-        return 0; 
-    },
-        
+        // Fail to raise
+        return 0;
+    }
+
 /*
     // TODO: Inner game loop
 

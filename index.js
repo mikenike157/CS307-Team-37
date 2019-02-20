@@ -23,6 +23,9 @@ const server = express()
 
 const io = sio(server);
 
+
+var players = [];
+
 var roomArray = new Array(101)
 
 var usernames = {};
@@ -32,10 +35,11 @@ var rooms = ['room1'];
 var availSockets = [];
 io.sockets.on('connection', function (socket) {
 
-	// when the client emits 'adduser', this listens and executes
+	// when the client emits 'adduser', this listesns and executes
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
-    console.log(socket.id)
+    var player = game.addPlayer(socket.id, availSockets.length);
+    players[availSockets.length] = player;
     availSockets.push(socket.id);
     username = validator.escape(username);
 		socket.username = username;
@@ -43,6 +47,8 @@ io.sockets.on('connection', function (socket) {
 		socket.room = 'room1';
 		// add the client's username to the global list
 		usernames[username] = username;
+    console.log()
+    console.log(player);
 		// send client to room 1
 		socket.join('room1');
 		// echo to client they've connected
