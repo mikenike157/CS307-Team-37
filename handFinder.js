@@ -70,18 +70,7 @@
       }
       return 0;
     })
-    console.log("ALL HANDS: " + sortArray);
-    var finalArr = [];
-    for (var i = 0; i < sortArray.length-1; i++) {
-      for (var j = 0; j < sortArray[i].length; j++) {
-        if (sortArray[i][j] != sortArray[i+1][j]) {
-            finalArr.push(sortArray[i]);
-            return finalArr;
-        }
-      }
-      finalArr.push(sortArray[i]);
-    }
-    return finalArr;
+    return sortArray[0];
   }
 
 

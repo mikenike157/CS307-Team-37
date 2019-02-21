@@ -6,7 +6,7 @@ var STATES = new Array("NOTREADY", "READY", "FOLDED")
 // Each Player object contains chip information, current state
 var allPlayers = [];
 var numbers = []; // 2N+5 unique random integers on [0, 51]
-var playerCards = [[],[], [], [], [], [], [], []]; // maximum of eight players
+var playerCards = []; // maximum of eight players
 var tableCards = [];
 
 var playerOrder = []; // not currently used; assign N values on [0, N-1]
@@ -19,14 +19,27 @@ var currentBet;
 var pot;
 var N;
 
+var seed = 1;
+
+function tutorialDeck() {
+  var x = Math.sin(seed++) * 52
+  return Math.floor((x-Math.floor(x))* 52);
+}
+
+function randomDeck() {
+  var tempSeed = new Date().getTime() / 1000;
+  tempSeed = tempSeed * tempSeed;
+  var x = Math.sin(tempSeed) * 52;
+  return Math.floor((x - Math.floor(x)) * 52);
+}
 class Player {
     constructor(playerID, order, chips)
     {
         this.playerID = playerID;
         this.order = order;
         this.lastBet = 0;
-        this.playerState = "NOTREADY";
-        this.playerChips = chips;
+        this.state = "NOTREADY";
+        this.chips = chips;
         this.cards = [-1, -1];
     }
 }
@@ -39,23 +52,30 @@ class Player {
     }
 
 
-    this.testPlayer = function()
+    this.startGame = function(numPlayers) // change to pass game object instead, gameInfo
     {
-        var player0 = new Player(0, 0, 100);
-        return player0;
-    }
-
-    this.startGame = function() // change to pass game object instead, gameInfo
-    {
-        N = 2;
+        N = numPlayers;
         currentBet = 0;
         pot = 0;
         defaultChips = 100;
         // Deal
         var m = 0; // 1. Random numbers
-        for (var i = 0; i < (2*N+5); i++)
+        var i = 0;
+        while (i < 52) {
+          var k = randomDeck();
+          if (numbers.includes(k)) {
+            continue;
+          }
+          else {
+            numbers[i] = k;
+            i++;
+          }
+        }
+        /*
+        for (var i = 0; i < 52; i++)
         {
-          var k = Math.floor(Math.random()*51);
+          var k = tutorialDeck();
+
           numbers[i] = k;
           var j = i-1; // check for and eliminate repeats
           while (j >= 0)
@@ -68,13 +88,18 @@ class Player {
             else { j--; }
           }
         }
+        */
+        console.log(numbers);
         var k = 0; // 2. Assign to players
         for (var i = 0; i < (N*2); i+=2)
         {
-            playerCards[k][0] = numbers[i];
-            playerCards[k][1] = numbers[i+1];
+          var cardsToPush = [numbers[i], numbers[i+1]];
+            //playerCards[k][0] = numbers[i];
+            //playerCards[k][1] = numbers[i+1];
+            playerCards.push(cardsToPush);
             k++;
         }
+        console.log()
         k = 0; // 3. Assign table cards
         for (var i = (2*N); i < (2*N+5); i++)
         {
@@ -90,21 +115,44 @@ class Player {
     }
 
     // TODO #1: Test this. Raise /to/ amount
-    this.playerRaise = function(pIndex, amount)
+    this.playerRaise = function(player, currentBet, raiseTo)
     {
-        // Increase current bet
-        if (playerChips[pIndex] >= amount)
-        {
-            playerChips[pIndex] -= amount;
-            playerStates[pIndex] = "READY";
-            pot += amount;
-            currentBet = amount;
-            return 1;
-        }
-        // Fail to raise
-        return 0;
+      if (player.chips >= raiseTo && raiseTo > currentBet)
+      {
+        var margin = raiseTo-player.lastBet;
+        player.chips -= margin;
+        player.state = "READY";
+        player.lastBet = raiseTo;
+        return [player, margin];
+      }
+      return -1;
     }
 
+    this.playerCall = function(player, currentBet)
+    {
+      if (player.chips >= currentBet)
+      {
+        var margin = currentBet-player.lastBet;
+        player.chips -= margin;
+        player.state = "READY";
+        player.lastBet = margin;
+        return [player, margin];
+      }
+      return -1;
+    }
+
+    this.playerFold = function(player)
+    {
+      player.state = "FOLDED";
+      return player;
+    }
+
+    this.blind = function(player, amount)
+    {
+        player.chips -= amount;
+        player.lastBet = amount;
+        return player;
+    }
 /*
     // TODO: Inner game loop
 
