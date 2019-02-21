@@ -119,6 +119,7 @@ class Player {
     // TODO #1: Test this. Raise /to/ amount
     this.playerRaise = function(player, currentBet, raiseTo)
     {
+      raiseTo = parseInt(raiseTo);
       if (player.chips >= raiseTo && raiseTo > currentBet)
       {
         var margin = raiseTo-player.lastBet;
@@ -137,7 +138,7 @@ class Player {
         var margin = currentBet-player.lastBet;
         player.chips -= margin;
         player.state = "READY";
-        player.lastBet = margin;
+        player.lastBet = currentBet;
         return [player, margin];
       }
       return -1;

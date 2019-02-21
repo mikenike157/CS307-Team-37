@@ -154,7 +154,7 @@ io.sockets.on('connection', function (socket) {
         }
         else {
           currentPot += retArray[1];
-          players[currentPlayer].state = "READY";
+          players[currentPlayer] = retArray[0];
           io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
       }
@@ -348,6 +348,7 @@ function progressGame(socket) {
        if (handRankString == winString) {
          console.log("WINNER FOUND");
           winnersArr.push(players[i].username);
+          delete players[i].handRank
        }
       }
     }
