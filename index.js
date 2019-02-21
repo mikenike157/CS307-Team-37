@@ -1,13 +1,13 @@
 'use strict';
 
 const express = require('express');
-const game = require('./GameActions.js');
+const game = require('./src/GameActions.js');
 const validator = require('validator');
 const port = process.env.PORT || 80;
 const path = require('path')
 const sio = require('socket.io')
 const pg = require('pg');
-const hf = require('./handFinder.js')
+const hf = require('./src/handFinder.js')
 const pool = new pg.Pool({
   user: 'uvqmfjuwtlhurl',
   host: 'ec2-54-227-246-152.compute-1.amazonaws.com',
@@ -18,7 +18,7 @@ const pool = new pg.Pool({
 });
 
 const server = express()
-  .use((req, res) => res.sendFile(path.join(__dirname, 'pages/chat.html')))
+  .use((req, res) => res.sendFile(path.join(__dirname, 'src/pages/chat.html')))
   .listen(port, () => console.log(`Listening on ${ port }`));
 
 const io = sio(server);
