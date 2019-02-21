@@ -49,10 +49,13 @@ const server = express()
      // if(err) throw err;
       const result = lg.validateUser(pool, req.body.username, req.body.password);
       //done();
+      console.log(result);
       if( typeof result.userId == undefined ){
         console.log(result.reason);
+        return res.redirect('/index.html');
       } else {
         console.log(result.userId);
+        return res.redirect('/main.html');
       }
       
     //})
