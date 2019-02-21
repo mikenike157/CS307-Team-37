@@ -33,31 +33,43 @@ const server = express()
 
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
-    //pool.connect((err, client, done) => {
-     // if(err) throw err;
+
       const result = lg.createUser(pool, req.body);
       
-     // done();
-    //})
+      result
+        .then( function handleRegister(user){
+          console.log("Success!");
+          return res.redirect('/')
+        })
+        .catch(function handleError(result){
+          console.log("ERROR")
+          console.log(result);
+          return res.redirect('/')
+        })
     
   })
 
   //validates login credentials of util.isError(e);
   .post('/login_post',  function(req, res){
     console.log("begin login");
-   // pool.connect((err, client, done) => {
-     // if(err) throw err;
       const result = lg.validateUser(pool, req.body.username, req.body.password);
-      //done();
-      console.log(result);
-      if( typeof result.userId == undefined ){
-        console.log(result.reason);
-        return res.redirect('/index.html');
-      } else {
-        console.log(result.userId);
-        return res.redirect('/main.html');
-      }
-      
+
+      result
+        .then(function handleLogin(user){
+          console.log(user);
+          if( user.userId === undefined ){
+            console.log(user.reason);
+            return res.redirect('/');
+          } else {
+            console.log(user.userId);
+            return res.redirect('/main.html');
+          }
+        })
+        .catch(function handleError(){
+          console.log("ERROR");
+          return res.redirect('/')
+        })    
+  
     //})
     
   })

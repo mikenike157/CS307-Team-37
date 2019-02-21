@@ -21,7 +21,7 @@ async function createUser(pool, userinfo) {
     "INSERT INTO Users (username, password, security_question, security_answer, chips, is_admin) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
   
-  client.release();
+  await client.release();
 
   console.log("client released");
 
@@ -50,7 +50,7 @@ async function validateUser(pool, username, password) {
   console.log(authRes);
   if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"], password)) {
     console.log("incorrect");
-    client.release(true);
+    await client.release(true);
     return {
       userId: undefined,
       reason: "Username or password is incorrect",
@@ -64,7 +64,7 @@ async function validateUser(pool, username, password) {
 
   console.log(banRes);
 
-  client.release(true);
+  await client.release(true);
 
   if (banRes.rows.length != 0) {
     return {
