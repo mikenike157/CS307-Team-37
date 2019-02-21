@@ -115,6 +115,10 @@ io.sockets.on('connection', function (socket) {
       var raiseTo = parsed[1];
       var currPlayer = players[currentPlayer];
       var retArray = game.playerRaise(currPlayer, currentBet, raiseTo);
+      if (retArray == -1) {
+        io.to(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
+        return;
+      }
       currentPot += retArray[1];
       currentBet = raiseTo;
       players[currentPlayer] = retArray[0];
@@ -143,9 +147,16 @@ io.sockets.on('connection', function (socket) {
       else {
         var amount = currentBet;
         var retArray = game.playerCall(players[currentPlayer], currentBet);
-        currentPot += retArray[1];
-        players[currentPlayer].state = "READY";
-        io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
+        if (retArray == -1) {
+          currentPot += players[currentPlayer].chips;
+          players[currentPlayer].chips = 0;
+          players[currentPlayer].state = "ALLIN";
+        }
+        else {
+          currentPot += retArray[1];
+          players[currentPlayer].state = "READY";
+          io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
+        }
       }
       checkReadyState(socket)
     }
