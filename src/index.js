@@ -34,6 +34,7 @@ const server = express()
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
 
+      //create promise that returns a user from the database
       const result = lg.createUser(pool, req.body);
       
       result
@@ -42,16 +43,18 @@ const server = express()
           return res.redirect('/')
         })
         .catch(function handleError(result){
-          console.log("ERROR")
+          console.log("ERROR");
           console.log(result);
           return res.redirect('/')
         })
     
   })
 
-  //validates login credentials of util.isError(e);
+  //validates login credentials of user
   .post('/login_post',  function(req, res){
     console.log("begin login");
+
+      //create promise that returns a user from the database
       const result = lg.validateUser(pool, req.body.username, req.body.password);
 
       result
