@@ -7,6 +7,7 @@ const path = require("path");
 const sio = require("socket.io");
 const pg = require("pg");
 const hf = require("./handFinder.js");
+const bp = require("body-parser")
 
 //The code for the database interaction
 const lg = require("./transactions/index.js")
@@ -27,12 +28,35 @@ const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
   //Testing login page
   .use(express.static(__dirname + '/pages'))
-  .get('/login.html', function(req,res){
-    res.sendFile("login.html");
+  //Converts post data to JSON
+  .use(bp.urlencoded({ extended: false }))
+
+  //attempts to register new user in database
+  .post('/register_post',  function(req, res){
+    //pool.connect((err, client, done) => {
+     // if(err) throw err;
+      const result = lg.createUser(pool, req.body);
+      
+     // done();
+    //})
+    
   })
-  .post('/register_post', function(req, res){
-    console.log(req)
-    //lg.createUser(req)
+
+  //validates login credentials of util.isError(e);
+  .post('/login_post',  function(req, res){
+    console.log("begin login");
+   // pool.connect((err, client, done) => {
+     // if(err) throw err;
+      const result = lg.validateUser(pool, req.body.username, req.body.password);
+      //done();
+      if( typeof result.userId == undefined ){
+        console.log(result.reason);
+      } else {
+        console.log(result.userId);
+      }
+      
+    //})
+    
   })
   
   .listen(port, ()  => console.log(`Listening on ${ port }`));

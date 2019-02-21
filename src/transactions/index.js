@@ -9,7 +9,10 @@ const DEFAULT_CHIPS = 100;
   * securityQuestion: security question
   * securityAnswer: answer to question
 */
-async function createUser(client, userinfo) {
+async function createUser(pool, userinfo) {
+
+  const client = await pool.connect();
+
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i,
     raw: true,
@@ -17,6 +20,9 @@ async function createUser(client, userinfo) {
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips, is_admin) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
+  
+  client.release();
+
   return res.rows[0]["user_id"];
 }
 
@@ -27,13 +33,21 @@ async function createUser(client, userinfo) {
   * userId: undefined
   * reason: string
 */
-async function validateUser(client, username, password) {
+async function validateUser(pool, username, password) {
   // Check if username and password is valid
+
+
+  console.log("begin validation");
+
+  const client = await pool.connect();
+
   const authRes = await client.query(
     "SELECT (user_id, password) FROM Users WHERE Users.username = $1;",
     [username]
   );
+  console.log(authRes);
   if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"], password)) {
+    console.log("incorrect");
     return {
       userId: undefined,
       reason: "Username or password is incorrect",
@@ -44,6 +58,9 @@ async function validateUser(client, username, password) {
     "SELECT (reason) FROM BanList WHERE user_id = $1 AND expiry > NOW and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
+
+  client.release();
+
   if (banRes.rows.length != 0) {
     return {
       userId: undefined,

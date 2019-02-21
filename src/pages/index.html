@@ -1,69 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Poker University</title>
+	<title>Login</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 	<div class="main-header">
-		<h1 id="mainTitle" class="page-title">Poker University</h1>
-		<input type="button" name="logout" value="logout">
+		<h1 class="page-title">Poker University</h1>
 	</div>
 	<div class="main-body">
-		<div class="sub-container" id="playModes">
-			<div class="tab-select sub-box" id="mainHeads">
-				<div class="tab-head" id="pvp">
-					<h3>Player vs Players</h3>
-				</div>
-				<div class="tab-head" id="pvb">
-					<h3>Player vs Bots</h3>
-				</div>
-				<div class="tab-head" id="tutorial">
-					<h3>Tutorial</h3>
-				</div>
-				<div class="tab-head" id="hostLobby">
-					<h3>Host Lobby</h3>
-				</div>
-			</div>
-			<div class="sub-box" id="modeWindows">
-				<div class="mode-window" id="pvpWindow">
-					
-				</div>
-				<div class="mode-window" id="pvbWindow">
-					
-				</div>
-				<div class="mode-window" id="tutorialWindow">
-					
-				</div>
-				<div class="mode-window" id="hostLobbyWindow">
-					
-				</div>
-			</div>
-			<input type="button" id="playButton" value="Play">
-			<div id="serverInfo">
-				<p>Players online: </p>
-				<p>Friends online: </p>
-				<p>Active tables: </p>
-			</div>
+		<div class="form-section sub-container" id="loginSection">
+			<h1> Login </h1>
+			<form id="loginForm" action="login_post" method="POST">
+				<p class="field-title">Username</p>
+				<input type="text" name="username">
+				<p class="field-title">Password</p>
+				<input type="text" name="password">
+				<input type="submit" name="submit" value="Submit">
+			</form>
+			<a id="passwordRecoveryLink" href="">Forgot Password?</a>
 		</div>
-		<div class="sub-container" id="playerInfo">
-			<div class="sub-box" id="profile">
-				<div id="chips">
-					<h3 id="chipTitle">Chips:</h2>
-					<h3 id="chipCount"></h3>
-				</div>
-				<img src="" id="profilePic"/>
-
-			</div>
-			<div class="sub-box" id="playerStats">
-				
-			</div>
-			<div class="sub-box" id="friendsList">
-				
-			</div>
+		<div class="form-section sub-container" id="registerForm">
+			<h1> Register </h1>
+			<form id="registerForm" action="register_post" method="POST">
+				<p class="field-title">Username</p>
+				<input type="text" name="username">
+				<p class="field-title">Password</p>
+				<input type="text" name="password">
+				<p class="field-title">Security Question:</p>
+				<input type="text" name="securityQuestion">
+				<p class="field-title">Security Answer:</p>
+				<input type="text" name="securityAnswer">
+				<input type="submit" name="submit" value="Submit">
+			</form>		
 		</div>
-
-
 	</div>
 
 
