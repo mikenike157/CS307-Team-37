@@ -9,13 +9,14 @@ const DEFAULT_CHIPS = 100;
   * securityQuestion: security question
   * securityAnswer: answer to question
 */
+  if (userinfo.username === "" || userinfo.password === "")
+    throw "empty username or password";
 async function createUser(pool, userinfo) {
 
   const client = await pool.connect();
 
   const hash = await argon2.hash(userinfo.password, {
-    type: argon2.argon2i,
-    raw: true,
+    type: argon2.argon2i
   });
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips, is_admin) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING user_id;",
@@ -44,7 +45,7 @@ async function validateUser(pool, username, password) {
   const client = await pool.connect();
 
   const authRes = await client.query(
-    "SELECT (user_id, password) FROM Users WHERE Users.username = $1;",
+    "SELECT user_id, password FROM Users WHERE Users.username = $1;",
     [username]
   );
   console.log(authRes);
@@ -58,7 +59,7 @@ async function validateUser(pool, username, password) {
   }
   // Check if user is not banned
   const banRes = await client.query(
-    "SELECT (reason) FROM BanList WHERE user_id = $1 AND expiry > NOW and type = 'ban'",
+    "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
 
@@ -83,7 +84,7 @@ async function validateUser(pool, username, password) {
 */
 async function getChipCount(client, id) {
   const res = await client.query(
-    "SELECT (chips) FROM Users WHERE user_id = $1",
+    "SELECT chips FROM Users WHERE user_id = $1",
     [id]
   );
   if (res.rows.length == 0) throw "User not found";
