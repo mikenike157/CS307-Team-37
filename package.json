@@ -18,9 +18,14 @@
   },
   "homepage": "https://github.com/mikenike157/CS307-TEAM-37#readme",
   "dependencies": {
+    "argon2": "^0.20.1",
     "express": "^4.16.4",
     "pg": "^7.8.0",
     "socket.io": "^2.2.0",
     "validator": "^10.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.13.0",
+    "mocha": "^6.0.0"
   }
 }
