@@ -85,7 +85,7 @@ io.sockets.on('connection', function (socket) {
 	socket.on('sendchat', function (data) {
 		// we tell the client to execute 'updatechat' with 2 parameters
     var parsed = data.split(" ");
-    if (data == "/start") {
+    if (parsed == "/start") {
       //console.log(players);
       if (gameStatus == 1) {
         io.to(socket.id).emit('updatechat', "Server", "There is already a game going on.");
@@ -194,6 +194,7 @@ io.sockets.on('connection', function (socket) {
         io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
         return;
       }
+      return;
     }
     printInfo(socket)
 	});
