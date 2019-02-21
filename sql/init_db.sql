@@ -9,7 +9,7 @@ CREATE TYPE BanType AS ENUM ('ban', 'silence');
 CREATE TABLE Users (
   user_id BIGSERIAL UNIQUE NOT NULL,
   username VARCHAR(40) UNIQUE NOT NULL,
-  password BYTEA NOT NULL, -- argon2 hash?
+  password TEXT NOT NULL, -- argon2 hash?
   security_question VARCHAR(100) NOT NULL,
   security_answer VARCHAR(100) NOT NULL,
   profile_picture BYTEA,

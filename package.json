@@ -27,5 +27,8 @@
   "devDependencies": {
     "eslint": "^5.13.0",
     "mocha": "^6.0.0"
-  }
+  },
+  "scripts": {
+    "test": "mocha"
+  }  
 }
