@@ -8,6 +8,9 @@ const sio = require("socket.io");
 const pg = require("pg");
 const hf = require("./handFinder.js");
 
+//The code for the database interaction
+const lg = require("./transactions/index.js")
+
 
 const port = process.env.PORT || 80;
 
@@ -21,8 +24,18 @@ const pool = new pg.Pool({
 });
 
 const server = express()
-  .use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
-  .listen(port, () => console.log(`Listening on ${ port }`));
+  //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
+  //Testing login page
+  .use(express.static(__dirname + '/pages'))
+  .get('/login.html', function(req,res){
+    res.sendFile("login.html");
+  })
+  .post('/register_post', function(req, res){
+    console.log(req)
+    //lg.createUser(req)
+  })
+  
+  .listen(port, ()  => console.log(`Listening on ${ port }`));
 
 const io = sio(server);
 
