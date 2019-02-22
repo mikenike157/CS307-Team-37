@@ -16,35 +16,21 @@ async function createUser(client, userinfo) {
     return undefined;
   }*/
 
-  try {
-    if (userinfo.username === "" || userinfo.password === ""){
-      console.log( "empty username or password" );
-      throw "Error";
-    }
-  } catch (err) {
-    return false;
+  if (userinfo.username === "" || userinfo.password === ""){
+    throw "Username and password cannot be empty";
   }
-
-  console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
 
-  console.log(hash);
-
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
-
-  console.log("client released");
-
-  return {
-  //returns user info for session purposes
-    userId: res.rows[0]["user_id"],
-    username: res.rows[0]["username"],
-    password: userinfo.password
-  };
+  
+  // I don't know why someone changed this to return the username and password
+  // as well. These are already known to the caller!
+  return res.rows[0]["user_id"];
 }
 
 /*
