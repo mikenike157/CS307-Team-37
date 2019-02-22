@@ -7,7 +7,16 @@
 	// on connection to server, ask for user's name with an anonymous callback
 	socket.on('connect', function(){
 		// call the server-side function 'adduser' and send one parameter (value of prompt)
-		socket.emit('adduser', 'guest');
+		let name = "guest";
+		$(function () {
+			$.get('http://localhost/update_username', function(data, textStatus) {
+				console.log(data);
+				name = data;
+				console.log(name);
+				socket.emit('adduser', name);
+			});
+		})
+
 	}); 
 
 	// listener, whenever the server emits 'updatechat', this updates the chat body
@@ -19,6 +28,9 @@
 
 	// on load of page
 	$(function(){
+
+
+		
 		// when the client clicks SEND
 		$('#datasend').click( function() {
 			var message = $('#data').val();
