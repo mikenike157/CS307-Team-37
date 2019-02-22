@@ -1,0 +1,99 @@
+html, body {
+	height: 100%;
+	overflow: hidden;
+}
+
+body {
+	width: 80%;
+	min-width: 300px;
+	margin: 0 auto;
+}
+
+/*Main Page Header*/
+.main-header {
+	position: static;
+	height: 20%;
+}
+
+.main-header .page-title {
+	margin: 6px auto;
+	text-align: center;
+}
+
+.main-header input {
+	position: absolute;
+	right: 0px;
+	top: 0px;
+}
+
+.main-body {
+	display: inline-flex;
+	width: 100%;
+	height: 80%;
+}
+
+/* Areas of pages which contain related active elements */
+.sub-container {
+	display: inline-block;
+	flex-basis: 33%;
+}
+
+.sub-box {
+	display: inline-block;
+	width: 100%;
+}
+
+/* Layout for a set of selectable tabs */
+.tab-select {
+	display: inline-flex;
+	width: 100%;
+}
+
+.tab-head {
+	text-align: center;
+	flex: auto;
+	border: 2px solid #000;
+	padding: 4px;
+
+}
+
+#playModes { 
+	flex-grow: 2;
+ }
+
+ #playModes #playButton {
+ 	width: 100%;
+ 	padding: 6px;
+ }
+
+#playerInfo {
+	flex-grow: 2;
+}
+
+.form-section {
+	width: 50%;
+}
+
+/* Game Page Specific */
+
+#pokerDisplay {
+	height: 70%;
+}
+
+#gameBar {
+	height: 30%;
+	width: 100%;
+	display: inline-flex;
+}
+
+#chatDisplay {
+	min-height: 120px;
+	border: 2px solid #000;
+}
+
+#hintBox input {
+	width: 80%;
+	height: 80%;
+	margin: 0 auto;
+	display: inherit;
+}
