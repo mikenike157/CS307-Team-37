@@ -16,13 +16,13 @@ async function createUser(client, userinfo) {
     return undefined;
   }*/
 
-  try{
+  try {
     if (userinfo.username === "" || userinfo.password === ""){
-       console.log( "empty username or password" );
-       throw "Error";
+      console.log( "empty username or password" );
+      throw "Error";
     }
-  } catch(err) {
-    return false
+  } catch (err) {
+    return false;
   }
 
   console.log(userinfo);
@@ -39,11 +39,11 @@ async function createUser(client, userinfo) {
 
   console.log("client released");
 
-  return{
+  return {
   //returns user info for session purposes
-      userId: res.rows[0]["user_id"],
-      username: res.rows[0]["username"],
-      password: userinfo.password
+    userId: res.rows[0]["user_id"],
+    username: res.rows[0]["username"],
+    password: userinfo.password
   };
 }
 
@@ -57,13 +57,13 @@ async function createUser(client, userinfo) {
 async function validateUser(client, username, password) {
   // Check if username and password is valid
   
-  try{
+  try {
     if (username === "" || password === ""){
-       console.log( "empty username or password" );
-       throw "Error";
+      console.log( "empty username or password" );
+      throw "Error";
       
     }
-  } catch(err) {
+  } catch (err) {
     return undefined;
   }
   
@@ -74,30 +74,30 @@ async function validateUser(client, username, password) {
   let authRes = [];
 
   try {
-     authRes = await client.query(
+    authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
       [username]
     );
-    if(authRes === undefined) {
+    if (authRes === undefined) {
       throw "Query unsuccessful";
       
     }
- } catch(err) {
+  } catch (err) {
     console.log(err);
-      return {
-        userId: undefined,
-        reason: "Cannot Connect"
-      };
+    return {
+      userId: undefined,
+      reason: "Cannot Connect"
+    };
     
-    }
-    console.log(authRes);
-    if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
-      console.log("incorrect");
-      return {
-        userId: undefined,
-        reason: "Username or password is incorrect"
-      };
-    }
+  }
+  console.log(authRes);
+  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
+    console.log("incorrect");
+    return {
+      userId: undefined,
+      reason: "Username or password is incorrect"
+    };
+  }
   
   // Check if user is not banned
   const banRes = await client.query(
