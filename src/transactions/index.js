@@ -20,7 +20,6 @@ async function createUser(client, userinfo) {
     if (userinfo.username === "" || userinfo.password === ""){
        console.log( "empty username or password" );
        throw "Error";
-      
     }
   } catch(err) {
     return false
@@ -33,13 +32,19 @@ async function createUser(client, userinfo) {
   });
 
   console.log(hash);
+
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
 
   console.log("client released");
 
-  return res.rows[0]["user_id"];
+  return{
+  //returns user info for session purposes
+      userId: res.rows[0]["user_id"],
+      username: res.rows[0]["username"],
+      password: userinfo.password
+  };
 }
 
 /*
@@ -66,22 +71,25 @@ async function validateUser(client, username, password) {
 
   console.log("begin validation");
 
-  //try {
-    const authRes = await client.query(
+  let authRes = [];
+
+  try {
+     authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
       [username]
     );
     if(authRes === undefined) {
-      //throw "Query unsuccessful";
+      throw "Query unsuccessful";
+      
+    }
+ } catch(err) {
+    console.log(err);
       return {
         userId: undefined,
         reason: "Cannot Connect"
       };
-    }
-// } catch(err) {
-   // console.log(err);
     
-  //}
+    }
     console.log(authRes);
     if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
       console.log("incorrect");
@@ -91,16 +99,11 @@ async function validateUser(client, username, password) {
       };
     }
   
-
-  console.log();
-  
   // Check if user is not banned
   const banRes = await client.query(
     "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
-
-  console.log("BanRes: \n" + banRes);
 
   if (banRes.rows.length != 0) {
     return {
@@ -109,7 +112,10 @@ async function validateUser(client, username, password) {
     };
   }
   return {
-    userId: authRes.rows[0]["user_id"]
+    //returns user info for session purposes
+    userId: authRes.rows[0]["user_id"],
+    username: username,
+    password: password
   };
 }
 

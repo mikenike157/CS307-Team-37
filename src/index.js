@@ -9,6 +9,7 @@ const pg = require("pg");
 const hf = require("./handFinder.js");
 const bp = require("body-parser");
 const fs = require("fs")
+const session = require('client-sessions')
 
 //The code for the database interaction
 const lg = require("./transactions/index.js")
@@ -25,28 +26,17 @@ const pool = new pg.Pool({
   ssl: true
 });
 
-const test_pool = new pg.Pool({
+/*const test_pool = new pg.Pool({
   database: "poker-university-test",
   host:"localhost"
-});
+}); */
 
 
-let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
-let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
 
 
-/*
-test_pool.connect()
-  .then(client => {
-  test_pool.query(dropAllTables);
-  test_pool.query(initDb);
-  return 1;
-  })
-  .catch(err=>{
-    console.log(err);
-  })
+//let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
+//let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
 
-  */
 
 const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
@@ -54,6 +44,18 @@ const server = express()
   .use(express.static(__dirname + '/pages'))
   //Converts post data to JSON
   .use(bp.urlencoded({ extended: false }))
+
+  .use(
+    session({
+      cookieName: 'session',
+      secret: 'LkX1KlxW5q92WR5CRgXqvYTUZi84umI7',
+      duration: 1000,
+      activeDuration: 1000,
+      httpOnly: true,
+      secure: true,
+      ephemeral: true
+    })
+  )
 
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
@@ -73,7 +75,8 @@ const server = express()
             return res.redirect('/');
           } else {
             console.log(user);
-            return res.redirect('/main.html');
+            req.session.user = user;
+            return res.redirect('/chat.html');
           }
         }) 
         .catch(err => {
@@ -106,7 +109,8 @@ const server = express()
               return res.redirect('/');
             } else {
               console.log(user.userId);
-             return res.redirect('/main.html');
+              req.session.user = user;
+              return res.redirect('/chat.html');
             }
           }) 
           .catch(err => {
@@ -141,8 +145,11 @@ io.sockets.on("connection", function (socket) {
     let player = game.addPlayer(socket.id, availSockets.length);
     players[availSockets.length] = player;
     availSockets.push(socket.id);
-    username = validator.escape(username);
-    socket.username = username;
+    if(session.user) {
+      username = validator.escape(session.user.username);
+      socket.username = username;  
+    }
+    
     // store the room name in the socket session for this client
     socket.room = "room1";
     // add the client's username to the global list
