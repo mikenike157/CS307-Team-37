@@ -9,20 +9,33 @@ const DEFAULT_CHIPS = 100;
   * securityQuestion: security question
   * securityAnswer: answer to question
 */
-  if (userinfo.username === "" || userinfo.password === "")
-    throw "empty username or password";
-async function createUser(pool, userinfo) {
 
-  const client = await pool.connect();
+async function createUser(client, userinfo) {
+  /*if (userinfo.username === "" || userinfo.password === ""){
+    console.log( "empty username or password" );
+    return undefined;
+  }*/
+
+  try{
+    if (userinfo.username === "" || userinfo.password === ""){
+       console.log( "empty username or password" );
+       throw "Error";
+      
+    }
+  } catch(err) {
+    return false
+  }
+
+  console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
+
+  console.log(hash);
   const res = await client.query(
-    "INSERT INTO Users (username, password, security_question, security_answer, chips, is_admin) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING user_id;",
+    "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
-  
-  await client.release();
 
   console.log("client released");
 
@@ -36,36 +49,58 @@ async function createUser(pool, userinfo) {
   * userId: undefined
   * reason: string
 */
-async function validateUser(pool, username, password) {
+async function validateUser(client, username, password) {
   // Check if username and password is valid
-
+  
+  try{
+    if (username === "" || password === ""){
+       console.log( "empty username or password" );
+       throw "Error";
+      
+    }
+  } catch(err) {
+    return undefined;
+  }
+  
+   
 
   console.log("begin validation");
 
-  const client = await pool.connect();
+  //try {
+    const authRes = await client.query(
+      "SELECT user_id, password FROM Users WHERE Users.username = $1",
+      [username]
+    );
+    if(authRes === undefined) {
+      //throw "Query unsuccessful";
+      return {
+        userId: undefined,
+        reason: "Cannot Connect"
+      };
+    }
+// } catch(err) {
+   // console.log(err);
+    
+  //}
+    console.log(authRes);
+    if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
+      console.log("incorrect");
+      return {
+        userId: undefined,
+        reason: "Username or password is incorrect"
+      };
+    }
+  
 
-  const authRes = await client.query(
-    "SELECT user_id, password FROM Users WHERE Users.username = $1;",
-    [username]
-  );
-  console.log(authRes);
-  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"], password)) {
-    console.log("incorrect");
-    await client.release(true);
-    return {
-      userId: undefined,
-      reason: "Username or password is incorrect",
-    };
-  }
+  console.log();
+  
   // Check if user is not banned
   const banRes = await client.query(
     "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
 
-  console.log(banRes);
-
-  await client.release(true);
+  console.log("BanRes: \n" + banRes);
 
   if (banRes.rows.length != 0) {
     return {

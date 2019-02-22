@@ -7,7 +7,8 @@ const path = require("path");
 const sio = require("socket.io");
 const pg = require("pg");
 const hf = require("./handFinder.js");
-const bp = require("body-parser")
+const bp = require("body-parser");
+const fs = require("fs")
 
 //The code for the database interaction
 const lg = require("./transactions/index.js")
@@ -24,6 +25,29 @@ const pool = new pg.Pool({
   ssl: true
 });
 
+const test_pool = new pg.Pool({
+  database: "poker-university-test",
+  host:"localhost"
+});
+
+
+let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
+let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
+
+
+/*
+test_pool.connect()
+  .then(client => {
+  test_pool.query(dropAllTables);
+  test_pool.query(initDb);
+  return 1;
+  })
+  .catch(err=>{
+    console.log(err);
+  })
+
+  */
+
 const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
   //Testing login page
@@ -35,18 +59,30 @@ const server = express()
   .post('/register_post',  function(req, res){
 
       //create promise that returns a user from the database
-      const result = lg.createUser(pool, req.body);
-      
-      result
-        .then( function handleRegister(user){
-          console.log("Success!");
+
+      pool.connect()
+        .then(client => {
+          return lg.createUser(client, req.body)
+          .then(user => {
+
+          client.release()
+
+          console.log(user);
+          if(!user){
+            console.log(user);
+            return res.redirect('/');
+          } else {
+            console.log(user);
+            return res.redirect('/main.html');
+          }
+        }) 
+        .catch(err => {
+          client.release()
+          console.log(err.stack);
           return res.redirect('/')
-        })
-        .catch(function handleError(result){
-          console.log("ERROR");
-          console.log(result);
-          return res.redirect('/')
-        })
+        }) 
+          
+      })
     
   })
 
@@ -55,25 +91,31 @@ const server = express()
     console.log("begin login");
 
       //create promise that returns a user from the database
-      const result = lg.validateUser(pool, req.body.username, req.body.password);
+      //const result = lg.validateUser(client, req.body.username, req.body.password);
 
-      result
-        .then(function handleLogin(user){
-          console.log(user);
-          if( user.userId === undefined ){
-            console.log(user.reason);
-            return res.redirect('/');
-          } else {
-            console.log(user.userId);
-            return res.redirect('/main.html');
-          }
+      pool.connect()
+        .then(client => {
+          return lg.validateUser(client, req.body.username, req.body.password)
+          .then(user => {
+
+          client.release()
+
+            console.log(user);
+            if( user.userId === undefined ){
+              console.log(user.reason);
+              return res.redirect('/');
+            } else {
+              console.log(user.userId);
+             return res.redirect('/main.html');
+            }
+          }) 
+          .catch(err => {
+            client.release()
+            console.log(err.stack);
+            return res.redirect('/')
+          }) 
+          
         })
-        .catch(function handleError(){
-          console.log("ERROR");
-          return res.redirect('/')
-        })    
-  
-    //})
     
   })
   
