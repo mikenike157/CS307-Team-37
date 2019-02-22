@@ -4,8 +4,7 @@
   "description": "This is a browser Texas Holdem game that allows users to learn how to play texas holdem for beginners. This will not be the final README but i need something to push onto the repsository <3",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -19,7 +18,11 @@
   "homepage": "https://github.com/mikenike157/CS307-TEAM-37#readme",
   "dependencies": {
     "argon2": "^0.20.1",
+    "assert": "^1.4.1",
+    "client-sessions": "^0.8.0",
     "express": "^4.16.4",
+    "jquery": "^3.3.1",
+    "node-waf": "^1.0.0",
     "pg": "^7.8.0",
     "socket.io": "^2.2.0",
     "validator": "^10.11.0"
