@@ -15,30 +15,21 @@ before(async function() {
   // Reset database
   let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
   let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
-  try {
-    await client.query(dropAllTables);
-    await client.query(initDb);
-  } catch (err) {
-    
-  }
-  
+  await client.query(dropAllTables);
+  await client.query(initDb);
 })
 
 describe("transactions", function() {
   describe("#createUser()", function() {
     it("writes to the database", async function() {
-      try {
-        let id = await transactions.createUser(client, {
-          username: "uruwi",
-          password: "passwordOrUruwi",
-          securityQuestion: "What other name do you go by?",
-          securityAnswer: "blue_bear_94",
-        });
-        assert(id != 0);
-      } catch {
-
-      }
-
+      // Do not wrap this code in a try-catch block – this should not throw!
+      let id = await transactions.createUser(client, {
+        username: "uruwi",
+        password: "passwordOrUruwi",
+        securityQuestion: "What other name do you go by?",
+        securityAnswer: "blue_bear_94",
+      });
+      assert(id != 0);
     });
     it("rejects duplicate usernames", async function() {
       try {
