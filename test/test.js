@@ -90,6 +90,14 @@ describe("transactions", function() {
     });
     // TODO: test bans
   });
+  describe("#updateUsername()", function() {
+    it("changes the username of an existing user", async function() {
+      const id = await transactions.getUserIdByUsername(client, "uruwi");
+      await transactions.updateUsername(client, id, "kozet");
+      const id2 = await transactions.getUserIdByUsername(client, "kozet");
+      assert(id == id2);
+    });
+  });
 });
 
 //client.end();

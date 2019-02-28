@@ -47,7 +47,6 @@ async function validateUser(client, username, password) {
     if (username === "" || password === ""){
       console.log( "empty username or password" );
       throw "Error";
-      
     }
   } catch (err) {
     return undefined;
@@ -100,8 +99,6 @@ async function validateUser(client, username, password) {
   return {
     //returns user info for session purposes
     userId: authRes.rows[0]["user_id"],
-    username: username,
-    password: password
   };
 }
 
@@ -147,9 +144,33 @@ async function deductChips(client, id, amount) {
   }
 }
 
+/*
+  updates username of user #id
+  throws if user is not found
+*/
+async function updateUsername(client, id, newUsername) {
+  const res = await client.query(
+    "UPDATE Users SET username = $1 WHERE user_id = $2;",
+    [newUsername, id]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+}
+
+async function getUserIdByUsername(client, username) {
+  const res = await client.query(
+    "SELECT user_id FROM Users WHERE username = $1;",
+    [username]
+  );
+  return res.rows[0]["user_id"];
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
   getChipCount: getChipCount,
   deductChips: deductChips,
+  updateUsername: updateUsername,
+  getUserIdByUsername: getUserIdByUsername,
 };
