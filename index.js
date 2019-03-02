@@ -154,6 +154,8 @@ var winner = [];
 
 var currentPlayer = 2;
 
+var ignoreList = [];
+
 var playerCards = [];
 
 var fixedPCards = [];
@@ -173,7 +175,7 @@ io.sockets.on('connection', function (socket) {
       username = validator.escape(username);
     }
     else {
-      username = "Player " + players.length;
+      return;
     }
     // store the username in the socket session for this client
     var player = game.addPlayer(socket.id);
@@ -211,6 +213,7 @@ io.sockets.on('connection', function (socket) {
         return;
       }
       gameStatus = 1;
+      gameState = 0;
       smallBlindPlacement = 0;
       bigBlindPlacement = 1;
       currentPlayer = (bigBlindPlacement + 1) % players.length;
@@ -247,6 +250,10 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
       checkReadyState(socket)
     }
+    else if (parsed[0] == "/ignore") {
+      ignoreList.push(socket.id);
+      return;
+    }
     else if (parsed[0] == "/call") {
       if (gameStatus == 0) {
         io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
@@ -274,6 +281,13 @@ io.sockets.on('connection', function (socket) {
         }
       }
       checkReadyState(socket)
+    }
+    else if (parsed[0] == "/blinds") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      io.to(socket.id).emit('updatechat', "Server", "The small blind is " + smallBlind + " and big blind is " + bigBlind + ".");
     }
     else if (parsed[0] == "/fold") {
       if (gameStatus == 0) {
@@ -316,8 +330,12 @@ io.sockets.on('connection', function (socket) {
     }
     else {
       if (data != "") {
-        var newdata = validator.escape(data)
-        io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+        var newdata = validator.escape(data);
+          for (var i = 0; i < players.length; i++) {
+            if (!(ignoreList.includes(players[i].playerID))) {
+              io.to(players[i].playerID).emit('updatechat', socket.username, newdata);
+            }
+          }
         return;
       }
       return;
@@ -337,6 +355,9 @@ io.sockets.on('connection', function (socket) {
     }
     if (players.length <= 1) {
       gameStatus = 0;
+      if (players.length == 1) {
+        players[0] = game.addPlayerplayer(players[0].playerID);
+      }
     }
     console.log(players);
     // update list of users in chat, client-side
@@ -365,6 +386,7 @@ function checkReadyState(socket) {
 }
 
 function beginRound(socket) {
+  currentPot = 0;
   console.log("Hello world")
   var cards = game.startGame(players.length);
   playerCards = cards[0];
@@ -375,6 +397,7 @@ function beginRound(socket) {
   fixedPCards = fixedCards[0];
   fixedTCards = fixedCards[1];
   for (var i = 0; i < players.length; i++) {
+    players[i].lastBet = 0;
     players[i].cards = playerCards[i];
   }
   var temp = game.blind(players[smallBlindPlacement], 1);
