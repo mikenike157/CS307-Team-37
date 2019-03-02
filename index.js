@@ -79,15 +79,15 @@ const server = express()
             req.session.user = user;
             return res.redirect('/chat.html');
           }
-        }) 
+        })
         .catch(err => {
           client.release()
           console.log(err.stack);
           return res.redirect('/')
-        }) 
-          
+        })
+
       })
-    
+
   })
 
   //validates login credentials of user
@@ -113,21 +113,21 @@ const server = express()
               req.session.user = user;
               return res.redirect('/chat.html');
             }
-          }) 
+          })
           .catch(err => {
             client.release()
             console.log(err.stack);
             return res.redirect('/')
-          }) 
-          
+          })
+
         })
-    
+
   })
 
   .get('/update_username', function(req,res){
     console.log(req.session.user);
     if(req.session && req.session.user){
-      return res.send(req.session.user.username);      
+      return res.send(req.session.user.username);
     } else {
       return res.send("nobody");
     }
@@ -135,7 +135,7 @@ const server = express()
 
   .listen(port, () => console.log(`Listening on ${ port }`));
 
-  
+
 const io = sio(server);
 
 
@@ -660,11 +660,4 @@ function findCard(card) {
       return ((card+2) + "H");
     }
   }
-}
-
-function getSockets(room) { // will return all sockets with room name
-  return Object.entries(io.sockets.adapter.rooms[room] === undefined ?
-  {} : io.sockets.adapter.rooms[room].sockets )
-    .filter(([id, status]) => status) // get only status = true sockets
-    .map(([id]) => io.sockets.connected[id])
 }
