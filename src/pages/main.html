@@ -7,7 +7,9 @@
 <body>
 	<div class="main-header">
 		<h1 id="mainTitle" class="page-title">Poker University</h1>
-		<input type="button" name="logout" value="logout">
+		<form id="logoutButton" action="logout_get" method="GET">
+			<input type="submit" name="logout" value="logout">
+		</form>
 	</div>
 	<div class="main-body">
 		<div class="sub-container" id="playModes">
@@ -27,16 +29,16 @@
 			</div>
 			<div class="sub-box" id="modeWindows">
 				<div class="mode-window" id="pvpWindow">
-					
+
 				</div>
 				<div class="mode-window" id="pvbWindow">
-					
+
 				</div>
 				<div class="mode-window" id="tutorialWindow">
-					
+
 				</div>
 				<div class="mode-window" id="hostLobbyWindow">
-					
+
 				</div>
 			</div>
 			<input type="button" id="playButton" value="Play">
@@ -56,10 +58,10 @@
 
 			</div>
 			<div class="sub-box" id="playerStats">
-				
+
 			</div>
 			<div class="sub-box" id="friendsList">
-				
+
 			</div>
 		</div>
 

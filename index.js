@@ -2,6 +2,7 @@
 
 const express = require("express");
 const game = require("./src/GameActions.js");
+const room = require("./src/Gamerooms.js");
 const validator = require("validator");
 const path = require("path");
 const sio = require("socket.io");
@@ -77,7 +78,7 @@ const server = express()
           } else {
             console.log(user);
             req.session.user = user;
-            return res.redirect('/chat.html');
+            return res.redirect('/main.html');
           }
         })
         .catch(err => {
@@ -88,6 +89,10 @@ const server = express()
 
       })
 
+  })
+
+  .get('/logout_get', function(req, res) {
+    res.redirect('/index.html');
   })
 
   //validates login credentials of user
@@ -111,7 +116,7 @@ const server = express()
             } else {
               console.log(user.userId);
               req.session.user = user;
-              return res.redirect('/chat.html');
+              return res.redirect('/main.html');
             }
           })
           .catch(err => {
