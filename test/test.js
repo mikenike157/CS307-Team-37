@@ -11,13 +11,22 @@ const client = new pg.Client({
 });
 client.connect();
 
+async function shouldThrowException(f) {
+  let ok = true;
+  try {
+    await f();
+    ok = false;
+  } catch { /* nothing */ }
+  if (!ok) throw "didn't throw";
+}
+
 before(async function() {
   // Reset database
   let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
   let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
   await client.query(dropAllTables);
   await client.query(initDb);
-})
+});
 
 describe("transactions", function() {
   describe("#createUser()", function() {
@@ -32,43 +41,34 @@ describe("transactions", function() {
       assert(id != 0);
     });
     it("rejects duplicate usernames", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "uruwi",
           password: "reject me",
           securityQuestion: "What is your favorite drink?",
           securityAnswer: "orange juice",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
     it("rejects empty usernames", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "",
           password: "404",
           securityQuestion: "What is your favorite number?",
           securityAnswer: "404",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
     it("rejects empty passwords", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "null",
           password: "",
           securityQuestion: "What is your favorite number?",
           securityAnswer: "404",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
   });
   describe("#validateUser()", function() {
@@ -97,6 +97,11 @@ describe("transactions", function() {
       const id2 = await transactions.getUserIdByUsername(client, "kozet");
       assert(id == id2);
     });
+    it("rejects nonexistent users", async function() {
+      await shouldThrowException(async function() {
+        await transactions.updateUsername(client, 4469, "dolphins");
+      });
+    })
   });
 });
 
