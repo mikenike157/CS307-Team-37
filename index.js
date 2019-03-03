@@ -34,7 +34,7 @@ const pool = new pg.Pool({
 }); */
 
 
-
+var rooms = [];
 
 //let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
 //let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
@@ -641,8 +641,6 @@ function findCard(card) {
     else if (card == 11) {
       return "KC"
     }
-    else if (card == 12) {
-      return "AC"
     }
     else {
       return ((card+2) + "C");
@@ -665,4 +663,29 @@ function findCard(card) {
       return ((card+2) + "H");
     }
   }
+}
+
+function joinRoom(socket, newRoom) {
+  var player = game.addPlayer(socket.id);
+  var i = 0;
+  for (i = 0; i < rooms.length; i++) {
+    if (newRoom = rooms[i].name) {
+      break;
+    }
+  }
+  var roomToJoin = rooms[i];
+  socket.room = rooms[i].name;
+  roomToJoin.players.push(player);
+  socket.join(newRoom);
+
+}
+
+//Will take the game options as arguments
+function createRoom(socket) {
+  var newRoom = room.createRoom();
+  var newPlayer = game.addPlayer(socket.id);
+  newRoom.players.push(newPlayer);
+  rooms.push(newRoom);
+  socket.room = "" + (rooms.length - 1);
+  socket.join(socket.room);
 }
