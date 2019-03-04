@@ -126,8 +126,11 @@ this.blind = function(player, amount) {
   return player;
 }
 
+
 this.allIn = function(player) {
+  var amount = player.chips;
+  player.chips = 0; 
   player.state = "ALLIN";
-  return player.chips; 
+  return [player, amount];
 }
 
