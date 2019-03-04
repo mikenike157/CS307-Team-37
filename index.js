@@ -166,6 +166,10 @@ var tableCards = [];
 
 var usernames = {};
 
+// For all-in logic
+var sidePot = 0;
+var mainPot = 0; // parallel currentPot
+
 // rooms which are currently available in chat
 var rooms = ['room1'];
 io.sockets.on('connection', function (socket) {
@@ -387,12 +391,18 @@ function checkReadyState(socket) {
 
 function beginRound(socket) {
   currentPot = 0;
+  
   console.log("Hello world")
+  
+  // Call GameAction.js to get cards
   var cards = game.startGame(players.length);
   playerCards = cards[0];
   tableCards = cards[1];
+  
   console.log(playerCards);
   console.log(tableCards);
+  
+  // Initialize player cards
   var fixedCards = fixCards(playerCards, tableCards);
   fixedPCards = fixedCards[0];
   fixedTCards = fixedCards[1];
@@ -400,61 +410,87 @@ function beginRound(socket) {
     players[i].lastBet = 0;
     players[i].cards = playerCards[i];
   }
+  
+  // Small blind
   var temp = game.blind(players[smallBlindPlacement], 1);
   currentPot += 1
   players[smallBlindPlacement] = temp;
+  
+  // Big blind
   temp = game.blind(players[bigBlindPlacement], 2);
   currentPot += 2;
   currentBet = 2;
   players[bigBlindPlacement] = temp;
+  
   //printInfo(socket);
   console.log(players)
 }
 
+function resetStates()
+{
+  for (var i = 0; i < players.length; i++)
+  {
+      if (players[i].state != "FOLDED")
+      {
+        players[i].state = "NOTREADY";
+        players[i].lastBet = 0;
+      }
+  }
+}
+
 function progressGame(socket) {
-  if (gameState == 0) {
+  
+  if (gameState == 0) { // Pre-flop 
     var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
     console.log("Players At State 1: ")
     console.log(players);
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
-  }
-  else if (gameState == 1) {
-
+  } 
+  else if (gameState == 1) { // Flop 
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
-  else if (gameState == 2) {
-
+  else if (gameState == 2) { // Turn
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
-  else if (gameState == 3) {
+  else if (gameState == 3) { // River
     console.log("IN GAME STATE 3")
+    
     var handRanks = [];
     for (var i = 0; i < playerCards.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -472,6 +508,7 @@ function progressGame(socket) {
         }
       }
     }
+    
     console.log("WINNER HAS BEEN CALCULATED")
     winner = hf.findWinner(handRanks)
 
@@ -490,11 +527,13 @@ function progressGame(socket) {
        }
       }
     }
+    
     //Modulo the hand winnings add that to whatever players
     var winnings = Math.floor((currentPot / winnersArr.length));
     for (var i = 0; i < winnersArr.length; i++) {
       io.sockets.in(socket.room).emit('updatechat', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
     }
+    
     for (var i = 0; i < players.length; i++) {
       for (var j = 0; j < winnersArr.length; j++) {
         if (players[i].username == winnersArr[j]) {
@@ -504,6 +543,7 @@ function progressGame(socket) {
       players[i].state = "NOTREADY";
       players[i].lastBet = 0;
     }
+    
     console.log("Players After Winnings");
     console.log(players);
 
@@ -513,21 +553,26 @@ function progressGame(socket) {
         players.splice(i, 1);
       }
     }
+    
     if (players.length == 1) {
       io.sockets.in(socket.room).emit('updatechat', "Server", players[0].username + " is the winner!!");
       gameStatus = 0;
       return;
     }
+    
+    // Reset round
     gameState = 0;
     currentPot = 0;
     currentBet = 0;
     smallBlindPlacement = bigBlindPlacement;
     bigBlindPlacement = (bigBlindPlacement + 1) % players.length;
     currentPlayer = (bigBlindPlacement + 1) % players.length;
+    
+    // Begin new round
     beginRound(socket);
     console.log("Made it to here");
-  }
-}
+  } // end of last else chunk
+} // end of progressGame()
 
 function printInfo(socket) {
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
