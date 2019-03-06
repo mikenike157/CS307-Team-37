@@ -46,18 +46,12 @@ async function createUser(client, userinfo) {
 async function validateUser(client, username, password) {
   // Check if username and password is valid
   
-  try {
-    if (username === "" || password === ""){
-      console.log( "empty username or password" );
-      throw "Error";
-    }
-  } catch (err) {
-    return undefined;
+  if (username === "" || password === ""){
+    return {
+      userId: undefined,
+      reason: "Username and password must not be empty",
+    };
   }
-  
-   
-
-  console.log("begin validation");
 
   let authRes = [];
 
@@ -68,19 +62,16 @@ async function validateUser(client, username, password) {
     );
     if (authRes === undefined) {
       throw "Query unsuccessful";
-      
     }
   } catch (err) {
     console.log(err);
     return {
       userId: undefined,
-      reason: "Cannot Connect"
+      reason: "Cannot connect to database",
     };
-    
   }
-  console.log(authRes);
+  
   if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
-    console.log("incorrect");
     return {
       userId: undefined,
       reason: "Username or password is incorrect"
@@ -99,8 +90,9 @@ async function validateUser(client, username, password) {
       reason: "Banned: " + banRes.rows[0]["reason"]
     };
   }
+
   return {
-    //returns user info for session purposes
+    // returns user info for session purposes
     userId: authRes.rows[0]["user_id"],
   };
 }
@@ -169,6 +161,17 @@ async function getUserIdByUsername(client, username) {
   return res.rows[0]["user_id"];
 }
 
+async function validateSecurityQuestion(client, username, answer) {
+  let authRes = await client.query(
+    "SELECT security_answer FROM Users WHERE Users.username = $1",
+    [username]
+  ); 
+  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["security_answer"].toString(), answer)) {
+    return false;
+  }
+  return true;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -176,4 +179,5 @@ module.exports = {
   deductChips: deductChips,
   updateUsername: updateUsername,
   getUserIdByUsername: getUserIdByUsername,
+  validateSecurityQuestion: validateSecurityQuestion,
 };

@@ -103,6 +103,20 @@ describe("transactions", function() {
       });
     })
   });
+  describe("#validateSecurityQuestion()", function() {
+    it("accepts the correct answer", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "kozet", "blue_bear_94");
+      assert(stat);
+    });
+    it("rejects wrong answers", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "kozet", "arth_glas_94");
+      assert(!stat);
+    });
+    it("rejects nonexistent users", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "poodle", "golden retrievers");
+      assert(!stat);
+    });
+  });
 });
 
 //client.end();
