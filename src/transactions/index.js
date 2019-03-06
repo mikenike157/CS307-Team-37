@@ -23,10 +23,13 @@ async function createUser(client, userinfo) {
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
+  const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
+    type: argon2.argon2i
+  });
 
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
-    [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
+    [userinfo.username, hash, userinfo.securityQuestion, securityAnswerHash, DEFAULT_CHIPS]);
   
   // I don't know why someone changed this to return the username and password
   // as well. These are already known to the caller!

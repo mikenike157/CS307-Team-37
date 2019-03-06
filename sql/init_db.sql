@@ -11,7 +11,7 @@ CREATE TABLE Users (
   username VARCHAR(40) UNIQUE NOT NULL,
   password TEXT NOT NULL, -- argon2 hash?
   security_question VARCHAR(100) NOT NULL,
-  security_answer VARCHAR(100) NOT NULL,
+  security_answer TEXT NOT NULL, -- changed to be an argon2 hash too
   profile_picture BYTEA,
   chips INT NOT NULL,
   is_admin BOOL,
