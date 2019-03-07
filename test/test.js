@@ -1,6 +1,8 @@
 const assert = require("assert");
 const fs = require("fs");
 
+const gameActions = require("../src/GameActions.js");
+const handFinder = require("../src/handFinder.js");
 const transactions = require("../src/transactions/index.js");
 const pg = require("pg");
 
@@ -115,6 +117,19 @@ describe("transactions", function() {
     it("rejects nonexistent users", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "poodle", "golden retrievers");
       assert(!stat);
+    });
+  });
+});
+
+describe("handFinder", function() {
+  describe("#finalhand", function() {
+    it("has 1s in positions with cards", function() {
+      const hand = [36, 27];
+      const table = [41, 2, 17, 8, 38];
+      const fmt = handFinder.finalhand(hand, table);
+      assert(fmt[2][1] == 1);
+      assert(fmt[0][2] == 1);
+      assert(fmt[3][3] == 0);
     });
   });
 });

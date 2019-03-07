@@ -1,15 +1,16 @@
+/*
+  given a list of cards in a player's hand and a list of cards on the table,
+  return a 2d array where the index [suit][rank] is 1 if present in the hand
+  or on the table, and 0 otherwise
+*/
+this.finalhand = function(handCards, tableCards) {
+  // Logic that makes these arrays look like what I want them to look like
 
-this.finalhand = function(a, b){
-
-  //Logic that makes these arrays look like what I want them to look like
-
-  //Make master Array
+  // Make master Array
   let x = new Array(4);
   for (let i = 0; i < x.length; i++) {
     x[i] = new Array(13);
   }
-
-
 
   for (let j = 0; j < x.length; j++){
     for (let k = 0; k < x[j].length; k++){
@@ -18,21 +19,20 @@ this.finalhand = function(a, b){
   }
 
   //find what cards are in users hand and setting them
-  for (let i = 0; i < a.length; i++){
-    let holder_a_number = a[i] % 13;
-    let holder_a_suit = Math.floor(a[i] / 13);
-    x[holder_a_suit][holder_a_number] = 1;
+  for (let i = 0; i < handCards.length; i++){
+    let rank = handCards[i] % 13;
+    let holder_a_suit = Math.floor(handCards[i] / 13);
+    x[suit][rank] = 1;
   }
 
   //find what cards are on the table and setting them
-  for (let i = 0; i < b.length; i++){
-    let holder_b_number = b[i] % 13;
-    let holder_b_suit   = Math.floor(b[i] / 13);
-    x[holder_b_suit][holder_b_number] = 1;
+  for (let i = 0; i < tableCards.length; i++){
+    let rank = tableCards[i] % 13;
+    let suit   = Math.floor(tableCards[i] / 13);
+    x[suit][rank] = 1;
   }
 
-
-  return (x);
+  return x;
 };
 
 
