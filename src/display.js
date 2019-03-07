@@ -13,6 +13,13 @@ function nameCard(card) {
   return rankStr + suitStr;
 }
 
+function namePlayerAndTableCards(pCards, tCards) {
+  let retPCards = pCards.map(hand => hand.map(nameCard));
+  let retTCards = tCards.map(nameCard);
+  return [retPCards, retTCards];
+}
+
 module.exports = {
-  nameCard: nameCard
+  nameCard: nameCard,
+  namePlayerAndTableCards: namePlayerAndTableCards,
 };

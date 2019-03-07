@@ -450,7 +450,7 @@ function beginRound(socket) {
   console.log(tableCards);
   
   // Initialize player cards
-  var fixedCards = fixCards(playerCards, tableCards);
+  var fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);
   fixedPCards = fixedCards[0];
   fixedTCards = fixedCards[1];
   for (var i = 0; i < players.length; i++) {
@@ -658,23 +658,4 @@ function validatePlayer(socket) {
       }
     }
   }
-}
-
-function fixCards(pCards, tCards) {
-  let retPCards = [];
-  let retTCards = [];
-  for (let i = 0; i < pCards.length; i++) {
-    let card1 = display.nameCard(pCards[i][0]);
-    let card2 = display.nameCard(pCards[i][1]);
-    let tempHand = [card1, card2]
-    retPCards.push(tempHand);
-  }
-  let card1 = display.nameCard(tCards[0]);
-  let card2 = display.nameCard(tCards[1]);
-  let card3 = display.nameCard(tCards[2]);
-  let card4 = display.nameCard(tCards[3]);
-  let card5 = display.nameCard(tCards[4]);
-  retTCards = [card1, card2, card3, card4, card5];
-  console.log(retPCards + " " + retTCards);
-  return [retPCards, retTCards];
 }

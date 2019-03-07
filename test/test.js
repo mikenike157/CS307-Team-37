@@ -1,6 +1,7 @@
 const assert = require("assert");
 const fs = require("fs");
 
+const _ = require('lodash');
 const display = require("../src/display.js");
 const gameActions = require("../src/GameActions.js");
 const handFinder = require("../src/handFinder.js");
@@ -137,7 +138,7 @@ describe("handFinder", function() {
 
 describe("display", function() {
   describe("#nameCard", function() {
-    it("names cards correct", function() {
+    it("names cards correctly", function() {
       assert(display.nameCard(0) == "2S");
       assert(display.nameCard(5) == "7S");
       assert(display.nameCard(9) == "JS");
@@ -151,6 +152,24 @@ describe("display", function() {
       assert(display.nameCard(39) == "2H");
       assert(display.nameCard(51) == "AH");
     });
+  });
+  describe("#namePlayerAndTableCards", function() {
+    it("returns the name of all player and table cards", function() {
+      const hands = [
+        [36, 27],
+        [11, 12],
+      ];
+      const table = [41, 2, 17, 8, 38];
+      const actual = display.namePlayerAndTableCards(hands, table);
+      const expected = [
+        [
+          ["QC", "3C"],
+          ["KS", "AS"],
+        ],
+        ["4H", "4S", "6D", "10S", "AC"]
+      ];
+      assert(_.isEqual(actual, expected));
+    })
   });
 });
 
