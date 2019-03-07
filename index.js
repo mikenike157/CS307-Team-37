@@ -79,15 +79,15 @@ const server = express()
             req.session.user = user;
             return res.redirect('/chat.html');
           }
-        }) 
+        })
         .catch(err => {
           client.release()
           console.log(err.stack);
           return res.redirect('/')
-        }) 
-          
+        })
+
       })
-    
+
   })
 
   //validates login credentials of user
@@ -113,21 +113,21 @@ const server = express()
               req.session.user = user;
               return res.redirect('/chat.html');
             }
-          }) 
+          })
           .catch(err => {
             client.release()
             console.log(err.stack);
             return res.redirect('/')
-          }) 
-          
+          })
+
         })
-    
+
   })
 
   .get('/update_username', function(req,res){
     console.log(req.session.user);
     if(req.session && req.session.user){
-      return res.send(req.session.user.username);      
+      return res.send(req.session.user.username);
     } else {
       return res.send("nobody");
     }
@@ -135,7 +135,7 @@ const server = express()
 
   .listen(port, () => console.log(`Listening on ${ port }`));
 
-  
+
 const io = sio(server);
 
 
@@ -154,6 +154,8 @@ var winner = [];
 
 var currentPlayer = 2;
 
+var ignoreList = [];
+
 var playerCards = [];
 
 var fixedPCards = [];
@@ -164,6 +166,10 @@ var tableCards = [];
 
 var usernames = {};
 
+// For all-in logic
+var sidePot = 0;
+var mainPot = 0; // parallel currentPot
+
 // rooms which are currently available in chat
 var rooms = ['room1'];
 io.sockets.on('connection', function (socket) {
@@ -173,7 +179,7 @@ io.sockets.on('connection', function (socket) {
       username = validator.escape(username);
     }
     else {
-      username = "Player " + players.length;
+      return;
     }
     // store the username in the socket session for this client
     var player = game.addPlayer(socket.id);
@@ -200,6 +206,7 @@ io.sockets.on('connection', function (socket) {
   socket.on('sendchat', function (data) {
     // we tell the client to execute 'updatechat' with 2 parameters
     var parsed = data.split(" ");
+    
     if (parsed == "/start") {
       //console.log(players);
       if (gameStatus == 1) {
@@ -210,7 +217,9 @@ io.sockets.on('connection', function (socket) {
         io.to(socket.id).emit('updatechat', "Server", "You cannot play a game with one person.");
         return;
       }
+      
       gameStatus = 1;
+      gameState = 0;
       smallBlindPlacement = 0;
       bigBlindPlacement = 1;
       currentPlayer = (bigBlindPlacement + 1) % players.length;
@@ -237,6 +246,17 @@ io.sockets.on('connection', function (socket) {
       currentPot += retArray[1];
       currentBet = raiseTo;
       players[currentPlayer] = retArray[0];
+      
+      // Added: If some prior player was all-in, divert amount to main pot and side pot
+      for (var i = 0; i < players.length; i++)
+      {
+        if (players[i].state == "ALLIN") {
+          sidePot += (retArray[1]-mainPot);
+          mainPot += mainPot; 
+          break;
+        }
+      }
+      
       for (var i = 0; i < players.length; i++) {
         if (players[i].state == "READY") {
           players[i].state = "NOTREADY";
@@ -246,6 +266,10 @@ io.sockets.on('connection', function (socket) {
       players[currentPlayer].state = "READY";
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
       checkReadyState(socket)
+    }
+    else if (parsed[0] == "/ignore") {
+      ignoreList.push(socket.id);
+      return;
     }
     else if (parsed[0] == "/call") {
       if (gameStatus == 0) {
@@ -269,11 +293,29 @@ io.sockets.on('connection', function (socket) {
         }
         else {
           currentPot += retArray[1];
+
+          // Added: If some prior player was all-in, divert amount to main pot and side pot
+          for (var i = 0; i < players.length; i++)
+          {
+            if (players[i].state == "ALLIN") {
+              sidePot += (retArray[1]-mainPot);
+             mainPot += mainPot; 
+             break;
+           }
+          }
+          
           players[currentPlayer] = retArray[0];
           io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
       }
       checkReadyState(socket)
+    }
+    else if (parsed[0] == "/blinds") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      io.to(socket.id).emit('updatechat', "Server", "The small blind is " + smallBlind + " and big blind is " + bigBlind + ".");
     }
     else if (parsed[0] == "/fold") {
       if (gameStatus == 0) {
@@ -302,22 +344,48 @@ io.sockets.on('connection', function (socket) {
         return;
       }
       if (!validatePlayer(socket)) {
-        console.log("vadlidate player")
+        console.log("validate player")
         return;
       }
       console.log("Validate player succeeds.");
       if (currentBet != 0 && currentPlayer != bigBlindPlacement && gameState != 0 && players[bigBlindPlacement].lastBet == bigBlind) {
-        io.to(socket.id).emit("You cannoy check when the current bet is higher than 0");
+        io.to(socket.id).emit("You cannot check when the current bet is higher than 0");
       }
       else{ console.log("Can check"); }
       players[currentPlayer].state = "READY";
       console.log(players[currentPlayer].state);
       checkReadyState(socket);
     }
+    else if (parsed[0] == "/allin") 
+    {
+      // Check game started
+      if (gameStatus == 0)
+      {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return; 
+      }
+      // Check valid player
+      if (!validatePlayer(socket)) {
+        console.log("vadlidate player")
+        return;
+      } 
+      
+      var currPlayer = players[currentPlayer];
+      var retArray = game.allIn(currPlayer);
+      mainPot += retArray[1]; // subsequent bets match this to make this the winnable amount for the all-in player
+      players[currentPlayer] = retArray[0];
+      
+      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " went all-in at" + retArray[1] + ". The Pot is now " + currentPot + ". mainPot is now " + mainPot + ".");
+      checkReadyState(socket)
+    }
     else {
       if (data != "") {
-        var newdata = validator.escape(data)
-        io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+        var newdata = validator.escape(data);
+          for (var i = 0; i < players.length; i++) {
+            if (!(ignoreList.includes(players[i].playerID))) {
+              io.to(players[i].playerID).emit('updatechat', socket.username, newdata);
+            }
+          }
         return;
       }
       return;
@@ -337,6 +405,9 @@ io.sockets.on('connection', function (socket) {
     }
     if (players.length <= 1) {
       gameStatus = 0;
+      if (players.length == 1) {
+        players[0] = game.addPlayerplayer(players[0].playerID);
+      }
     }
     console.log(players);
     // update list of users in chat, client-side
@@ -365,73 +436,107 @@ function checkReadyState(socket) {
 }
 
 function beginRound(socket) {
+  currentPot = 0;
+  
   console.log("Hello world")
+  
+  // Call GameAction.js to get cards
   var cards = game.startGame(players.length);
   playerCards = cards[0];
   tableCards = cards[1];
+  
   console.log(playerCards);
   console.log(tableCards);
+  
+  // Initialize player cards
   var fixedCards = fixCards(playerCards, tableCards);
   fixedPCards = fixedCards[0];
   fixedTCards = fixedCards[1];
   for (var i = 0; i < players.length; i++) {
+    players[i].lastBet = 0;
     players[i].cards = playerCards[i];
   }
+  
+  // Small blind
   var temp = game.blind(players[smallBlindPlacement], 1);
   currentPot += 1
   players[smallBlindPlacement] = temp;
+  
+  // Big blind
   temp = game.blind(players[bigBlindPlacement], 2);
   currentPot += 2;
   currentBet = 2;
   players[bigBlindPlacement] = temp;
+  
   //printInfo(socket);
   console.log(players)
 }
 
+function resetStates()
+{
+  for (var i = 0; i < players.length; i++)
+  {
+      if (players[i].state != "FOLDED")
+      {
+        players[i].state = "NOTREADY";
+        players[i].lastBet = 0;
+      }
+  }
+}
+
 function progressGame(socket) {
-  if (gameState == 0) {
+  
+  if (gameState == 0) { // Pre-flop 
     var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
     console.log("Players At State 1: ")
     console.log(players);
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
-  }
-  else if (gameState == 1) {
-
+  } 
+  else if (gameState == 1) { // Flop 
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
-  else if (gameState == 2) {
-
+  else if (gameState == 2) { // Turn
+    resetStates();
+    /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
         players[i].lastBet = 0;
       }
     }
+    */
     currentPlayer = (currentPlayer + 1) % players.length;
     checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
-  else if (gameState == 3) {
+  else if (gameState == 3) { // River
     console.log("IN GAME STATE 3")
+    
     var handRanks = [];
     for (var i = 0; i < playerCards.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -449,6 +554,7 @@ function progressGame(socket) {
         }
       }
     }
+    
     console.log("WINNER HAS BEEN CALCULATED")
     winner = hf.findWinner(handRanks)
 
@@ -467,11 +573,13 @@ function progressGame(socket) {
        }
       }
     }
+    
     //Modulo the hand winnings add that to whatever players
     var winnings = Math.floor((currentPot / winnersArr.length));
     for (var i = 0; i < winnersArr.length; i++) {
       io.sockets.in(socket.room).emit('updatechat', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
     }
+    
     for (var i = 0; i < players.length; i++) {
       for (var j = 0; j < winnersArr.length; j++) {
         if (players[i].username == winnersArr[j]) {
@@ -481,6 +589,7 @@ function progressGame(socket) {
       players[i].state = "NOTREADY";
       players[i].lastBet = 0;
     }
+    
     console.log("Players After Winnings");
     console.log(players);
 
@@ -490,21 +599,26 @@ function progressGame(socket) {
         players.splice(i, 1);
       }
     }
+    
     if (players.length == 1) {
       io.sockets.in(socket.room).emit('updatechat', "Server", players[0].username + " is the winner!!");
       gameStatus = 0;
       return;
     }
+    
+    // Reset round
     gameState = 0;
     currentPot = 0;
     currentBet = 0;
     smallBlindPlacement = bigBlindPlacement;
     bigBlindPlacement = (bigBlindPlacement + 1) % players.length;
     currentPlayer = (bigBlindPlacement + 1) % players.length;
+    
+    // Begin new round
     beginRound(socket);
     console.log("Made it to here");
-  }
-}
+  } // end of last else chunk
+} // end of progressGame()
 
 function printInfo(socket) {
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
@@ -637,11 +751,4 @@ function findCard(card) {
       return ((card+2) + "H");
     }
   }
-}
-
-function getSockets(room) { // will return all sockets with room name
-  return Object.entries(io.sockets.adapter.rooms[room] === undefined ?
-  {} : io.sockets.adapter.rooms[room].sockets )
-    .filter(([id, status]) => status) // get only status = true sockets
-    .map(([id]) => io.sockets.connected[id])
 }

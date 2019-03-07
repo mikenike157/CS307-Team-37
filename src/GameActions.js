@@ -1,26 +1,18 @@
-const SUITS = new Array("Spades", "Hearts", "Clubs", "Diamonds");
-const VALUES = new Array("Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King");
-const STATES = new Array("NOTREADY", "READY", "FOLDED");
 
-// Length N array of Player objects
-// Each Player object contains chip information, current state
-let allPlayers = [];
-let numbers = []; // 2N+5 unique random integers on [0, 51]
-let playerCards = []; // maximum of eight players
-let tableCards = [];
+///////////////////////////////////////
+            /* Variables */
+///////////////////////////////////////
 
-let playerOrder = []; // not currently used; assign N values on [0, N-1]
-let playerChips = [];
-let playerStates = [];
-let lastBet = [];
+var numbers = []; // 2N+5 unique random integers on [0, 51]
+var playerCards = []; // maximum of eight players
+var tableCards = [];
+var N;
 
-// Track current bet and pot
-let currentBet;
-let pot;
-let N;
+///////////////////////////////////////
+          /* Deck generation */
+///////////////////////////////////////
 
-let seed = 1;
-
+var seed = 1;
 function tutorialDeck() {
   let x = Math.sin(seed++) * 52;
   return Math.floor((x-Math.floor(x))* 52);
@@ -32,6 +24,11 @@ function randomDeck() {
   let x = Math.sin(tempSeed) * 52;
   return Math.floor((x - Math.floor(x)) * 52);
 }
+
+///////////////////////////////////////
+    /* Player object and methods */
+///////////////////////////////////////
+
 class Player {
   constructor(playerID, chips) {
     this.playerID = playerID;
@@ -42,155 +39,97 @@ class Player {
   }
 }
 
-
 this.addPlayer = function(socketid) {
-  let player = new Player(socketid, 100);
-  //allPlayers[n] = player;
+  var player = new Player(socketid, 100);
   return player;
-};
+}
 
+///////////////////////////////////////
+ /* Called by server at game start */ 
+///////////////////////////////////////
 
-this.startGame = function(numPlayers) { // change to pass game object instead, gameInfo
+this.startGame = function(numPlayers) {
   numbers = [];
   playerCards = [];
   tableCards = [];
   N = numPlayers;
-  currentBet = 0;
-  pot = 0;
-  let defaultChips = 100;
-  // Deal
-  let m = 0; // 1. Random numbers
-  let i = 0;
+
+  // 0. Generate random deck
+  var m = 0; 
+  var i = 0;
   while (i < 52) {
-    let k = randomDeck();
+    var k = randomDeck();
     if (numbers.includes(k)) {
       continue;
-    } else {
+    } 
+    else {
       numbers[i] = k;
       i++;
     }
   }
-  /*
-        for (var i = 0; i < 52; i++)
-        {
-          var k = tutorialDeck();
-
-          numbers[i] = k;
-          var j = i-1; // check for and eliminate repeats
-          while (j >= 0)
-          {
-            if (numbers[i] == numbers[j])
-            {
-              numbers[i] = (numbers[i]+1) % 52;
-              j = i-1;
-            }
-            else { j--; }
-          }
-        }
-        */
-  //console.log(numbers);
-  let k = 0; // 2. Assign to players
-  for (let i = 0; i < (N*2); i+=2) {
-    let cardsToPush = [numbers[i], numbers[i+1]];
-    //playerCards[k][0] = numbers[i];
-    //playerCards[k][1] = numbers[i+1];
-    playerCards.push(cardsToPush);
-    k++;
+  
+  // 1. Assign cards to players
+  for (var i = 0; i < (N*2); i+=2) {
+    playerCards.push([numbers[i], numbers[i+1]]);
+    //var cardsToPush = [numbers[i], numbers[i+1]];
+    //playerCards.push(cardsToPush);
   }
-  //console.log()
-  k = 0; // 3. Assign table cards
-  for (let i = (2*N); i < (2*N+5); i++) {
-    tableCards[k] = numbers[i];
-    k++;
+  
+  // 2. Assign cards to table
+  //k = 0; 
+  for (var i = (2*N); i < (2*N+5); i++) {
+    tableCards.push(numbers[i]);
+    //tableCards[k] = numbers[i];
+    //k++;
   }
-  // Later: Assign random order for players
-
-  // 0th player = dealer, 1st = small blind, 2nd = big blind
-  // Could use playerRaise for blinds, take amount as parameter and numerical player index [0, 1]
-
+  
+  // 3. Return cards to server
   return [playerCards, tableCards];
-};
+}
 
-// TODO #1: Test this. Raise /to/ amount
+///////////////////////////////////////
+/* Called by server at player action */
+///////////////////////////////////////
+
 this.playerRaise = function(player, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
-    let margin = raiseTo-player.lastBet;
+    var margin = raiseTo-player.lastBet;
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = raiseTo;
     return [player, margin];
   }
   return -1;
-};
+}
 
 this.playerCall = function(player, currentBet) {
   if (player.chips >= currentBet) {
-    let margin = currentBet-player.lastBet;
+    var margin = currentBet-player.lastBet;
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = currentBet;
     return [player, margin];
   }
   return -1;
-};
+}
 
 this.playerFold = function(player) {
   player.state = "FOLDED";
   return player;
-};
+}
 
 this.blind = function(player, amount) {
   player.chips -= amount;
   player.lastBet = amount;
   return player;
-};
-/*
-    // TODO: Inner game loop
+}
 
-    playerCall: function(pIndex)
-    {
-        // Match current bet, if able
-        if (player.chips >= currentBet)
-        {
-            player.chips -= (currentBet-lastBet[pIndex]);
-            player.state = "READY";
-            pot += (currentBet-lastBet[pIndex]);
-            return 1;
-        }
-        return 0;
-    },
 
-    playerCheck: function(player)
-    {
-        // Pass player without folding
-        player.state = "NOTREADY";
-        return 1;
-    },
+this.allIn = function(player) {
+  var amount = player.chips;
+  player.chips = 0; 
+  player.state = "ALLIN";
+  return [player, amount];
+}
 
-    playerFold: function(player)
-    {
-        // End user (enter fold state)
-        player.state = "FOLDED";
-        return 1;
-    },
-
-    //playerRaise: function(player, amount)
-    {
-        // Increase current bet
-        if (player.chips >= amount)
-        {
-            player.chips -= amount;
-            player.state = "READY";
-            pot += amount;
-            currentBet = amount;
-            return 1;
-        }
-        return 0;
-    },
-
-    endGame: function()
-    {
-    },
-*/
-//}
