@@ -113,7 +113,7 @@ this.playerRaise = function(game, playerID, currentBet, raiseTo) {
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = raiseTo;
-    return [player, margin];
+    return [game, player, margin];
   }
   return -1;
 }
@@ -125,7 +125,7 @@ this.playerCall = function(game, playerID, currentBet) {
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = currentBet;
-    return [player, margin];
+    return [game, player, margin];
   }
   return -1;
 }
@@ -133,22 +133,21 @@ this.playerCall = function(game, playerID, currentBet) {
 this.playerFold = function(game, playerID) {
   player = getPlayer(game.players, playerID);
   player.state = "FOLDED";
-  return player;
+  return [game, player];
 }
 
 this.blind = function(game, playerID, amount) {
   player = getPlayer(game.players, playerID);
   player.chips -= amount;
   player.lastBet = amount;
-  return player;
+  return [game, player];
 }
-
 
 this.allIn = function(game, playerID) {
   player = getPlayer(game.players, playerID);
   var amount = player.chips;
   player.chips = 0; 
   player.state = "ALLIN";
-  return [player, amount];
+  return [game, player, amount];
 }
 
