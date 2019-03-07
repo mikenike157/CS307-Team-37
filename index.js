@@ -15,7 +15,6 @@ const jq = require('jquery')
 //The code for the database interaction
 const lg = require("./src/transactions/index.js")
 
-
 const port = process.env.PORT || 80;
 
 const pool = new pg.Pool({
@@ -32,12 +31,8 @@ const pool = new pg.Pool({
   host:"localhost"
 }); */
 
-
-
-
 //let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
 //let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
-
 
 const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
@@ -56,7 +51,7 @@ const server = express()
       //secure: true,
       ephemeral: true
     })
-  )
+  ) // const server = express()
 
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
@@ -88,7 +83,7 @@ const server = express()
 
       })
 
-  })
+  }) // .post('/register_post',  function(req, res)
 
   //validates login credentials of user
   .post('/login_post',  function(req, res){
@@ -121,8 +116,7 @@ const server = express()
           })
 
         })
-
-  })
+  }) // .post('/login_post',  function(req, res)
 
   .get('/update_username', function(req,res){
     console.log(req.session.user);
@@ -131,49 +125,126 @@ const server = express()
     } else {
       return res.send("nobody");
     }
-  })
+  }) //   .get('/update_username', function(req,res)
 
   .listen(port, () => console.log(`Listening on ${ port }`));
 
 
 const io = sio(server);
 
+//////////////////////////////
+/* Global Variables */
+//////////////////////////////
 
 var players = [];
+var usernames = {};
+//var roomArray = new Array(101)
+ 
 var smallBlindPlacement = 0;
 var bigBlindPlacement = 1;
+
 var currentPot = 0;
 var currentBet = 0;
+var currentPlayer = 2;
 
 var gameStatus = 0;
 var smallBlind = 1;
 var bigBlind = 2;
 var gameState = 0;
-//var roomArray = new Array(101)
-var winner = [];
-
-var currentPlayer = 2;
-
-var ignoreList = [];
 
 var playerCards = [];
-
+var tableCards = [];
 var fixedPCards = [];
-
 var fixedTCards = [];
 
-var tableCards = [];
-
-var usernames = {};
+var ignoreList = [];
+var winner = [];
 
 // For all-in logic
 var sidePot = 0;
-var mainPot = 0; // parallel currentPot
+var mainPot = 0; 
 
 // rooms which are currently available in chat
 var rooms = ['room1'];
+
+// Returns -1 if unable to complete action
+// Returns 0 otherwise
+// Do not let it call checkReadyState or progressGame
+////////////////////
+/* /start */
+////////////////////
+function startAction(socket)
+{
+  if (gameStatus == 1) {
+    io.to(socket.id).emit('updatechat', "Server", "There is already a game going on.");
+    return -1;
+  }
+  if (players.length == 1) {
+    io.to(socket.id).emit('updatechat', "Server", "You cannot play a game with one person.");
+    return -1;
+  }
+  gameStatus = 1;
+  gameState = 0;
+  smallBlindPlacement = 0;
+  bigBlindPlacement = 1;
+  currentPlayer = (bigBlindPlacement + 1) % players.length;
+  return 0;
+  // beginRound(socket); // leave in caller
+}
+////////////////////
+/* /raise */
+////////////////////
+function raiseAction(socket, parsed)
+{
+  if (gameStatus == 0) {
+    io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+    return -1;
+  }
+  if (!validatePlayer(socket)) {
+    return -1;
+  }
+
+  // playerRaise returns [game, player, margin]
+  var raiseTo = parsed[1];
+  var currPlayer = players[currentPlayer];
+  var retArray = game.playerRaise(currPlayer, currentBet, raiseTo); // (game, currPlayer.playerID, currentBet, raiseTo)
+  if (retArray == -1) {
+    io.to(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
+    return -1;
+  }
+  // Update pot and player values
+  currentPot += retArray[2];
+  currentBet = raiseTo;
+  players[currentPlayer] = retArray[1]; 
+      
+      // Added: If some prior player was all-in, divert amount to main pot and side pot
+      for (var i = 0; i < players.length; i++)
+      {
+        if (players[i].state == "ALLIN") {
+          sidePot += (retArray[1]-players[i].chips);
+          mainPot += mainPot; 
+          break;
+        }
+      } // should not do anything for now
+  
+  // Set everyone else to not ready, then self to ready
+  for (var i = 0; i < players.length; i++) {
+    if (players[i].state == "READY") {
+      players[i].state = "NOTREADY";
+    }
+  }
+  players[currentPlayer].state = "READY";
+  io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
+  return 0;
+  //checkReadyState(socket) // leave in caller
+}
+
+////////////////////////////////////////////////////////////
+         /* Where all the parsed[0] stuff is */
+////////////////////////////////////////////////////////////
 io.sockets.on('connection', function (socket) {
-  // when the client emits 'adduser', this listesns and executes
+  
+  // when the client emits 'adduser', this listens and executes
   socket.on('adduser', function(username){
     if (username != null) {
       username = validator.escape(username);
@@ -200,7 +271,7 @@ io.sockets.on('connection', function (socket) {
     // echo to room 1 that a person has connected to their room
     socket.broadcast.to('room1').emit('updatechat', 'SERVER', username + ' has connected to this room');
     socket.emit('updaterooms', rooms, 'room1');
-  });
+  }); // ADDUSER
 
   // when the client emits 'sendchat', this listens and executes
   socket.on('sendchat', function (data) {
@@ -208,68 +279,12 @@ io.sockets.on('connection', function (socket) {
     var parsed = data.split(" ");
     
     if (parsed == "/start") {
-      //console.log(players);
-      if (gameStatus == 1) {
-        io.to(socket.id).emit('updatechat', "Server", "There is already a game going on.");
-        return;
-      }
-      if (players.length == 1) {
-        io.to(socket.id).emit('updatechat', "Server", "You cannot play a game with one person.");
-        return;
-      }
-      
-      gameStatus = 1;
-      gameState = 0;
-      smallBlindPlacement = 0;
-      bigBlindPlacement = 1;
-      currentPlayer = (bigBlindPlacement + 1) % players.length;
-
+      if (startAction(socket) == -1) return; 
       beginRound(socket);
-      //io.sockets.in(socket.room).emit('updatechat', "Player Cards: ", playerCards);
-      //io.sockets.in(socket.room).emit('updatechat', "Table Cards: ", tableCards)
     }
     else if (parsed[0] == "/raise") {
-      if (gameStatus == 0) {
-        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
-        return;
-      }
-      if (!validatePlayer(socket)) {
-        return;
-      }
-      var raiseTo = parsed[1];
-      var currPlayer = players[currentPlayer];
-      var retArray = game.playerRaise(currPlayer, currentBet, raiseTo);
-      if (retArray == -1) {
-        io.to(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
-        return;
-      }
-      currentPot += retArray[1];
-      currentBet = raiseTo;
-      players[currentPlayer] = retArray[0];
-      
-      // Added: If some prior player was all-in, divert amount to main pot and side pot
-      for (var i = 0; i < players.length; i++)
-      {
-        if (players[i].state == "ALLIN") {
-          sidePot += (retArray[1]-mainPot);
-          mainPot += mainPot; 
-          break;
-        }
-      }
-      
-      for (var i = 0; i < players.length; i++) {
-        if (players[i].state == "READY") {
-          players[i].state = "NOTREADY";
-        }
-        console.log(players[i]);
-      }
-      players[currentPlayer].state = "READY";
-      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
-      checkReadyState(socket)
-    }
-    else if (parsed[0] == "/ignore") {
-      ignoreList.push(socket.id);
-      return;
+      if (raiseAction(socket, parsed) == -1) return;
+      checkReadyState(socket);
     }
     else if (parsed[0] == "/call") {
       if (gameStatus == 0) {
@@ -378,6 +393,10 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " went all-in at" + retArray[1] + ". The Pot is now " + currentPot + ". mainPot is now " + mainPot + ".");
       checkReadyState(socket)
     }
+    else if (parsed[0] == "/ignore") {
+      ignoreList.push(socket.id);
+      return;
+    }
     else {
       if (data != "") {
         var newdata = validator.escape(data);
@@ -391,8 +410,7 @@ io.sockets.on('connection', function (socket) {
       return;
     }
     printInfo(socket)
-  });
-
+  }); // SENDCHAT
 
   // when the user disconnects.. perform this
   socket.on('disconnect', function() {
@@ -415,26 +433,14 @@ io.sockets.on('connection', function (socket) {
     // echo globally that this client has left
     socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
     socket.leave(socket.room);
-  });
+  }); // DISCONNECT
+  
 });
 
-function checkReadyState(socket) {
-  var k = 0;
-  for (var i = currentPlayer; k < players.length; i++) {
-    if (i >= players.length) {
-      i = 0;
-    }
-    if (players[i].state == "NOTREADY") {
-      currentPlayer = i;
-      break;
-    }
-    k++;
-  }
-  if (k == players.length) {
-    progressGame(socket)
-  }
-}
-
+///////////////////////////////////////////////////////
+/* Called by /start action */
+/* Called again in progressGame when game is over */
+//////////////////////////////////////////////////////
 function beginRound(socket) {
   currentPot = 0;
   
@@ -472,65 +478,76 @@ function beginRound(socket) {
   console.log(players)
 }
 
+//////////////////////////////////////////////////
+/* Calls progressGame when all players ready */
+/* Called by SENDCHAT */
+//////////////////////////////////////////////////
+function checkReadyState(socket) {
+  var k = 0;
+  for (var i = currentPlayer; k < players.length; i++) {
+    if (i >= players.length) {
+      i = 0;
+    }
+    if (players[i].state == "NOTREADY") {
+      currentPlayer = i;
+      break;
+    }
+    k++;
+  }
+  if (k == players.length) {
+    progressGame(socket)
+  }
+}
+
+//////////////////////////////////////////////////
+/* Helper function, does not call anything */
+/* Called by progressGame to reset b/w rounds */
+//////////////////////////////////////////////////
 function resetStates()
 {
   for (var i = 0; i < players.length; i++)
   {
-      if (players[i].state != "FOLDED")
+      if (players[i].state != "FOLDED" || players[i].state != "ALLIN")
       {
         players[i].state = "NOTREADY";
         players[i].lastBet = 0;
+        players[i].initialChips = players[i].chips;
       }
   }
 }
 
+///////////////////////////////////////////////////////
+/* Assuming all ready, proceed to next game state */
+/* Calls resetState */ 
+/* Called by checkReadyState */
+///////////////////////////////////////////////////////
 function progressGame(socket) {
   
   if (gameState == 0) { // Pre-flop 
     var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
     console.log("Players At State 1: ")
     console.log(players);
+    
     resetStates();
-    /*
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].state != "FOLDED") {
-        players[i].state = "NOTREADY"
-        players[i].lastBet = 0;
-      }
-    }
-    */
+
     currentPlayer = (currentPlayer + 1) % players.length;
-    checkReadyState(socket);
+    //checkReadyState(socket);
     gameState++;
     currentBet = 0;
   } 
   else if (gameState == 1) { // Flop 
     resetStates();
-    /*
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].state != "FOLDED") {
-        players[i].state = "NOTREADY"
-        players[i].lastBet = 0;
-      }
-    }
-    */
+
     currentPlayer = (currentPlayer + 1) % players.length;
-    checkReadyState(socket);
+    //checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
   else if (gameState == 2) { // Turn
     resetStates();
-    /*
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].state != "FOLDED") {
-        players[i].state = "NOTREADY"
-        players[i].lastBet = 0;
-      }
-    }
-    */
+
     currentPlayer = (currentPlayer + 1) % players.length;
-    checkReadyState(socket);
+    //checkReadyState(socket);
     gameState++;
     currentBet = 0;
   }
@@ -620,6 +637,9 @@ function progressGame(socket) {
   } // end of last else chunk
 } // end of progressGame()
 
+//////////////////////////////
+/* Called in SENDCHAT */
+//////////////////////////////
 function printInfo(socket) {
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
   io.sockets.in(socket.room).emit('updatechat', "Server", "Current Bet: " + currentBet);
@@ -645,6 +665,9 @@ function printInfo(socket) {
   io.sockets.in(socket.room).emit('updatechat', "Server", "It is now " + players[currentPlayer].username + "\'s turn.");
 }
 
+////////////////////////////////////////
+/* Called in SENDCHAT actions */
+////////////////////////////////////////
 function validatePlayer(socket) {
   for (var i = 0; i < players.length; i++) {
     if (players[i].playerID == socket.id) {
@@ -659,6 +682,9 @@ function validatePlayer(socket) {
   }
 }
 
+////////////////////////////////////////
+/* Called by beginRound */
+////////////////////////////////////////
 function fixCards(pCards, tCards) {
   var retPCards = [];
   var retTCards = [];
@@ -678,24 +704,24 @@ function fixCards(pCards, tCards) {
     return [retPCards, retTCards];
   }
 
-//////////////////////////////
-  /* Map integer to card */ 
-//////////////////////////////
-
+////////////////////////////////////////
+/* Maps integer to cardname string */ 
+////////////////////////////////////////
 var FACES = ["J", "Q", "K", "A"];
 var SUITS = ["S", "H", "C", "D"];
 function findCard(card) {
   console.log(card);
   var suit = Math.floor(card / 13);
-  card = card - (13 * suit);
-  var str = ""; 
+  var num = card - (13 * suit);
+  var cardName = ""; 
   if (num < 9) {
-  	str = str + (num+2); 
+  	cardName += (num + 2); 
   }
   else {
-  	str = str + FACES[num-9]; 
+  	cardName += FACES[num - 9]; 
   }
-  str += SUITS[suit];
-  console.log(str); 
-  return str;
+  cardName += SUITS[suit];
+  console.log(cardName); 
+  return cardName;
 }
+
