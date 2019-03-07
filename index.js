@@ -159,10 +159,6 @@ var ignoreList = [];
 
 var playerCards = [];
 
-var fixedPCards = [];
-
-var fixedTCards = [];
-
 var tableCards = [];
 
 var usernames = {};
@@ -450,9 +446,6 @@ function beginRound(socket) {
   console.log(tableCards);
   
   // Initialize player cards
-  var fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);
-  fixedPCards = fixedCards[0];
-  fixedTCards = fixedCards[1];
   for (var i = 0; i < players.length; i++) {
     players[i].lastBet = 0;
     players[i].cards = playerCards[i];
@@ -486,9 +479,7 @@ function resetStates()
 }
 
 function progressGame(socket) {
-  
   if (gameState == 0) { // Pre-flop 
-    var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
     console.log("Players At State 1: ")
     console.log(players);
     resetStates();
@@ -622,25 +613,28 @@ function progressGame(socket) {
 } // end of progressGame()
 
 function printInfo(socket) {
+  let fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);
+  let fixedPCards = fixedCards[0];
+  let fixedTCards = fixedCards[1];
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
   io.sockets.in(socket.room).emit('updatechat', "Server", "Current Bet: " + currentBet);
-  for (var i = 0; i < players.length; i++) {
+  for (let i = 0; i < players.length; i++) {
     var variable = players[i];
     io.sockets.in(socket.room).emit('updatechat', "Chips: ", variable.username + ": " + variable.chips);
   }
-  for (var i = 0; i < players.length; i++) {
+  for (let i = 0; i < players.length; i++) {
     io.to(players[i].playerID).emit('updatechat', 'Your Cards: ', fixedPCards[i]);
   }
   if (gameState >= 1) {
-    var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
-    io.sockets.in(socket.room).emit('updatechat', "Server", "Flop: " + flop)
+    let flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]];
+    io.sockets.in(socket.room).emit('updatechat', "Server", "Flop: " + flop);
   }
   if (gameState >= 2) {
-    var turn = fixedTCards[3];
-    io.sockets.in(socket.room).emit('updatechat', "Server", "Turn: " + turn)
+    let turn = fixedTCards[3];
+    io.sockets.in(socket.room).emit('updatechat', "Server", "Turn: " + turn);
   }
   if (gameState >= 3) {
-    var river = fixedTCards[4];
+    let river = fixedTCards[4];
     io.sockets.in(socket.room).emit('updatechat', "Server", "River: " + river);
   }
   io.sockets.in(socket.room).emit('updatechat', "Server", "It is now " + players[currentPlayer].username + "\'s turn.");
