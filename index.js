@@ -2,6 +2,7 @@
 
 const express = require("express");
 const game = require("./src/GameActions.js");
+const display = require("./src/display.js");
 const validator = require("validator");
 const path = require("path");
 const sio = require("socket.io");
@@ -660,95 +661,20 @@ function validatePlayer(socket) {
 }
 
 function fixCards(pCards, tCards) {
-  var retPCards = [];
-  var retTCards = [];
-    for (var i = 0; i < pCards.length; i++) {
-      var card1 = findCard(pCards[i][0]);
-      var card2 = findCard(pCards[i][1]);
-      var tempHand = [card1, card2]
-      retPCards.push(tempHand);
-    }
-    var card1 = findCard(tCards[0])
-    var card2 = findCard(tCards[1])
-    var card3 = findCard(tCards[2]);
-    var card4 = findCard(tCards[3]);
-    var card5 = findCard(tCards[4]);
-    retTCards = [card1, card2, card3, card4, card5];
-    console.log(retPCards + " " + retTCards);
-    return [retPCards, retTCards];
+  let retPCards = [];
+  let retTCards = [];
+  for (let i = 0; i < pCards.length; i++) {
+    let card1 = display.nameCard(pCards[i][0]);
+    let card2 = display.nameCard(pCards[i][1]);
+    let tempHand = [card1, card2]
+    retPCards.push(tempHand);
   }
-
-function findCard(card) {
-  console.log(card);
-  var suit = Math.floor(card / 13);
-  card = card - (13 * suit);
-  console.log(card)
-  if (suit == 0) {
-    if (card == 9) {
-      return "JS"
-    }
-    else if (card == 10) {
-      return "QS"
-    }
-    else if (card == 11) {
-      return "KS"
-    }
-    else if (card == 12) {
-      return "AS"
-    }
-    else {
-      return ((card+2) + "S");
-    }
-  }
-  else if (suit == 1) {
-    if (card == 9) {
-      return "JD"
-    }
-    else if (card == 10) {
-      return "QD"
-    }
-    else if (card == 11) {
-      return "KD"
-    }
-    else if (card == 12) {
-      return "AD"
-    }
-    else {
-      return ((card+2) + "D");
-    }
-  }
-  else if (suit == 2) {
-    if (card == 9) {
-      return "JC"
-    }
-    else if (card == 10) {
-      return "QC"
-    }
-    else if (card == 11) {
-      return "KC"
-    }
-    else if (card == 12) {
-      return "AC"
-    }
-    else {
-      return ((card+2) + "C");
-    }
-  }
-  else if (suit == 3) {
-    if (card == 9) {
-      return "JH"
-    }
-    else if (card == 10) {
-      return "QH"
-    }
-    else if (card == 11) {
-      return "KH"
-    }
-    else if (card == 12) {
-      return "AH"
-    }
-    else {
-      return ((card+2) + "H");
-    }
-  }
+  let card1 = display.nameCard(tCards[0]);
+  let card2 = display.nameCard(tCards[1]);
+  let card3 = display.nameCard(tCards[2]);
+  let card4 = display.nameCard(tCards[3]);
+  let card5 = display.nameCard(tCards[4]);
+  retTCards = [card1, card2, card3, card4, card5];
+  console.log(retPCards + " " + retTCards);
+  return [retPCards, retTCards];
 }

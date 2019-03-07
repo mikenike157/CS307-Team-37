@@ -21,7 +21,7 @@ this.finalhand = function(handCards, tableCards) {
   //find what cards are in users hand and setting them
   for (let i = 0; i < handCards.length; i++){
     let rank = handCards[i] % 13;
-    let holder_a_suit = Math.floor(handCards[i] / 13);
+    let suit = Math.floor(handCards[i] / 13);
     x[suit][rank] = 1;
   }
 

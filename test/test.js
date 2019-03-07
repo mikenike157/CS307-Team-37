@@ -1,6 +1,7 @@
 const assert = require("assert");
 const fs = require("fs");
 
+const display = require("../src/display.js");
 const gameActions = require("../src/GameActions.js");
 const handFinder = require("../src/handFinder.js");
 const transactions = require("../src/transactions/index.js");
@@ -130,6 +131,25 @@ describe("handFinder", function() {
       assert(fmt[2][1] == 1);
       assert(fmt[0][2] == 1);
       assert(fmt[3][3] == 0);
+    });
+  });
+});
+
+describe("display", function() {
+  describe("#nameCard", function() {
+    it("names cards correct", function() {
+      assert(display.nameCard(0) == "2S");
+      assert(display.nameCard(5) == "7S");
+      assert(display.nameCard(9) == "JS");
+      assert(display.nameCard(10) == "QS");
+      assert(display.nameCard(11) == "KS");
+      assert(display.nameCard(12) == "AS");
+      assert(display.nameCard(13) == "2D");
+      assert(display.nameCard(20) == "9D");
+      assert(display.nameCard(24) == "KD");
+      assert(display.nameCard(26) == "2C");
+      assert(display.nameCard(39) == "2H");
+      assert(display.nameCard(51) == "AH");
     });
   });
 });
