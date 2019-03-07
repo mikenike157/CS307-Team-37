@@ -1,71 +1,93 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>Poker University</title>
-	<link rel="stylesheet" type="text/css" href="style.css">
+    <title>Poker University</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function(){
+
+			//Only shows active tab.
+			$(".mode-window:not(:first)").hide();
+
+			$(".tab-head").click(function(){
+				$(".mode-window").hide();
+				$("." + $(this).attr('name')).show();
+			});
+		});
+	</script>
 </head>
+
 <body>
-	<div class="main-header">
-		<h1 id="mainTitle" class="page-title">Poker University</h1>
-		<input type="button" name="logout" value="logout">
-	</div>
-	<div class="main-body">
-		<div class="sub-container" id="playModes">
-			<div class="tab-select sub-box" id="mainHeads">
-				<div class="tab-head" id="pvp">
-					<h3>Player vs Players</h3>
-				</div>
-				<div class="tab-head" id="pvb">
-					<h3>Player vs Bots</h3>
-				</div>
-				<div class="tab-head" id="tutorial">
-					<h3>Tutorial</h3>
-				</div>
-				<div class="tab-head" id="hostLobby">
-					<h3>Host Lobby</h3>
-				</div>
-			</div>
-			<div class="sub-box" id="modeWindows">
-				<div class="mode-window" id="pvpWindow">
-					
-				</div>
-				<div class="mode-window" id="pvbWindow">
-					
-				</div>
-				<div class="mode-window" id="tutorialWindow">
-					
-				</div>
-				<div class="mode-window" id="hostLobbyWindow">
-					
-				</div>
-			</div>
-			<input type="button" id="playButton" value="Play">
-			<div id="serverInfo">
-				<p>Players online: </p>
-				<p>Friends online: </p>
-				<p>Active tables: </p>
-			</div>
-		</div>
-		<div class="sub-container" id="playerInfo">
-			<div class="sub-box" id="profile">
-				<div id="chips">
-					<h3 id="chipTitle">Chips:</h2>
-					<h3 id="chipCount"></h3>
-				</div>
-				<img src="" id="profilePic"/>
-
-			</div>
-			<div class="sub-box" id="playerStats">
-				
-			</div>
-			<div class="sub-box" id="friendsList">
-				
-			</div>
-		</div>
-
-
-	</div>
-
-
+    <div class="main-header">
+        <h1 id="mainTitle" class="page-title">Poker University</h1>
+        <input type="button" name="logout" value="logout">
+    </div>
+    <div class="main-body">
+        <div class="sub-container" id="playModes">
+            <div class="tab-select sub-box" id="mainHeads">
+                <div class="tab-head" name="pvp-option" id="pvp">
+                    <h3>Player vs Players</h3>
+                </div>
+                <div class="tab-head" name="pvb-option" id="pvb">
+                    <h3>Player vs Bots</h3>
+                </div>
+                <div class="tab-head" name="tutorial-window-option" id="tutorial">
+                    <h3>Tutorial</h3>
+                </div>
+                <div class="tab-head" name="host-lobby-option" id="hostLobby">
+                    <h3>Host Lobby</h3>
+                </div>
+            </div>
+            <div class="sub-box" id="modeWindows">
+                <div class="mode-window pvp-option" id="pvpWindow">
+                    <input type="button" class="play-button" value="Join">
+                </div>
+                <div class="mode-window pvb-option" id="pvbWindow">
+                    <input type="button" class="play-button" value="Play">
+                </div>
+                <div class="mode-window tutorial-window-option" id="tutorialWindow">
+                    <input type="button" class="play-button" value="Play">
+                </div>
+                <div class="mode-window host-lobby-option" id="hostLobbyWindow">
+                    <form id="hostForm" action="host_game" method="POST">
+                        <p class="field-title">Room Name</p>
+                        <input type="text" name="roomName">
+                        <p class="field-title">Max players (2-8)</p>
+                        <input type="number" name="numPlayers">
+                        <p class="field-title">Password (Leave blank if public)</p>
+                        <input type="text" name="roomPass">
+                        <p class="field-title">Number of AI</p>
+                        <input type="number" name="numAI">
+                        <p class="field-title">Enable Antes</p>
+                        <input type="checkbox" name="anteOption">
+                        <p class="field-title">Starting Chips</p>
+                        <input type="number" name="startChips">
+                        <input type="submit" class="play-button" value="Create">
+                    </form>
+                </div>
+            </div>
+            <div id="serverInfo">
+                <p>Players online: </p>
+                <p>Friends online: </p>
+                <p>Active tables: </p>
+            </div>
+        </div>
+        <div class="sub-container" id="playerInfo">
+            <div class="sub-box" id="profile">
+                <div id="chips">
+                    <h3 id="chipTitle">Chips:</h2>
+                        <h3 id="chipCount"></h3>
+                </div>
+                <img src="" id="profilePic" />
+            </div>
+            <div class="sub-box" id="playerStats">
+            </div>
+            <div class="sub-box" id="friendsList">
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>
