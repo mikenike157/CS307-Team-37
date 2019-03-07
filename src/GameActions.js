@@ -3,16 +3,16 @@
             /* Variables */
 ///////////////////////////////////////
 
-var numbers = []; // 2N+5 unique random integers on [0, 51]
-var playerCards = []; // maximum of eight players
-var tableCards = [];
-var N;
+let numbers = []; // 2N+5 unique random integers on [0, 51]
+let playerCards = []; // maximum of eight players
+let tableCards = [];
+let N;
 
 ///////////////////////////////////////
           /* Deck generation */
 ///////////////////////////////////////
 
-var seed = 1;
+let seed = 1;
 function tutorialDeck() {
   let x = Math.sin(seed++) * 52;
   return Math.floor((x-Math.floor(x))* 52);
@@ -40,7 +40,7 @@ class Player {
 }
 
 this.addPlayer = function(socketid) {
-  var player = new Player(socketid, 100);
+  let player = new Player(socketid, 100);
   return player;
 }
 
@@ -55,10 +55,10 @@ this.startGame = function(numPlayers) {
   N = numPlayers;
 
   // 0. Generate random deck
-  var m = 0; 
-  var i = 0;
+  let m = 0; 
+  let i = 0;
   while (i < 52) {
-    var k = randomDeck();
+    let k = randomDeck();
     if (numbers.includes(k)) {
       continue;
     } 
@@ -69,15 +69,15 @@ this.startGame = function(numPlayers) {
   }
   
   // 1. Assign cards to players
-  for (var i = 0; i < (N*2); i+=2) {
+  for (let i = 0; i < (N*2); i+=2) {
     playerCards.push([numbers[i], numbers[i+1]]);
-    //var cardsToPush = [numbers[i], numbers[i+1]];
+    //let cardsToPush = [numbers[i], numbers[i+1]];
     //playerCards.push(cardsToPush);
   }
   
   // 2. Assign cards to table
   //k = 0; 
-  for (var i = (2*N); i < (2*N+5); i++) {
+  for (let i = (2*N); i < (2*N+5); i++) {
     tableCards.push(numbers[i]);
     //tableCards[k] = numbers[i];
     //k++;
@@ -94,7 +94,7 @@ this.startGame = function(numPlayers) {
 this.playerRaise = function(player, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
-    var margin = raiseTo-player.lastBet;
+    let margin = raiseTo-player.lastBet;
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = raiseTo;
@@ -105,7 +105,7 @@ this.playerRaise = function(player, currentBet, raiseTo) {
 
 this.playerCall = function(player, currentBet) {
   if (player.chips >= currentBet) {
-    var margin = currentBet-player.lastBet;
+    let margin = currentBet-player.lastBet;
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = currentBet;
@@ -127,7 +127,7 @@ this.blind = function(player, amount) {
 
 
 this.allIn = function(player) {
-  var amount = player.chips;
+  let amount = player.chips;
   player.chips = 0; 
   player.state = "ALLIN";
   return [player, amount];
