@@ -668,8 +668,8 @@ function fixCards(pCards, tCards) {
       var tempHand = [card1, card2]
       retPCards.push(tempHand);
     }
-    var card1 = findCard(tCards[0])
-    var card2 = findCard(tCards[1])
+    var card1 = findCard(tCards[0]);
+    var card2 = findCard(tCards[1]);
     var card3 = findCard(tCards[2]);
     var card4 = findCard(tCards[3]);
     var card5 = findCard(tCards[4]);
@@ -678,77 +678,24 @@ function fixCards(pCards, tCards) {
     return [retPCards, retTCards];
   }
 
+//////////////////////////////
+  /* Map integer to card */ 
+//////////////////////////////
+
+var FACES = ["J", "Q", "K", "A"];
+var SUITS = ["S", "H", "C", "D"];
 function findCard(card) {
   console.log(card);
   var suit = Math.floor(card / 13);
   card = card - (13 * suit);
-  console.log(card)
-  if (suit == 0) {
-    if (card == 9) {
-      return "JS"
-    }
-    else if (card == 10) {
-      return "QS"
-    }
-    else if (card == 11) {
-      return "KS"
-    }
-    else if (card == 12) {
-      return "AS"
-    }
-    else {
-      return ((card+2) + "S");
-    }
+  var str = ""; 
+  if (num < 9) {
+  	str = str + (num+2); 
   }
-  else if (suit == 1) {
-    if (card == 9) {
-      return "JD"
-    }
-    else if (card == 10) {
-      return "QD"
-    }
-    else if (card == 11) {
-      return "KD"
-    }
-    else if (card == 12) {
-      return "AD"
-    }
-    else {
-      return ((card+2) + "D");
-    }
+  else {
+  	str = str + FACES[num-9]; 
   }
-  else if (suit == 2) {
-    if (card == 9) {
-      return "JC"
-    }
-    else if (card == 10) {
-      return "QC"
-    }
-    else if (card == 11) {
-      return "KC"
-    }
-    else if (card == 12) {
-      return "AC"
-    }
-    else {
-      return ((card+2) + "C");
-    }
-  }
-  else if (suit == 3) {
-    if (card == 9) {
-      return "JH"
-    }
-    else if (card == 10) {
-      return "QH"
-    }
-    else if (card == 11) {
-      return "KH"
-    }
-    else if (card == 12) {
-      return "AH"
-    }
-    else {
-      return ((card+2) + "H");
-    }
-  }
+  str += SUITS[suit];
+  console.log(str); 
+  return str;
 }
