@@ -49,11 +49,11 @@ this.addPlayer = function(socketid) {
  /* Called by server at game start */ 
 ///////////////////////////////////////
 
-this.startGame = function(game, numPlayers) {
+this.startGame = function(game) {
   numbers = [];
   playerCards = [];
   tableCards = [];
-  N = numPlayers;
+  N = game.players.length;
 
   // 0. Generate random deck
   var m = 0; 
