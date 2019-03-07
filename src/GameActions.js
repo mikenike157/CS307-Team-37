@@ -49,7 +49,7 @@ this.addPlayer = function(socketid) {
  /* Called by server at game start */ 
 ///////////////////////////////////////
 
-this.startGame = function(numPlayers) {
+this.startGame = function(game, numPlayers) {
   numbers = [];
   playerCards = [];
   tableCards = [];
@@ -85,15 +85,29 @@ this.startGame = function(numPlayers) {
   }
   
   // 3. Return cards to server
-  return [playerCards, tableCards];
+  game.playerCards = playerCards;
+  game.tableCards = tableCards; 
+  return game;
 }
 
 ///////////////////////////////////////
 /* Called by server at player action */
 ///////////////////////////////////////
 
-this.playerRaise = function(player, currentBet, raiseTo) {
+function getPlayer(playerArray, playerID) {
+  player = new Player(-1, 1);
+  for (var i = 0; i < playerArray.length; i++) {
+    if (players[i].playerID == playerID) {
+        player = players[i];
+        break;
+    }
+  }
+  return player; 
+} // internal helper method 
+
+this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
+  player = getPlayer(game.players, playerID);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
     var margin = raiseTo-player.lastBet;
     player.chips -= margin;
@@ -104,7 +118,8 @@ this.playerRaise = function(player, currentBet, raiseTo) {
   return -1;
 }
 
-this.playerCall = function(player, currentBet) {
+this.playerCall = function(game, playerID, currentBet) {
+  player = getPlayer(game.players, playerID);  
   if (player.chips >= currentBet) {
     var margin = currentBet-player.lastBet;
     player.chips -= margin;
@@ -115,19 +130,22 @@ this.playerCall = function(player, currentBet) {
   return -1;
 }
 
-this.playerFold = function(player) {
+this.playerFold = function(game, playerID) {
+  player = getPlayer(game.players, playerID);
   player.state = "FOLDED";
   return player;
 }
 
-this.blind = function(player, amount) {
+this.blind = function(game, playerID, amount) {
+  player = getPlayer(game.players, playerID);
   player.chips -= amount;
   player.lastBet = amount;
   return player;
 }
 
 
-this.allIn = function(player) {
+this.allIn = function(game, playerID) {
+  player = getPlayer(game.players, playerID);
   var amount = player.chips;
   player.chips = 0; 
   player.state = "ALLIN";
