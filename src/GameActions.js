@@ -37,6 +37,7 @@ class Player {
         this.state = "NOTREADY";
         this.chips = chips;
         this.cards = [-1, -1];
+        this.initialChips = chips; // Add
     }
 }
 
@@ -146,7 +147,7 @@ this.blind = function(game, playerID, amount) {
 this.allIn = function(game, playerID) {
   player = getPlayer(game.players, playerID);
   var amount = player.chips;
-  player.chips = 0; 
+  //player.chips = 0; // keep player.chips as reference amount
   player.state = "ALLIN";
   return [game, player, amount];
 }
