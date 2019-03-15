@@ -59,6 +59,19 @@ const server = express()
     })
   )
 
+  .post('/host_game', function(req, res) {
+    \/* this section needs to update the requesting usernme's room field in
+    the databse to the name of the room they are creating. After this, they
+    need to be redirected to the game lobby. This also needs to call
+    the function that creates a room and inserts it into the rooms array
+    */
+  })
+
+  .post('/join_game', function(req, res) {
+    /* Update the current players current room, redirect them to the game
+    page. 
+    */
+  })
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
 
@@ -68,9 +81,7 @@ const server = express()
         .then(client => {
           return lg.createUser(client, req.body)
           .then(user => {
-
           client.release()
-
           console.log(user);
           if(!user){
             console.log(user);
@@ -95,10 +106,40 @@ const server = express()
     res.redirect('/index.html');
   })
 
+  .post('/password_post', function(req, res) {
+    pool.connect()
+      .then(client => {
+        console.log(client);
+        return lg.getSecurityQuestion(client, req.body.username)
+        .then(question => {
+        client.release()
+          if (question.question === undefined) {
+            console.log(question.reason);
+            return res.redirect('/');
+          }
+          else {
+            let thispath = path.join(__dirname, "/pages/question.html")
+            fs.readFile(thispath, function(err, data) {
+              if (err) {
+                console.log(err, 'error');
+                return null;
+              };
+              data = data.replace('{QUESTION}', question.question);
+              next(data);
+            })
+          }
+      })
+      .catch(err => {
+        console.log("HERE");
+        client.release()
+        console.log(err.stack);
+        return res.redirect('/');
+      })
+    })
+  })
   //validates login credentials of user
   .post('/login_post',  function(req, res){
     console.log("begin login");
-
       //create promise that returns a user from the database
       //const result = lg.validateUser(client, req.body.username, req.body.password);
 
@@ -106,7 +147,6 @@ const server = express()
         .then(client => {
           return lg.validateUser(client, req.body.username, req.body.password)
           .then(user => {
-
           client.release()
 
             console.log(user);
@@ -126,7 +166,6 @@ const server = express()
           })
 
         })
-
   })
 
   .get('/update_username', function(req,res){
@@ -137,6 +176,8 @@ const server = express()
       return res.send("nobody");
     }
   })
+
+  .post('/')
 
   .listen(port, () => console.log(`Listening on ${ port }`));
 
@@ -392,7 +433,6 @@ function checkReadyState(socket) {
 
 function beginRound(socket) {
   currentPot = 0;
-  console.log("Hello world")
   var cards = game.startGame(players.length);
   playerCards = cards[0];
   tableCards = cards[1];
@@ -433,7 +473,6 @@ function progressGame(socket) {
     currentBet = 0;
   }
   else if (gameState == 1) {
-
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
         players[i].state = "NOTREADY"
@@ -641,7 +680,6 @@ function findCard(card) {
     else if (card == 11) {
       return "KC"
     }
-    }
     else {
       return ((card+2) + "C");
     }
@@ -681,11 +719,8 @@ function joinRoom(socket, newRoom) {
 }
 
 //Will take the game options as arguments
-function createRoom(socket) {
+function createRoom() {
+  //Do stuff with the database here. Insert into the games table
   var newRoom = room.createRoom();
-  var newPlayer = game.addPlayer(socket.id);
-  newRoom.players.push(newPlayer);
   rooms.push(newRoom);
-  socket.room = "" + (rooms.length - 1);
-  socket.join(socket.room);
 }

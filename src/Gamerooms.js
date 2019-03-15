@@ -40,5 +40,5 @@ this.createRoom = function() {
 
 this.addPlayer = function(room, socket, username) {
   var player = game.addPlayer(socket);
-
+  return room;
 }
