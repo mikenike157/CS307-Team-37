@@ -5,6 +5,7 @@ const game = require("./GameActions.js");
 class gameRoom {
   constructor() {
     var name = "";
+    var maxPlayers = 8;
     var players = [];
     var smallBlindPlacement = 0;
     var bigBlindPlacement = 1;

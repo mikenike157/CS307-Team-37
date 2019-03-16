@@ -1,12 +1,57 @@
 <!DOCTYPE html>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script>
+	var socket = io();
+	//on connection to page load the username and call adduser on server side
+	socket.on('connect', function() {
+		let name = "guest";
+		socket.emit('adduser', name);
+	})
+	//on fold button press call the fold method on server side
+
+	socket.on	('updatechat', function (data) {
+		$('#chatDisplay').append(':</b> ' + data + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	});
+
+	$(function() {
+		$('fold').click( function() {
+			socket.emit('playerFold');
+		})
+	})
+
+	$(function(){
+		// when the client clicks SEND
+		$('#send').click( function() {
+			var message = $('#text').val();
+			$('#text').val('');
+			// tell server to execute 'sendchat' and send along one parameter
+			socket.emit('sendchat', message);
+		});
+
+		// when the client hits ENTER on their keyboard
+		$('#text').keypress(function(e) {
+			if(e.which == 13) {
+				$(this).blur();
+				$('#send').focus().click();
+			}
+		});
+	});
+
+</script>
+
+
+
 <html>
 <head>
 	<title>Poker Game</title>
-	<link rel="stylesheet" type="text/css" href="style.css">	
+	<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 	<canvas id="pokerDisplay">
-		
+
 	</canvas>
 	<div id="gameBar">
 		<div class="sub-container" id="chatBox">
@@ -21,13 +66,12 @@
 					Hint Log
 				</div>
 			</div>
-			<div id="chatDisplay">
-				
+			<div id="chatDisplay" style="overflow-y:scroll">
+
 			</div>
 			<div id="chatInputField">
-				<form>
-					<input type="text" name="chatMessage">
-					<input type="submit" name="chatSubmit" value="submit">
+					<input type="text" id="text" name="chatMessage">
+					<input type="submit" id="send" name="chatSubmit" value="Send">
 				</form>
 			</div>
 		</div>
@@ -52,7 +96,7 @@
 			<div id="playerActionButtons">
 				<input type="button" name="Fold" value="Fold">
 				<input type="button" name="Call" value="Call">
-				<input type="button" name="Raise" value="Raise">	
+				<input type="button" ame="Raise" value="Raise">
 			</div>
 		</div>
 	</div>

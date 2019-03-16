@@ -41,9 +41,9 @@ var rooms = [];
 
 
 const server = express()
-  //.use((req, res) => res.sendFile(path.join(__dirname, "pages/chat.html")))
+  //.use((req, res) => res.sendFile(path.join(__dirname, "src/pages/game.html")))
   //Testing login page
-  .use(express.static(__dirname + '/src/pages'))
+  .use(express.static(__dirname + '/src/pages/'))
   //Converts post data to JSON
   .use(bp.urlencoded({ extended: false }))
 
@@ -60,7 +60,7 @@ const server = express()
   )
 
   .post('/host_game', function(req, res) {
-    \/* this section needs to update the requesting usernme's room field in
+    /* this section needs to update the requesting usernme's room field in
     the databse to the name of the room they are creating. After this, they
     need to be redirected to the game lobby. This also needs to call
     the function that creates a room and inserts it into the rooms array
@@ -103,6 +103,7 @@ const server = express()
   })
 
   .get('/logout_get', function(req, res) {
+    //Make sure current room is equal to null
     res.redirect('/index.html');
   })
 
@@ -220,6 +221,7 @@ var mainPot = 0; // parallel currentPot
 var rooms = ['room1'];
 io.sockets.on('connection', function (socket) {
   // when the client emits 'adduser', this listesns and executes
+  /*
   socket.on('adduser', function(username){
     if (username != null) {
       username = validator.escape(username);
@@ -246,8 +248,28 @@ io.sockets.on('connection', function (socket) {
     // echo to room 1 that a person has connected to their room
     socket.broadcast.to('room1').emit('updatechat', 'SERVER', username + ' has connected to this room');
     socket.emit('updaterooms', rooms, 'room1');
-  });
+    */
+    socket.on('adduser', function(username) {
+      socket.join('room1');
+    })
 
+    socket.on('joinRoom', function(socket) {
+      //socket.room = //Figure out a way to get the room that the current request was sent from
+      //... all the house keeping variable setting
+      //var currGame = the game object in the array of games
+      if (currGame.players.length == maxPlayers) {
+        beginRound(socket);
+      }
+    })
+    socket.on('sendchat', function (data) {
+      if (data != "") {
+        var newdata = validator.escape(data);
+        io.to(socket.id).emit('updatechat', newdata);
+        return;
+      }
+    });
+});
+/*
   // when the client emits 'sendchat', this listens and executes
   socket.on('sendchat', function (data) {
     // we tell the client to execute 'updatechat' with 2 parameters
@@ -463,7 +485,7 @@ io.sockets.on('connection', function (socket) {
     socket.leave(socket.room);
   });
 });
-
+*/
 function checkReadyState(socket) {
   var k = 0;
   for (var i = currentPlayer; k < players.length; i++) {
@@ -481,32 +503,28 @@ function checkReadyState(socket) {
   }
 }
 
-function beginRound(socket) {
+function beginRound(socket, currGame) {
   currentPot = 0;
 
   console.log("Hello world")
 
   // Call GameAction.js to get cards
-  var cards = game.startGame(players.length);
-  playerCards = cards[0];
-  tableCards = cards[1];
-
-  console.log(playerCards);
-  console.log(tableCards);
+  var newGame = game.startGame(currGame);
+  //playerCards = cards[0];
+  //tableCards = cards[1];
 
   // Initialize player cards
-  var fixedCards = fixCards(playerCards, tableCards);
-  fixedPCards = fixedCards[0];
-  fixedTCards = fixedCards[1];
-  for (var i = 0; i < players.length; i++) {
-    players[i].lastBet = 0;
-    players[i].cards = playerCards[i];
+  //fixedPCards = fixedCards[0];
+  //fixedTCards = fixedCards[1];
+  for (var i = 0; i < currGame.players.length; i++) {
+    currGame.players[i].lastBet = 0;
+    currGame.players[i].cards = playerCards[i];
   }
 
   // Small blind
   var temp = game.blind(players[smallBlindPlacement], 1);
   currentPot += 1
-  players[smallBlindPlacement] = temp;
+  game.players[smallBlindPlacement] = temp;
 
   // Big blind
   temp = game.blind(players[bigBlindPlacement], 2);
@@ -705,96 +723,7 @@ function validatePlayer(socket) {
   }
 }
 
-function fixCards(pCards, tCards) {
-  var retPCards = [];
-  var retTCards = [];
-    for (var i = 0; i < pCards.length; i++) {
-      var card1 = findCard(pCards[i][0]);
-      var card2 = findCard(pCards[i][1]);
-      var tempHand = [card1, card2]
-      retPCards.push(tempHand);
-    }
-    var card1 = findCard(tCards[0])
-    var card2 = findCard(tCards[1])
-    var card3 = findCard(tCards[2]);
-    var card4 = findCard(tCards[3]);
-    var card5 = findCard(tCards[4]);
-    retTCards = [card1, card2, card3, card4, card5];
-    console.log(retPCards + " " + retTCards);
-    return [retPCards, retTCards];
-  }
 
-function findCard(card) {
-  console.log(card);
-  var suit = Math.floor(card / 13);
-  card = card - (13 * suit);
-  console.log(card)
-  if (suit == 0) {
-    if (card == 9) {
-      return "JS"
-    }
-    else if (card == 10) {
-      return "QS"
-    }
-    else if (card == 11) {
-      return "KS"
-    }
-    else if (card == 12) {
-      return "AS"
-    }
-    else {
-      return ((card+2) + "S");
-    }
-  }
-  else if (suit == 1) {
-    if (card == 9) {
-      return "JD"
-    }
-    else if (card == 10) {
-      return "QD"
-    }
-    else if (card == 11) {
-      return "KD"
-    }
-    else if (card == 12) {
-      return "AD"
-    }
-    else {
-      return ((card+2) + "D");
-    }
-  }
-  else if (suit == 2) {
-    if (card == 9) {
-      return "JC"
-    }
-    else if (card == 10) {
-      return "QC"
-    }
-    else if (card == 11) {
-      return "KC"
-    }
-    else {
-      return ((card+2) + "C");
-    }
-  }
-  else if (suit == 3) {
-    if (card == 9) {
-      return "JH"
-    }
-    else if (card == 10) {
-      return "QH"
-    }
-    else if (card == 11) {
-      return "KH"
-    }
-    else if (card == 12) {
-      return "AH"
-    }
-    else {
-      return ((card+2) + "H");
-    }
-  }
-}
 
 function joinRoom(socket, newRoom) {
   var player = game.addPlayer(socket.id);

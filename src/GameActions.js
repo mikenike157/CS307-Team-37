@@ -47,7 +47,7 @@ this.addPlayer = function(socketid) {
 }
 
 ///////////////////////////////////////
- /* Called by server at game start */ 
+ /* Called by server at game start */
 ///////////////////////////////////////
 
 this.startGame = function(game) {
@@ -57,37 +57,40 @@ this.startGame = function(game) {
   N = game.players.length;
 
   // 0. Generate random deck
-  var m = 0; 
+  var m = 0;
   var i = 0;
   while (i < 52) {
     var k = randomDeck();
     if (numbers.includes(k)) {
       continue;
-    } 
+    }
     else {
       numbers[i] = k;
       i++;
     }
   }
-  
+
   // 1. Assign cards to players
   for (var i = 0; i < (N*2); i+=2) {
     playerCards.push([numbers[i], numbers[i+1]]);
     //var cardsToPush = [numbers[i], numbers[i+1]];
     //playerCards.push(cardsToPush);
   }
-  
+
   // 2. Assign cards to table
-  //k = 0; 
+  //k = 0;
   for (var i = (2*N); i < (2*N+5); i++) {
     tableCards.push(numbers[i]);
     //tableCards[k] = numbers[i];
     //k++;
   }
-  
+
   // 3. Return cards to server
   game.playerCards = playerCards;
-  game.tableCards = tableCards; 
+  game.tableCards = tableCards;
+  let fixedCards = fixCards(playerCards, tableCards);
+  game.fixedPCards = fixedCards[0];
+  game.fixedTCards = fixedCards[1];
   return game;
 }
 
@@ -103,8 +106,8 @@ function getPlayer(playerArray, playerID) {
         break;
     }
   }
-  return player; 
-} // internal helper method 
+  return player;
+} // internal helper method
 
 this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
@@ -120,7 +123,7 @@ this.playerRaise = function(game, playerID, currentBet, raiseTo) {
 }
 
 this.playerCall = function(game, playerID, currentBet) {
-  player = getPlayer(game.players, playerID);  
+  player = getPlayer(game.players, playerID);
   if (player.chips >= currentBet) {
     var margin = currentBet-player.lastBet;
     player.chips -= margin;
@@ -152,3 +155,93 @@ this.allIn = function(game, playerID) {
   return [game, player, amount];
 }
 
+function fixCards(pCards, tCards) {
+  var retPCards = [];
+  var retTCards = [];
+    for (var i = 0; i < pCards.length; i++) {
+      var card1 = findCard(pCards[i][0]);
+      var card2 = findCard(pCards[i][1]);
+      var tempHand = [card1, card2]
+      retPCards.push(tempHand);
+    }
+    var card1 = findCard(tCards[0])
+    var card2 = findCard(tCards[1])
+    var card3 = findCard(tCards[2]);
+    var card4 = findCard(tCards[3]);
+    var card5 = findCard(tCards[4]);
+    retTCards = [card1, card2, card3, card4, card5];
+    console.log(retPCards + " " + retTCards);
+    return [retPCards, retTCards];
+  }
+
+function findCard(card) {
+  console.log(card);
+  var suit = Math.floor(card / 13);
+  card = card - (13 * suit);
+  console.log(card)
+  if (suit == 0) {
+    if (card == 9) {
+      return "JS"
+    }
+    else if (card == 10) {
+      return "QS"
+    }
+    else if (card == 11) {
+      return "KS"
+    }
+    else if (card == 12) {
+      return "AS"
+    }
+    else {
+      return ((card+2) + "S");
+    }
+  }
+  else if (suit == 1) {
+    if (card == 9) {
+      return "JD"
+    }
+    else if (card == 10) {
+      return "QD"
+    }
+    else if (card == 11) {
+      return "KD"
+    }
+    else if (card == 12) {
+      return "AD"
+    }
+    else {
+      return ((card+2) + "D");
+    }
+  }
+  else if (suit == 2) {
+    if (card == 9) {
+      return "JC"
+    }
+    else if (card == 10) {
+      return "QC"
+    }
+    else if (card == 11) {
+      return "KC"
+    }
+    else {
+      return ((card+2) + "C");
+    }
+  }
+  else if (suit == 3) {
+    if (card == 9) {
+      return "JH"
+    }
+    else if (card == 10) {
+      return "QH"
+    }
+    else if (card == 11) {
+      return "KH"
+    }
+    else if (card == 12) {
+      return "AH"
+    }
+    else {
+      return ((card+2) + "H");
+    }
+  }
+}
