@@ -12,32 +12,32 @@ const DEFAULT_CHIPS = 100;
 
 async function createUser(client, userinfo) {
   /*if (userinfo.username === "" || userinfo.password === ""){
-    console.log( "empty username or password" );
+    //console.log( "empty username or password" );
     return undefined;
   }*/
 
   try{
     if (userinfo.username === "" || userinfo.password === ""){
-       console.log( "empty username or password" );
+       //console.log( "empty username or password" );
        throw "Error";
     }
   } catch(err) {
     return false
   }
 
-  console.log(userinfo);
+  //console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
 
-  console.log(hash);
+  //console.log(hash);
 
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
 
-  console.log("client released");
+  //console.log("client released");
 
   return{
   //returns user info for session purposes
@@ -59,7 +59,7 @@ async function validateUser(client, username, password) {
   
   try{
     if (username === "" || password === ""){
-       console.log( "empty username or password" );
+       //console.log( "empty username or password" );
        throw "Error";
       
     }
@@ -69,7 +69,7 @@ async function validateUser(client, username, password) {
   
    
 
-  console.log("begin validation");
+  //console.log("begin validation");
 
   let authRes = [];
 
@@ -83,16 +83,16 @@ async function validateUser(client, username, password) {
       
     }
  } catch(err) {
-    console.log(err);
+    //console.log(err);
       return {
         userId: undefined,
         reason: "Cannot Connect"
       };
     
     }
-    console.log(authRes);
+    //console.log(authRes);
     if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
-      console.log("incorrect");
+      //console.log("incorrect");
       return {
         userId: undefined,
         reason: "Username or password is incorrect"

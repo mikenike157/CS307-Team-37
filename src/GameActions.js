@@ -51,9 +51,11 @@ this.addPlayer = function(socketid) {
 ///////////////////////////////////////
 
 this.startGame = function(game) {
+
   numbers = [];
   playerCards = [];
   tableCards = [];
+  //changed for testing purposes
   N = game.players.length;
 
   // 0. Generate random deck
@@ -88,6 +90,7 @@ this.startGame = function(game) {
   // 3. Return cards to server
   game.playerCards = playerCards;
   game.tableCards = tableCards; 
+  console.log(game);
   return game;
 }
 

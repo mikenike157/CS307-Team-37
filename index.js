@@ -11,6 +11,7 @@ const bp = require("body-parser");
 const fs = require("fs")
 const session = require('client-sessions')
 const jq = require('jquery')
+const gr = require("./src/Gamerooms.js");
 
 //The code for the database interaction
 const lg = require("./src/transactions/index.js")
@@ -208,7 +209,7 @@ io.sockets.on('connection', function (socket) {
     var parsed = data.split(" ");
     
     if (parsed == "/start") {
-      //console.log(players);
+      console.log(players);
       if (gameStatus == 1) {
         io.to(socket.id).emit('updatechat', "Server", "There is already a game going on.");
         return;
@@ -441,9 +442,14 @@ function beginRound(socket) {
   console.log("Hello world")
   
   // Call GameAction.js to get cards
-  var cards = game.startGame(players.length);
-  playerCards = cards[0];
-  tableCards = cards[1];
+
+  //changing room creation method to avoid errors on this branch
+  let newRoom = gr.createRoom();
+  newRoom.players = players; 
+  
+  var cards = game.startGame(newRoom);
+  playerCards = cards.playerCards;
+  tableCards = cards.tableCards;
   
   console.log(playerCards);
   console.log(tableCards);
