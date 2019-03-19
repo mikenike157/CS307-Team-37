@@ -194,7 +194,7 @@ const server = express()
             } else {
               console.log(user.userId);
               req.session.user = user;
-              return res.redirect('/game.html');
+              return res.redirect('/main.html');
             }
           })
           .catch(err => {
@@ -967,25 +967,14 @@ function sendLog(socket) {
 //Send all client-visible data so that it can be rendered on the screen
 function sendVisibleData(socket){
 
-  let publicPacket = {
-      this.fixedTCards = fixedTCards
-      this.currentPot = currentPot,
-      this.currentBet = currentBet,
-  };
-  let privatePacket = {};
-
   io.sockets.in(socket.room).emit('updatedisplay', fixedTCards, 'fixedTCards');
   io.sockets.in(socket.room).emit('updatedisplay', currentPot, 'currentPot');
   io.sockets.in(socket.room).emit('updatedisplay', currentBet, 'currentBet');
 
   for(let i  = 0; i < players.length; i++){
-    privatePacket = {
-      
-      this.chips = players[i].chips,
-      this.fixedPCards = fixedPCards[i],
-    }
+
     io.to(players[i].playerID).emit('updatedisplay', players[i].chips, 'chips['+i+']');
-    io.to(players[i].playerID).emit('updatedisplay', fixedTCards, 'fixedTCards');
+    io.to(players[i].playerID).emit('updatedisplay', fixedpCards[i], 'fixedPCards');
   }
 }
 

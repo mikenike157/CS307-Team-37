@@ -2,84 +2,22 @@
 <html>
 
 <head>
-    <script>
-        $(document).ready(function(){
+
 	<title>Poker University</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+        <script>
+        $(document).ready(function(){
+            //Only shows active tab.
+            $(".mode-window:not(:first)").hide();
+            $(".tab-head").click(function(){
+                $(".mode-window").hide();
+                $("." + $(this).attr('name')).show();
+            });
+        });
+    </script>
 </head>
-<body>
-	<div class="main-header">
-		<h1 id="mainTitle" class="page-title">Poker University</h1>
-		<form id="logoutButton" action="logout_get" method="GET">
-			<input type="submit" name="logout" value="logout">
-		</form>
-	</div>
-	<div class="main-body">
-		<div class="sub-container" id="playModes">
-			<div class="tab-select sub-box" id="mainHeads">
-				<div class="tab-head" id="pvp">
-					<h3>Player vs Players</h3>
-				</div>
-				<div class="tab-head" id="pvb">
-					<h3>Player vs Bots</h3>
-				</div>
-				<div class="tab-head" id="tutorial">
-					<h3>Tutorial</h3>
-				</div>
-				<div class="tab-head" id="hostLobby">
-					<h3>Host Lobby</h3>
-				</div>
-			</div>
-			<div class="sub-box" id="modeWindows">
-				<div class="mode-window" id="pvpWindow">
 
-				</div>
-				<div class="mode-window" id="pvbWindow">
-
-				</div>
-				<div class="mode-window" id="tutorialWindow">
-
-				</div>
-				<div class="mode-window" id="hostLobbyWindow">
-
-				</div>
-			</div>
-			<form id="playButtonForm" action="join_game" action="GET">
-				<input type="submit" id="playButton" value="Play">
-			</form>
-			<div id="roomsModal" class=
-			<div id="serverInfo">
-				<p>Players online: </p>
-				<p>Friends online: </p>
-				<p>Active tables: </p>
-			</div>
-		</div>
-		<div class="sub-container" id="playerInfo">
-			<div class="sub-box" id="profile">
-				<div id="chips">
-					<h3 id="chipTitle">Chips:</h2>
-					<h3 id="chipCount"></h3>
-				</div>
-				<img src="" id="profilePic"/>
-
-			//Only shows active tab.
-			$(".mode-window:not(:first)").hide();
-			</div>
-			<div class="sub-box" id="playerStats">
-
-			</div>
-			<div class="sub-box" id="friendsList">
-
-			</div>
-		</div>
-
-			$(".tab-head").click(function(){
-				$(".mode-window").hide();
-				$("." + $(this).attr('name')).show();
-			});
-		});
-	</script>
-</head>
 
 <body>
     <div class="main-header">
