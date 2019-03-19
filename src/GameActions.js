@@ -42,8 +42,8 @@ class Player {
     }
 }
 
-this.addPlayer = function(socketid) {
-  var player = new Player(socketid, 100);
+this.addPlayer = function(socketid, startingChips) {
+  var player = new Player(socketid, startingChips);
   console.log("NEW PLAYER: " + player);
   return player;
 }

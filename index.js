@@ -12,10 +12,12 @@ const bp = require("body-parser");
 const fs = require("fs")
 const session = require('client-sessions')
 const jq = require('jquery')
+//const pos = require('./src/possibility.js');
 
 //The code for the database interaction
 const lg = require("./src/transactions/index.js")
 
+var flag = 1;
 
 const port = process.env.PORT || 80;
 
@@ -64,6 +66,18 @@ const server = express()
     need to be redirected to the game lobby. This also needs to call
     the function that creates a room and inserts it into the rooms array
     */
+    console.log(req.body);
+    let roomName = req.body.roomName;
+    let maxPlayers = req.body.numPlayers;
+    let roomPass = req.body.roomPass;
+    let numAI = req.body.numAI;
+    let anteOption = req.body.anteOption
+    let startChips = req.body.startChips;
+    createRoom(roomName, maxPlayers, roomPass, numAI, anteOption, startChips);
+    req.session.user.room = roomName;
+
+    return res.redirect('/game.html');
+
   })
 
   .get('/join_game', function(req, res) {
@@ -142,7 +156,6 @@ const server = express()
   .post('/password_post', function(req, res) {
     pool.connect()
       .then(client => {
-        console.log(client);
         return lg.getSecurityQuestion(client, req.body.username)
         .then(question => {
         client.release()
@@ -172,10 +185,7 @@ const server = express()
   })
   //validates login credentials of user
   .post('/login_post',  function(req, res){
-    for (let i = 0; i < 3; i++) {
-      let room = createRoom("room" + (i+1));
-      rooms.push(room);
-    }
+
     console.log("begin login");
       //create promise that returns a user from the database
       //const result = lg.validateUser(client, req.body.username, req.body.password);
@@ -306,6 +316,7 @@ io.sockets.on('connection', function (socket) {
     socket.emit('updaterooms', rooms, 'room1');
     */
     socket.on('adduser', function(username, room) {
+      flag = 0;
       // get room index and set up socket information
       let currRoomIndex = findRoom(room);
       socket.username = username;
@@ -326,6 +337,7 @@ io.sockets.on('connection', function (socket) {
         }
       }
       rooms[currRoomIndex] = currRoom;
+      io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
       console.log("JOINED ROOM");
       return;
     })
@@ -1000,9 +1012,22 @@ function joinRoom(socket, newRoom) {
 }
 
 //Will take the game options as arguments
-function createRoom(name) {
+function createRoom(name, maxPlayers, password, numAI, anteOption, startChips) {
   //Do stuff with the database here. Insert into the games table
-  var newRoom = room.createRoom(name);
+  var newRoom = room.createRoom(name, maxPlayers, password, numAI, anteOption, startChips);
   console.log(newRoom);
   rooms.push(newRoom);
 }
+
+
+//FOR HINT
+/*
+function createHint(currRoom, socket) {
+  //get whoever clicked the hint button, do all of this with the currRoom.player[whatever]
+  let tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer]., whatever.tableCards)
+  let match = hf.match(tableArray);
+  let hintOutcome = pos.possibility(tableArray, match, 2+whatever.tableCards);
+
+
+}
+*/
