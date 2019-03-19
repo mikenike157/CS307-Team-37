@@ -10,6 +10,13 @@ const DEFAULT_CHIPS = 100;
   * securityAnswer: answer to question
 */
 
+
+async function getRooms(client) {
+  const res = await client.query("SELECT * FROM Games");
+  console.log(res);
+  return res;
+}
+
 async function createUser(client, userinfo) {
   /*if (userinfo.username === "" || userinfo.password === ""){
     //console.log( "empty username or password" );
@@ -54,20 +61,53 @@ async function createUser(client, userinfo) {
   * userId: undefined
   * reason: string
 */
+
+async function getSecurityQuestion(client, username) {
+  try {
+    if (username === "") {
+      throw "Error"
+    }
+  } catch (err) {
+    return undefined;
+  }
+  let authRes = [];
+
+  try {
+    authRes = await client.query(
+      "SELECT security_question, security_answer FROM Users WHERE Users.username = $1",
+      [username]
+    );
+    if (authRes === undefined) {
+      throw "Query unsuccessful";
+    }
+  }catch(err) {
+    return userID
+  }
+  console.log(authRes);
+  if (authRes.rows.length == 0) {
+    return {
+      question: undefined,
+      reason: "Username Incorrect"
+    };
+  }
+  return {
+    question: authRes.rows[0]["security_question"],
+    answer: authRes.rows[0]["security_answer"]
+  }
+}
+
 async function validateUser(client, username, password) {
   // Check if username and password is valid
-  
+
   try{
     if (username === "" || password === ""){
        //console.log( "empty username or password" );
        throw "Error";
-      
+
     }
   } catch(err) {
     return undefined;
   }
-  
-   
 
   //console.log("begin validation");
 
@@ -80,15 +120,13 @@ async function validateUser(client, username, password) {
     );
     if(authRes === undefined) {
       throw "Query unsuccessful";
-      
+
     }
  } catch(err) {
     //console.log(err);
       return {
         userId: undefined,
-        reason: "Cannot Connect"
       };
-    
     }
     //console.log(authRes);
     if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
@@ -98,7 +136,7 @@ async function validateUser(client, username, password) {
         reason: "Username or password is incorrect"
       };
     }
-  
+
   // Check if user is not banned
   const banRes = await client.query(
     "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",

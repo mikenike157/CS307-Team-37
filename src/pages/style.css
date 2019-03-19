@@ -121,3 +121,14 @@ body {
     margin: 0 auto;
     display: inherit;
 }
+/*Room options style */
+.block {
+  display: block; /* Make the buttons appear below each other */
+}
+.logButtons {
+	width: 34%;
+}
+
+.bet {
+	width: 100%
+}
