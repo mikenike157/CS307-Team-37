@@ -3,7 +3,66 @@
 <head>
 	<title>Poker Game</title>
 	<link rel="stylesheet" type="text/css" href="style.css">	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/fabric.js/2.4.6/fabric.min.js"></script>
+	<script src="socket.io.js"></script>
+	<script type ="text/javascript" src="display.js"></script>
+
+	<script type="text/javascript">
+	
+		//Moved chat.html functionality to game page
+		const socket = io()
+		// on connection to server, ask for user's name with an anonymous callback
+		socket.on('connect', function(){
+			// call the server-side function 'adduser' and send one parameter (value of prompt)
+			let name = "guest";
+			$(function () {
+				$.get('http://localhost/update_username', function(chatMessage, textStatus) {
+					console.log(chatMessage);
+					name = chatMessage;
+					console.log(name);
+					socket.emit('adduser', name);
+				});
+			})
+
+		}); 
+
+		// listener, whenever the server emits 'updatechat', this updates the chat body
+		socket.on	('updatechat', function (username, chatMessage) {
+			console.log(chatMessage);
+			$('#chatDisplay').append('<b>'+username + ':</b> ' + chatMessage + '<br>');
+		});
+
+		socket.on  ('updatedisplay', function(value, name){
+			console.log(name + ": " + value);
+		});
+
+		// listener, whenever the server emits 'updaterooms', this updates the room the client is in
+
+		// on load of page
+		$(function(){
+
+			drawRoom("pokerDisplay",$("#pokerDisplay").height(), $("#pokerDisplay").width());
+			
+			// when the client clicks SEND
+			$('#chatSubmit').click( function() {
+				var message = $('#chatMessage').val();
+				$('#chatMessage').val('');
+				// tell server to execute 'sendchat' and send along one parameter
+				socket.emit('sendchat', message);
+			});
+
+			// when the client hits ENTER on their keyboard
+			$('#chatMessage').keypress(function(e) {
+				if(e.which == 13) {
+					$(this).blur();
+					$('#chatSubmit').focus().click();
+				}
+			});
+		});
+	</script>
 </head>
+
 <body>
 	<canvas id="pokerDisplay">
 		
@@ -25,10 +84,8 @@
 				
 			</div>
 			<div id="chatInputField">
-				<form>
-					<input type="text" name="chatMessage">
-					<input type="submit" name="chatSubmit" value="submit">
-				</form>
+				<input id="chatMessage">
+				<input type="button" id="chatSubmit" value="submit">
 			</div>
 		</div>
 		<div class="sub-container" id="hintBox">

@@ -110,8 +110,9 @@ body {
 }
 
 #chatDisplay {
-    min-height: 120px;
+    height: 120px;
     border: 2px solid #000;
+    overflow-y: scroll;
 }
 
 #hintBox input {

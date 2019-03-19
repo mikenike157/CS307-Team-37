@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script>
+  var socket = io();
+
+  $(function() {
+    $('submit').click( function() {
+      
+
+    })
+  })
+
+  })
+</script>
+<html>
+<head>
+	<title>Host Game</title>
+</head>
+<body>
+    <input type="button" id="submit" value="Check"/>
+    <input type="button" id="submit2" value="Raise"/>
+    <input type="button" id="submit3" value="Fold"/>
+</body>
+</html>
