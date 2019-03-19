@@ -2,26 +2,149 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 <script>
+
+	var idleCounter = 0;
+	var timer;
+	var pot = "Pot";
+	var amountToCall = "Call Amount";
+	var chips = "Total Chips";
+	function updateScreen(newPot, newAmountToCall, newChips) {
+		pot = newPot;
+		amountToCall = newAmountToCall;
+		chips = newChips;
+		document.getElementById('fullPotTab').innerHTML=pot;
+		document.getElementById('amountToCall').innerHTML=amountToCall;
+		document.getElementById('chips').innerHTML=chips;
+	}
+	function setTimer() {
+
+	}
+
+	function autoFold() {
+		document.getElementById('fold').click();
+	}
+
 	var socket = io();
 	//on connection to page load the username and call adduser on server side
 	socket.on('connect', function() {
-		let name = "guest";
-		socket.emit('adduser', name);
-	})
+		$(function() {
+			let name = "guest";
+			let room = "null";
+			$.ajax({
+				async: false,
+				type: 'GET',
+				url: 'http://localhost/update_username',
+				success: function(data) {
+					name = data;
+					console.log(name);
+				}
+			})
+			$.ajax({
+				async: false,
+				type: 'GET',
+				url: 'http://localhost/update_room',
+				success: function(data) {
+					room = data;
+					console.log(room);
+				}
+			})
+			socket.emit('adduser', name, room);
+		})
+	});
+
+	socket.on('updateScreen', function(pot, amountToCall, chips) {
+			updateScreen(pot, amountToCall, chips);
+	});
 	//on fold button press call the fold method on server side
 
-	socket.on	('updatechat', function (data) {
-		$('#chatDisplay').append(':</b> ' + data + '<br>');
+	socket.on('updateTurn', function() {
+		/*
+		if (idleCounter == 0) {
+			timer = setTimeout(autofold, 3000)
+			idleCounter++;
+		}
+		else if (idleCounter != 5) {
+			timer = setTimeout(autofold, 20000);
+			idleCounter++;
+		}
+		else {
+			document.getElementById('leave').click();
+		}
+		*/
+		if (idleCounter == 0) {
+			setTimeout(autoFold, 60000)
+			idleCounter++;
+		}
+		else if (idleCounter < 5) {
+			setTimeout(autoFold, 2000);
+			idleCounter++;
+		}
+		else {
+			document.getElementById('leave').click();
+		}
+
+	})
+
+	socket.on	('updatechat', function (username, data) {
+		$('#chatDisplay').append(username + ':</b> ' + data + '<br>');
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	});
 
+	socket.on('dealCards', function(cards) {
+		$('#chatDisplay').append("Cards: " + cards + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	})
+
+	socket.on('winner', function(data) {
+		$('#chatDisplay').append("The winners of the hand are: " + data + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	})
+
+	socket.on('flop', function(data) {
+		$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	})
+
+	socket.on('turn', function(data) {
+		$('#chatDisplay').append("Turn: " + data.toString() + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	})
+
+	socket.on('river', function(data) {
+		$('#chatDisplay').append("River: " + data.toString() + '<br>');
+		let obj = document.getElementById("chatDisplay");
+		obj.scrollTop = obj.scrollHeight;
+	})
+
 	$(function() {
-		$('fold').click( function() {
-			socket.emit('playerFold');
+		$('#raise').click( function() {
+			idleCounter = 0;
+			clearTimeout(timer);
+			let betAmount = document.getElementById("customBet").value;
+			socket.emit('playerRaise', betAmount);
 		})
 	})
 
+	$(function() {
+		$('#call').click( function() {
+			idleCounter = 0;
+			clearTimeout(timer);
+			socket.emit('playerCall');
+		})
+	})
+
+	$(function() {
+		$('#fold').click( function() {
+			idleCounter = 0;
+			clearTimeout(timer);
+			socket.emit('playerFold');
+		})
+	})
 	$(function(){
 		// when the client clicks SEND
 		$('#send').click( function() {
@@ -30,7 +153,6 @@
 			// tell server to execute 'sendchat' and send along one parameter
 			socket.emit('sendchat', message);
 		});
-
 		// when the client hits ENTER on their keyboard
 		$('#text').keypress(function(e) {
 			if(e.which == 13) {
@@ -39,6 +161,8 @@
 			}
 		});
 	});
+
+
 
 </script>
 
@@ -56,15 +180,12 @@
 	<div id="gameBar">
 		<div class="sub-container" id="chatBox">
 			<div class="tab-select">
-				<div class="tab-head" id="chat">
-					chat
-				</div>
-				<div class="tab-head" id="history">
-					History
-				</div>
-				<div class="tab-head" id="hintLog">
-					Hint Log
-				</div>
+
+				<input class="logButtons" type="button" id="chatButton" value="Chat">
+
+				<input class="logButtons" type="button" id="histButton" value="History">
+
+				<input class="logButtons" type="button" id="hintLogButton" value="Hint Log">
 			</div>
 			<div id="chatDisplay" style="overflow-y:scroll">
 
@@ -80,23 +201,24 @@
 		</div>
 		<div class="sub-container" id="playerActions">
 			<div class="tab-select">
-				<div class="tab-head" id="halfPotTab">
-					1/2 Pot
+				<div class="tab-head" id="amountToCall">
+				Amount To Call
 				</div>
+
 				<div class="tab-head" id="fullPotTab">
-					Pot
+				Pot
 				</div>
-				<div class="tab-head" id="allInTab">
-					All In
+				<div class="tab-head" id="chips">
+					Total Chips
 				</div>
 				<div class="tab-head" id="customTab">
-					Custom Amount
+					<input class="bet" type="number" id="customBet" name="customBet" min="0">
 				</div>
 			</div>
 			<div id="playerActionButtons">
-				<input type="button" name="Fold" value="Fold">
-				<input type="button" name="Call" value="Call">
-				<input type="button" ame="Raise" value="Raise">
+				<input type="button" id="fold" name="Fold" value="Fold" onclick="myVar = setTimeout()">
+				<input type="button" id="call" name="Call" value="Call">
+				<input type="button" id="raise" name="Raise" value="Raise">
 			</div>
 		</div>
 	</div>

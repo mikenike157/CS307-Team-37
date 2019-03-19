@@ -10,6 +10,13 @@ const DEFAULT_CHIPS = 100;
   * securityAnswer: answer to question
 */
 
+
+async function getRooms(client) {
+  const res = await client.query("SELECT * FROM Games");
+  console.log(res);
+  return res;
+}
+
 async function createUser(client, userinfo) {
   /*if (userinfo.username === "" || userinfo.password === ""){
     console.log( "empty username or password" );
@@ -123,7 +130,7 @@ async function validateUser(client, username, password) {
         userId: undefined,
       };
     }
-    console.log(authRes);
+    console.log("HERE: " + authRes);
     if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
       console.log("incorrect");
       return {

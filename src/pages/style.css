@@ -51,6 +51,8 @@ body {
 
 .tab-head {
 	text-align: center;
+	width: 100%;
+	display: flex;
 	flex: auto;
 	border: 2px solid #000;
 	padding: 4px;
@@ -99,4 +101,15 @@ body {
 	height: 80%;
 	margin: 0 auto;
 	display: inherit;
+}
+/*Room options style */
+.block {
+  display: block; /* Make the buttons appear below each other */
+}
+.logButtons {
+	width: 34%;
+}
+
+.bet {
+	width: 100%
 }

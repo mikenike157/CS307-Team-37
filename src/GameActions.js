@@ -37,12 +37,14 @@ class Player {
         this.state = "NOTREADY";
         this.chips = chips;
         this.cards = [-1, -1];
+        this.fixedCards = [-1, -1];
         this.initialChips = chips; // Add
     }
 }
 
 this.addPlayer = function(socketid) {
   var player = new Player(socketid, 100);
+  console.log("NEW PLAYER: " + player);
   return player;
 }
 
@@ -91,6 +93,7 @@ this.startGame = function(game) {
   let fixedCards = fixCards(playerCards, tableCards);
   game.fixedPCards = fixedCards[0];
   game.fixedTCards = fixedCards[1];
+
   return game;
 }
 
@@ -99,31 +102,39 @@ this.startGame = function(game) {
 ///////////////////////////////////////
 
 function getPlayer(playerArray, playerID) {
-  player = new Player(-1, 1);
   for (var i = 0; i < playerArray.length; i++) {
-    if (players[i].playerID == playerID) {
-        player = players[i];
-        break;
+    if (playerArray[i].playerID == playerID) {
+      return i;
+      //  player = players[i];
+      //  break;
     }
   }
-  return player;
+  return -1;
 } // internal helper method
 
 this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
-  player = getPlayer(game.players, playerID);
+  console.log(raiseTo + " " + currentBet);
+  let playerIndex = getPlayer(game.players, playerID);
+  player = game.players[playerIndex];
+  console.log(player.chips);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
     var margin = raiseTo-player.lastBet;
     player.chips -= margin;
     player.state = "READY";
     player.lastBet = raiseTo;
+    game.players[playerIndex] = player;
+    game.currentPot += margin;
+    game.currentBet = raiseTo;
     return [game, player, margin];
   }
   return -1;
 }
 
 this.playerCall = function(game, playerID, currentBet) {
-  player = getPlayer(game.players, playerID);
+  let playerIndex = getPlayer(game.players, playerID);
+  player = game.players[playerIndex];
+
   if (player.chips >= currentBet) {
     var margin = currentBet-player.lastBet;
     player.chips -= margin;
@@ -134,17 +145,20 @@ this.playerCall = function(game, playerID, currentBet) {
   return -1;
 }
 
-this.playerFold = function(game, playerID) {
+this. Fold = function(game, playerID) {
   player = getPlayer(game.players, playerID);
   player.state = "FOLDED";
   return [game, player];
 }
 
 this.blind = function(game, playerID, amount) {
-  player = getPlayer(game.players, playerID);
-  player.chips -= amount;
-  player.lastBet = amount;
-  return [game, player];
+  console.log("FULL GAME: " + game);
+  let playerIndex = getPlayer(game.players, playerID);
+  console.log("Player Index: " + playerIndex);
+  player = game.players[playerIndex];
+  game.players[playerIndex].chips -= amount;
+  game.players[playerIndex].lastBet = amount;
+  return game;
 }
 
 this.allIn = function(game, playerID) {
@@ -222,6 +236,9 @@ function findCard(card) {
     }
     else if (card == 11) {
       return "KC"
+    }
+    else if (card == 12) {
+      return "AC";
     }
     else {
       return ((card+2) + "C");

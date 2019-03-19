@@ -39,7 +39,6 @@ var rooms = [];
 //let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
 //let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
 
-
 const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "src/pages/game.html")))
   //Testing login page
@@ -67,10 +66,43 @@ const server = express()
     */
   })
 
-  .post('/join_game', function(req, res) {
+  .get('/join_game', function(req, res) {
     /* Update the current players current room, redirect them to the game
     page.
     */
+    //console.log("IN JOIN GAME: " + req.session.user.username);
+    return res.redirect('/buttonDemo.html');
+  })
+  .post('/room_post', function(req, res) {
+    //console.log("IN ROOM POST: " + req.session.user.username);
+    req.session.user.room = req.body.room;
+    //console.log(req.session.user.room + " " + req.session.user.username);
+    return res.redirect('/game.html');
+  })
+
+  .post('/search_rooms', function(req, res) {
+    pool.connect()
+      .then(client => {
+        return lg.getRooms(client)
+        .then(rooms => {
+        client.release()
+        console.log(rooms);
+        if(!rooms){
+          console.log("No open rooms");
+          return res.redirect('/');
+        } else {
+          var header = "";
+          var body = "";
+
+          return res.redirect('/main.html');
+        }
+      })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+        return res.redirect('/')
+      })
+    });
   })
   //attempts to register new user in database
   .post('/register_post',  function(req, res){
@@ -140,6 +172,10 @@ const server = express()
   })
   //validates login credentials of user
   .post('/login_post',  function(req, res){
+    for (let i = 0; i < 3; i++) {
+      let room = createRoom("room" + (i+1));
+      rooms.push(room);
+    }
     console.log("begin login");
       //create promise that returns a user from the database
       //const result = lg.validateUser(client, req.body.username, req.body.password);
@@ -167,10 +203,11 @@ const server = express()
           })
 
         })
+
   })
 
   .get('/update_username', function(req,res){
-    console.log(req.session.user);
+    console.log("FROM USERNAME: " + req.session.user.username);
     if(req.session && req.session.user){
       return res.send(req.session.user.username);
     } else {
@@ -178,14 +215,31 @@ const server = express()
     }
   })
 
+  .get('/update_room', function(req, res) {
+    console.log("FROM ROOM: " + req.session.user);
+    if (req.session && req.session.user) {
+      return res.send(req.session.user.room);
+    }
+    else {
+      return res.send("nobody");
+    }
+  })
+
+  .get('/join_room', function(req, res) {
+    console.log(req.session.user);
+    if (req.session && req.session.user) {
+      currUser = req.session.user.username;
+
+    }
+  })
+
   .post('/')
 
   .listen(port, () => console.log(`Listening on ${ port }`));
 
-
 const io = sio(server);
 
-
+/*
 var players = [];
 var smallBlindPlacement = 0;
 var bigBlindPlacement = 1;
@@ -212,6 +266,8 @@ var fixedTCards = [];
 var tableCards = [];
 
 var usernames = {};
+*/
+
 
 // For all-in logic
 var sidePot = 0;
@@ -224,7 +280,7 @@ io.sockets.on('connection', function (socket) {
   /*
   socket.on('adduser', function(username){
     if (username != null) {
-      username = validator.escape(username);
+      username = validator.escape(usernameupda);
     }
     else {
       return;
@@ -249,26 +305,171 @@ io.sockets.on('connection', function (socket) {
     socket.broadcast.to('room1').emit('updatechat', 'SERVER', username + ' has connected to this room');
     socket.emit('updaterooms', rooms, 'room1');
     */
-    socket.on('adduser', function(username) {
-      socket.join('room1');
+    socket.on('adduser', function(username, room) {
+      // get room index and set up socket information
+      let currRoomIndex = findRoom(room);
+      socket.username = username;
+      socket.room = room;
+      //add a player to the room, set the returned room to currRoom
+      let currRoom = addPlayer(rooms[currRoomIndex], socket);
+      //if room was full
+      if (currRoom == null) {
+        return;
+      }
+      socket.join(room);
+      console.log(currRoom);
+      // if max numebr of players have joined
+      if (currRoom.players.length == currRoom.maxPlayers) {
+        currRoom = startGame(socket, currRoom);
+        for (let i = 0; i < currRoom.players.length; i++) {
+          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.current, currRoom.players[i].chips);
+        }
+      }
+      rooms[currRoomIndex] = currRoom;
+      console.log("JOINED ROOM");
+      return;
     })
 
-    socket.on('joinRoom', function(socket) {
-      //socket.room = //Figure out a way to get the room that the current request was sent from
-      //... all the house keeping variable setting
-      //var currGame = the game object in the array of games
-      if (currGame.players.length == maxPlayers) {
-        beginRound(socket);
-      }
-    })
     socket.on('sendchat', function (data) {
+      //console.log(data);
+      //make sure not empty
       if (data != "") {
         var newdata = validator.escape(data);
-        io.to(socket.id).emit('updatechat', newdata);
+        //
+        io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
         return;
       }
     });
+
+    socket.on('playerRaise', function(amount) {
+      console.log(amount);
+      let roomIndex = findRoom(socket.room);
+      let currRoom = rooms[roomIndex];
+      //if (amount == 0) {
+
+      //}
+      //checks if there is a game running, if not dont do anything
+      if (currRoom.gameStatus == 0) {
+        return;
+      }
+      //checks if it is the current players turn
+      if (!validatePlayer(socket)) {
+        return;
+      }
+      //start raise logic
+      var currPlayer = currRoom.players[currRoom.currentPlayer];
+      var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
+      //if the raise failed / they do not have enough chips
+      if (retArray == -1) {
+        io.sockets.in(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
+        return;
+      }
+      //make the current room equal to the output of the raise logic
+      currRoom = retArray[0];
+      // Added: If some prior player was all-in, divert amount to main pot and side pot
+      for (var i = 0; i < currRoom.players.length; i++)
+      {
+        if (currRoom.players[i].state == "ALLIN") {
+          currRoom.sidePot += (retArray[1]-mainPot);
+          mainPot += mainPot;
+          break;
+        }
+      }
+
+      for (var i = 0; i < currRoom.players.length; i++) {
+        if (currRoom.players[i].state == "READY") {
+          currRoom.players[i].state = "NOTREADY";
+        }
+      }
+      currRoom.players[currRoom.currentPlayer].state = "READY";
+      /*Update the socket emits and checking the ready state
+      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
+      checkReadyState(socket)
+      */
+      rooms[roomIndex] = currRoom;
+      checkReadyState(socket)
+    })
+
+    socket.on('playerCall', function() {
+      let roomIndex = findRoom(socket.room);
+      let currRoom = rooms[roomIndex];
+
+      if (currRoom.gameStatus == 0) {
+        io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        return;
+      }
+      if (currRoom.currentBet == 0) {
+        currRoom.players[currRoom.currentPlayer].state = "READY";
+        //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
+        //FIX EMITS
+      }
+      else {
+        var amount = currRoom.currentBet;
+        var retArray = game.playerCall(currRoom, currRoom.players[currRoom.currentPlayer].playerID, currRoom.currentBet);
+        if (retArray == -1) {
+          currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
+          currRoom.players[currRoom.currentPlayer].chips = 0;
+          currRoom.players[currRoom.currentPlayer].state = "ALLIN";
+        }
+        else {
+
+          // Added: If some prior player was all-in, divert amount to main pot and side pot
+          for (var i = 0; i < currRoom.players.length; i++)
+          {
+            if (currRoom.players[i].state == "ALLIN") {
+              sidePot += (retArray[1]-mainPot);
+             mainPot += mainPot;
+             break;
+           }
+          }
+
+          currRoom.currentPot += retArray[2];
+          currRoom.players[currRoom.currentPlayer] = retArray[1];
+          rooms[currRoom] = currRoom;
+          //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
+        }
+      }
+      checkReadyState(socket)
+    })
+    socket.on('playerFold', function() {
+      console.log("Registered fold click");
+      let roomIndex = findRoom(socket.room);
+      let currRoom = rooms[roomIndex];
+      if (currRoom.gameStatus == 0) {
+        //io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        console.log("not this players turn");
+        return;
+      }
+      currRoom.players[currRoom.currentPlayer].state = "FOLDED";
+      var counter = 0;
+      for (var i = 0; i < currRoom.players.length; i++) {
+        if (currRoom.players[i].state == "FOLDED") {
+          counter++;
+        }
+      }
+      if (counter == currRoom.players.length-1) {
+        currRoom.gameState = 3;
+        progressGame(socket);
+      }
+      checkReadyState(socket);
+    })
 });
+
+function findRoom(roomName) {
+  for (let i = 0; i < rooms.length; i++) {
+    if (rooms[i].name == roomName) {
+      return i;
+    }
+  }
+  return "ERR";
+}
+
 /*
   // when the client emits 'sendchat', this listens and executes
   socket.on('sendchat', function (data) {
@@ -486,75 +687,119 @@ io.sockets.on('connection', function (socket) {
   });
 });
 */
+
+function addPlayer(currRoom, socket) {
+  currRoom = room.addPlayer(currRoom, socket);
+  return currRoom;
+}
+
+function startGame(socket, currRoom) {
+  currRoom.gameStatus = 1;
+  currRoom.gameState = 0;
+  currRoom.smallBlindPlacement = 0;
+  currRoom.bigBlindPlacement = 1;
+  currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+  currRoom = beginRound(socket, currRoom);
+
+  return currRoom;
+}
+
+
 function checkReadyState(socket) {
-  var k = 0;
-  for (var i = currentPlayer; k < players.length; i++) {
-    if (i >= players.length) {
+  let currRoomIndex = findRoom(socket.room);
+  let currRoom = rooms[currRoomIndex];
+  let k = 0;
+  for (let i = currRoom.currentPlayer; k < currRoom.players.length; i++) {
+    if (i >= currRoom.players.length) {
       i = 0;
     }
-    if (players[i].state == "NOTREADY") {
-      currentPlayer = i;
+    if (currRoom.players[i].state == "NOTREADY") {
+      currRoom.currentPlayer = i;
       break;
     }
     k++;
   }
-  if (k == players.length) {
-    progressGame(socket)
+  if (k == currRoom.players.length) {
+    currRoom = progressGame(socket)
   }
+  for (let i = 0; i < currRoom.players.length; i++) {
+    io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+
+  }
+  io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "It is your turn");
+  io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updateTurn");
+
+  rooms[currRoomIndex] = currRoom;
 }
 
 function beginRound(socket, currGame) {
-  currentPot = 0;
+  currGame.currentPot = 0;
 
   console.log("Hello world")
 
   // Call GameAction.js to get cards
   var newGame = game.startGame(currGame);
+
   //playerCards = cards[0];
   //tableCards = cards[1];
 
   // Initialize player cards
   //fixedPCards = fixedCards[0];
   //fixedTCards = fixedCards[1];
-  for (var i = 0; i < currGame.players.length; i++) {
-    currGame.players[i].lastBet = 0;
-    currGame.players[i].cards = playerCards[i];
+
+  //Michael: Note i'm changing all of these from currGame. to newGame.
+  //at the end of this, it will return newGame and the index of the current game
+  //in rooms will be replaced by this.
+  for (var i = 0; i < newGame.players.length; i++) {
+    newGame.players[i].lastBet = 0;
+    //This is what deals the cards
+    newGame.players[i].cards = newGame.playerCards[i];
+    newGame.players[i].fixedCards = newGame.fixedPCards[i];
   }
 
   // Small blind
-  var temp = game.blind(players[smallBlindPlacement], 1);
-  currentPot += 1
-  game.players[smallBlindPlacement] = temp;
+  newGame = game.blind(newGame, newGame.players[newGame.smallBlindPlacement].playerID, newGame.smallBlind);
+  newGame.currentPot += newGame.smallBlind;
+  //game.players[smallBlindPlacement] = temp;
 
   // Big blind
-  temp = game.blind(players[bigBlindPlacement], 2);
-  currentPot += 2;
-  currentBet = 2;
-  players[bigBlindPlacement] = temp;
+  newGame = game.blind(newGame, newGame.players[newGame.bigBlindPlacement].playerID, newGame.bigBlind);
+  newGame.currentPot += newGame.bigBlind;
+  newGame.currentBet = newGame.bigBlind;
+  //players[bigBlindPlacement] = temp;
 
   //printInfo(socket);
-  console.log(players)
+  for (let i = 0; i < newGame.players.length; i++) {
+    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i]);
+    io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
+  }
+  console.log(newGame.players)
+  io.to(newGame.players[newGame.currentPlayer].playerID).emit("updatechat", "it is your turn");
+  io.to(newGame.players[newGame.currentPlayer].playerID).emit("updateTurn");
+
+  return newGame;
 }
 
-function resetStates()
+function resetStates(currRoom)
 {
-  for (var i = 0; i < players.length; i++)
+  for (var i = 0; i < currRoom.players.length; i++)
   {
-      if (players[i].state != "FOLDED")
+      if (currRoom.players[i].state != "FOLDED")
       {
-        players[i].state = "NOTREADY";
-        players[i].lastBet = 0;
+        currRoom.players[i].state = "NOTREADY";
+        currRoom.players[i].lastBet = 0;
       }
   }
 }
 
 function progressGame(socket) {
+  //get the room the request was sent from
+  let currRoom = rooms[findRoom(socket.room)];
 
-  if (gameState == 0) { // Pre-flop
-    var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
-    console.log("Players At State 1: ")
-    console.log(players);
-    resetStates();
+  //check if the game is preflop
+  if (currRoom.gameState == 0) { // Pre-flop
+    var flop = [currRoom.fixedTCards[0], currRoom.fixedTCards[1], currRoom.fixedTCards[2]]
+    resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -563,13 +808,14 @@ function progressGame(socket) {
       }
     }
     */
-    currentPlayer = (currentPlayer + 1) % players.length;
+    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    gameState++;
-    currentBet = 0;
+    currRoom.gameState++;
+    currRoom.currentBet = 0;
+    io.sockets.in(socket.room).emit('flop', flop);
   }
-  else if (gameState == 1) { // Flop
-    resetStates();
+  else if (currRoom.gameState == 1) { // Flop
+    resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -578,13 +824,14 @@ function progressGame(socket) {
       }
     }
     */
-    currentPlayer = (currentPlayer + 1) % players.length;
+    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    gameState++;
-    currentBet = 0;
+    currRoom.gameState++;
+    currRoom.currentBet = 0;
+    io.sockets.in(socket.room).emit('turn', currRoom.fixedTCards[3])
   }
-  else if (gameState == 2) { // Turn
-    resetStates();
+  else if (currRoom.gameState == 2) { // Turn
+    resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -593,98 +840,105 @@ function progressGame(socket) {
       }
     }
     */
-    currentPlayer = (currentPlayer + 1) % players.length;
+    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    gameState++;
-    currentBet = 0;
+    currRoom.gameState++;
+    currRoom.currentBet = 0;
+    io.sockets.in(socket.room).emit('river', currRoom.fixedTCards[4])
+
   }
-  else if (gameState == 3) { // River
-    console.log("IN GAME STATE 3")
+  else if (currRoom.gameState == 3) { // River
 
     var handRanks = [];
-    for (var i = 0; i < playerCards.length; i++) {
-      if (players[i].state != "FOLDED") {
-        var hand = hf.finalhand(playerCards[i], tableCards)
+    for (var i = 0; i < currRoom.playerCards.length; i++) {
+      if (currRoom.players[i].state != "FOLDED") {
+        var hand = hf.finalhand(currRoom.playerCards[i], currRoom.tableCards)
         var matchArray = hf.match(hand);
         var handArray0 = hf.kinds(matchArray);
         var handArray1 = hf.flushAndStraight(hand,matchArray);
         if(handArray0[0]>handArray1[0]){
           handRanks.push(handArray0);
-          players[i].handRank = handArray0;
+          currRoom.players[i].handRank = handArray0;
         }
         else {
           handRanks.push(handArray1);
-          players[i].handRank = handArray1;
+          currRoom.players[i].handRank = handArray1;
         }
       }
     }
 
     console.log("WINNER HAS BEEN CALCULATED")
-    winner = hf.findWinner(handRanks)
+    let winner = hf.findWinner(handRanks)
 
     var winnersArr = []
     var winString = winner.toString();
     console.log(winString);
 
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].state != "FOLDED") {
-       var handRankString = players[i].handRank.toString();
+    for (var i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state != "FOLDED") {
+       var handRankString = currRoom.players[i].handRank.toString();
        console.log(handRankString);
        if (handRankString == winString) {
          console.log("WINNER FOUND");
-          winnersArr.push(players[i].username);
-          delete players[i].handRank
+          //winnersArr.push(currRoom.players[i].username);
+          winnersArr.push(currRoom.players[i]);
+          delete currRoom.players[i].handRank
        }
       }
     }
 
     //Modulo the hand winnings add that to whatever players
-    var winnings = Math.floor((currentPot / winnersArr.length));
-    for (var i = 0; i < winnersArr.length; i++) {
-      io.sockets.in(socket.room).emit('updatechat', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
+    //At this point we have an array of the usernames of winners.
+    var winnings = Math.floor((currRoom.currentPot / winnersArr.length));
+    let winnersNames = [];
+    for (let k = 0; k < winnersArr.length; k++) {
+      winnersNames.push(winnersArr[k].playerID)
     }
+    io.sockets.in(socket.room).emit('winner', winnersNames.toString());
 
-    for (var i = 0; i < players.length; i++) {
+    /*for (var i = 0; i < winnersArr.length; i++) {
+      io.sockets.in(socket.room).emit('winners', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
+    }
+    */
+    for (var i = 0; i < currRoom.players.length; i++) {
       for (var j = 0; j < winnersArr.length; j++) {
-        if (players[i].username == winnersArr[j]) {
-          players[i].chips += winnings;
+        if (currRoom.players[i].playerID == winnersArr[j].playerID) {
+          currRoom.players[i].chips += winnings;
+          console.log(currRoom.players[i].chips);
         }
       }
-      players[i].state = "NOTREADY";
-      players[i].lastBet = 0;
+      currRoom.players[i].state = "NOTREADY";
+      currRoom.players[i].lastBet = 0;
     }
 
-    console.log("Players After Winnings");
-    console.log(players);
-
-    for (var i = 0; i < players.length; i++) {
-      if (players[i].chips == 0) {
-        io.sockets.in(socket.room).emit('updatechat', "Server", players[i].username + " is out.");
-        players.splice(i, 1);
+    for (var i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].chips == 0) {
+        io.sockets.in(socket.room).emit('lost', currRoom.players[i].playerID);
+        currRoom.players.splice(i, 1);
       }
     }
 
-    if (players.length == 1) {
-      io.sockets.in(socket.room).emit('updatechat', "Server", players[0].username + " is the winner!!");
-      gameStatus = 0;
+    if (currRoom.players.length == 1) {
+      io.sockets.in(socket.room).emit('finalWinner', currRoom.players[0].playerID);
+      currRoom.gameStatus = 0;
       return;
     }
 
     // Reset round
-    gameState = 0;
-    currentPot = 0;
-    currentBet = 0;
-    smallBlindPlacement = bigBlindPlacement;
-    bigBlindPlacement = (bigBlindPlacement + 1) % players.length;
-    currentPlayer = (bigBlindPlacement + 1) % players.length;
+    currRoom.gameState = 0;
+    currRoom.currentPot = 0;
+    currRoom.currentBet = 0;
+    currRoom.smallBlindPlacement = currRoom.bigBlindPlacement;
+    currRoom.bigBlindPlacement = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+    currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
 
     // Begin new round
-    beginRound(socket);
-    console.log("Made it to here");
+    currRoom = beginRound(socket, currRoom);
   } // end of last else chunk
+  return currRoom;
 } // end of progressGame()
 
-function printInfo(socket) {
+function sendLog(socket) {
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
   io.sockets.in(socket.room).emit('updatechat', "Server", "Current Bet: " + currentBet);
   for (var i = 0; i < players.length; i++) {
@@ -710,13 +964,17 @@ function printInfo(socket) {
 }
 
 function validatePlayer(socket) {
-  for (var i = 0; i < players.length; i++) {
-    if (players[i].playerID == socket.id) {
-      if (currentPlayer == i) {
+  let currRoomIndex = findRoom(socket.room);
+  let currRoom = rooms[currRoomIndex];
+  let playerList = currRoom.players;
+  for (var i = 0; i < playerList.length; i++) {
+    if (playerList[i].playerID == socket.id) {
+      if (currRoom.currentPlayer == i) {
         return true;
       }
       else {
-        io.to(players[i].playerID).emit('updatechat', "Server: ", "It is not your turn");
+        //FIX EMITS
+        //io.to(players[i].playerID).emit('updatechat', "Server: ", "It is not your turn");
         return false;
       }
     }
@@ -726,10 +984,11 @@ function validatePlayer(socket) {
 
 
 function joinRoom(socket, newRoom) {
+  var joinRoom = findCurrentRoom()
   var player = game.addPlayer(socket.id);
   var i = 0;
   for (i = 0; i < rooms.length; i++) {
-    if (newRoom = rooms[i].name) {
+    if (newRoom == rooms[i].name) {
       break;
     }
   }
@@ -741,8 +1000,9 @@ function joinRoom(socket, newRoom) {
 }
 
 //Will take the game options as arguments
-function createRoom() {
+function createRoom(name) {
   //Do stuff with the database here. Insert into the games table
-  var newRoom = room.createRoom();
+  var newRoom = room.createRoom(name);
+  console.log(newRoom);
   rooms.push(newRoom);
 }
