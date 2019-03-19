@@ -28,7 +28,7 @@ function possibility(tableArray,matchArray,numTableCards) {
 	rArray[1] = 1;
 	
 	 for(var k = 0; k < matchArray.length; k++){
-		  if(matchArray[k] > currentHighMatch){
+		  if(matchArray[k] >= currentHighMatch){
 			  secondhighmatch = currentHighMatch
 			  currentHighMatch = matchArray[k];
 		  }
@@ -118,6 +118,7 @@ function possibility(tableArray,matchArray,numTableCards) {
 	  }
 
 	  //fullhouse
+	  console.log(secondhighmatch);
 	  if((cardsleft >= 3) || (secondhighmatch == 2 && currentHighMatch == 3) || (currentHighMatch >= 3 && cardsleft >= 1) || (currentHighMatch >= 2 && cardsleft >= 2) || (secondhighmatch>=2 && cardsleft >= 1)){
 			 rArray[6] = 1;		 
 	  }else{
@@ -231,6 +232,7 @@ function possibility(tableArray,matchArray,numTableCards) {
 	  if(doubleCounter >= 2 && !fullHouse){
 		  twoPair = true;
 	  }
+	  
 	  	  
 	  var flush = false;
 	  var flushArrayHolder = new Array(5);
@@ -321,7 +323,7 @@ function possibility(tableArray,matchArray,numTableCards) {
 		  rArray[3] = 2;
 	  }if (twoPair){
 		  rArray[2] = 2;
-	  }if(doubleCounter == 1){
+	  }if(doubleCounter >= 1){
 		  rArray[1] = 2;
 	  } 	  
 	 
