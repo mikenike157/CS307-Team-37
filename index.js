@@ -591,9 +591,10 @@ function progressGame(socket) {
     updateSidePots();
     
     // TODO get: var winnersArray = [player object with highest hand rank, player object with next highest hand rank, ...]
-    // then call: var finalArray = distributeWinnings(winnersArray); 
+    // var finalArray = distributeWinnings(winnersArray); // uncomment
     // once that is done, the commented out code below shouldn't be needed
     // just iterate through finalArray or players array to see changes
+    
     
     /* 
     var handRanks = [];
