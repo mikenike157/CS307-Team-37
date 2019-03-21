@@ -590,9 +590,12 @@ function progressGame(socket) {
     console.log("IN GAME STATE 3")
     updateSidePots();
     
-    // TODO: get winnersArray = [player object with highest hand rank, player object with next highest hand rank, ...]
-    // then call distributeWinnings(winnersArray)
+    // TODO get: var winnersArray = [player object with highest hand rank, player object with next highest hand rank, ...]
+    // then call: var finalArray = distributeWinnings(winnersArray); 
+    // once that is done, the commented out code below shouldn't be needed
+    // just iterate through finalArray or players array to see changes
     
+    /* 
     var handRanks = [];
     for (var i = 0; i < playerCards.length; i++) {
       if (players[i].state != "FOLDED") {
@@ -661,6 +664,7 @@ function progressGame(socket) {
       gameStatus = 0;
       return;
     }
+    */
     
     // Reset game
     gameState = 0;
@@ -772,6 +776,7 @@ function updateSidePots() {
     }
   }
 }
+var finalArray = []; 
 function distributeWinnings(winnersArray) {
   var pot = game.currentPot; // 
   if (pot < 0) {
@@ -794,8 +799,9 @@ function distributeWinnings(winnersArray) {
     player.currentChips += pot;
     pot -= pot;
   }
-  winnersArray.shift();
+  finalArray.push(winnersArray.shift());
   distributeWinnings(winnersArray, pot);
+  return finalArray;
 }
 
 ////////////////////////////////////////
