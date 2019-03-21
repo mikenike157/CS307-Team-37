@@ -560,6 +560,7 @@ function progressGame(socket) {
     console.log("Players At State 1: ")
     console.log(players);
     
+    updateSidePots();
     resetStates();
 
     currentPlayer = (currentPlayer + 1) % players.length;
@@ -568,6 +569,7 @@ function progressGame(socket) {
     currentBet = 0;
   } 
   else if (gameState == 1) { // Flop 
+    updateSidePots();
     resetStates();
 
     currentPlayer = (currentPlayer + 1) % players.length;
@@ -576,6 +578,7 @@ function progressGame(socket) {
     currentBet = 0;
   }
   else if (gameState == 2) { // Turn
+    updateSidePots();
     resetStates();
 
     currentPlayer = (currentPlayer + 1) % players.length;
@@ -585,6 +588,10 @@ function progressGame(socket) {
   }
   else if (gameState == 3) { // River
     console.log("IN GAME STATE 3")
+    updateSidePots();
+    
+    // TODO: get winnersArray = [player object with highest hand rank, player object with next highest hand rank, ...]
+    // then call distributeWinnings(winnersArray)
     
     var handRanks = [];
     for (var i = 0; i < playerCards.length; i++) {
@@ -610,7 +617,7 @@ function progressGame(socket) {
     var winnersArr = []
     var winString = winner.toString();
     console.log(winString);
-
+    
     for (var i = 0; i < players.length; i++) {
       if (players[i].state != "FOLDED") {
        var handRankString = players[i].handRank.toString();
@@ -655,7 +662,7 @@ function progressGame(socket) {
       return;
     }
     
-    // Reset round
+    // Reset game
     gameState = 0;
     currentPot = 0;
     currentBet = 0;
@@ -663,11 +670,13 @@ function progressGame(socket) {
     bigBlindPlacement = (bigBlindPlacement + 1) % players.length;
     currentPlayer = (bigBlindPlacement + 1) % players.length;
     
-    // Begin new round
+    // Begin new game
     beginRound(socket);
     console.log("Made it to here");
   } // end of last else chunk
 } // end of progressGame()
+
+
 
 //////////////////////////////
 /* Called in SENDCHAT */
@@ -735,6 +744,59 @@ function fixCards(pCards, tCards) {
     console.log(retPCards + " " + retTCards);
     return [retPCards, retTCards];
   }
+
+//////////////////////////////////////////////////////
+/* For all-in logic                                 */
+/* 1. updateSidePots -- Called between rounds       */ 
+/* 2. distributeWinnings -- Called after game ends  */
+//////////////////////////////////////////////////////
+function updateSidePots() {
+  var players = game.players; // 
+  var totalPot = game.currentPot; // 
+  for (var i = 0; i < players.length; i++) {
+    if (players[i].state == "ALLIN_OK") continue;
+    for (var j = 0; j < players.length; j++) {
+      if (i == j) continue;
+      if (players[i].lastBet > players[j].lastBet) { // originally players[j].totalBet
+        players[i].sidePot += players[j].lastBet; // originally players[j].totalBet
+      } else {
+        players[i].sidePot += players[i].lastBet;
+      }
+    }
+    if (players[i].state == "ALLIN") {
+      players[i].state = "ALLIN_OK";
+      players[i].sidePot += players[i].lastBet;
+    } else if (players[i].state != "FOLDED") {
+      players[i].state = "NOTREADY";
+      players[i].sidePot = totalPot;
+    }
+  }
+}
+function distributeWinnings(winnersArray) {
+  var pot = game.currentPot; // 
+  if (pot < 0) {
+    console.log("ERROR: Negative pot"); return;
+  } else if (pot === 0 || winnersArray.length === 0) return;
+
+  var player = winnersArray[0];
+  var sidePot = player.sidePot;
+  if (player.state == "ALLIN_OK") {
+    if (sidePot < pot) {
+      player.currentChips += sidePot;
+      pot -= sidePot;
+    } else
+    {
+      player.currentChips += pot;
+      pot -= pot;
+    }
+  } else
+  {
+    player.currentChips += pot;
+    pot -= pot;
+  }
+  winnersArray.shift();
+  distributeWinnings(winnersArray, pot);
+}
 
 ////////////////////////////////////////
 /* Maps integer to cardname string */ 
