@@ -23,35 +23,24 @@ async function createUser(client, userinfo) {
     return undefined;
   }*/
 
-  try{
-    if (userinfo.username === "" || userinfo.password === ""){
-       console.log( "empty username or password" );
-       throw "Error";
-    }
-  } catch(err) {
-    return false
+  if (userinfo.username === "" || userinfo.password === ""){
+    throw "Username and password cannot be empty";
   }
-
-  console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
-
-  console.log(hash);
+  const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
+    type: argon2.argon2i
+  });
 
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
-    [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
+    [userinfo.username, hash, userinfo.securityQuestion, securityAnswerHash, DEFAULT_CHIPS]);
 
-  console.log("client released");
-
-  return{
-  //returns user info for session purposes
-      userId: res.rows[0]["user_id"],
-      username: res.rows[0]["username"],
-      password: userinfo.password
-  };
+  // I don't know why someone changed this to return the username and password
+  // as well. These are already known to the caller!
+  return res.rows[0]["user_id"];
 }
 
 /*
@@ -99,45 +88,37 @@ async function getSecurityQuestion(client, username) {
 async function validateUser(client, username, password) {
   // Check if username and password is valid
 
-  try{
-    if (username === "" || password === ""){
-       console.log( "empty username or password" );
-       throw "Error";
-
-    }
-  } catch(err) {
-    return undefined;
+  if (username === "" || password === ""){
+    return {
+      userId: undefined,
+      reason: "Username and password must not be empty",
+    };
   }
-
-
-
-  console.log("begin validation");
 
   let authRes = [];
 
   try {
-     authRes = await client.query(
+    authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
       [username]
     );
-    if(authRes === undefined) {
+    if (authRes === undefined) {
       throw "Query unsuccessful";
-
     }
- } catch(err) {
+  } catch (err) {
     console.log(err);
-      return {
-        userId: undefined,
-      };
-    }
-    console.log("HERE: " + authRes);
-    if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
-      console.log("incorrect");
-      return {
-        userId: undefined,
-        reason: "Username or password is incorrect"
-      };
-    }
+    return {
+      userId: undefined,
+      reason: "Cannot connect to database",
+    };
+  }
+
+  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
+    return {
+      userId: undefined,
+      reason: "Username or password is incorrect"
+    };
+  }
 
   // Check if user is not banned
   const banRes = await client.query(
@@ -151,11 +132,10 @@ async function validateUser(client, username, password) {
       reason: "Banned: " + banRes.rows[0]["reason"]
     };
   }
+
   return {
-    //returns user info for session purposes
+    // returns user info for session purposes
     userId: authRes.rows[0]["user_id"],
-    username: username,
-    password: password
   };
 }
 
@@ -201,10 +181,45 @@ async function deductChips(client, id, amount) {
   }
 }
 
+/*
+  updates username of user #id
+  throws if user is not found
+*/
+async function updateUsername(client, id, newUsername) {
+  const res = await client.query(
+    "UPDATE Users SET username = $1 WHERE user_id = $2;",
+    [newUsername, id]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+}
+
+async function getUserIdByUsername(client, username) {
+  const res = await client.query(
+    "SELECT user_id FROM Users WHERE username = $1;",
+    [username]
+  );
+  return res.rows[0]["user_id"];
+}
+
+async function validateSecurityQuestion(client, username, answer) {
+  let authRes = await client.query(
+    "SELECT security_answer FROM Users WHERE Users.username = $1",
+    [username]
+  );
+  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["security_answer"].toString(), answer)) {
+    return false;
+  }
+  return true;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
   getChipCount: getChipCount,
   deductChips: deductChips,
-  getSecurityQuestion: getSecurityQuestion,
+  updateUsername: updateUsername,
+  getUserIdByUsername: getUserIdByUsername,
+  validateSecurityQuestion: validateSecurityQuestion,
 };

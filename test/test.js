@@ -1,6 +1,10 @@
 const assert = require("assert");
 const fs = require("fs");
 
+const _ = require('lodash');
+const display = require("../src/display.js");
+const gameActions = require("../src/GameActions.js");
+const handFinder = require("../src/handFinder.js");
 const transactions = require("../src/transactions/index.js");
 const pg = require("pg");
 
@@ -11,73 +15,64 @@ const client = new pg.Client({
 });
 client.connect();
 
+async function shouldThrowException(f) {
+  let ok = true;
+  try {
+    await f();
+    ok = false;
+  } catch { /* nothing */ }
+  if (!ok) throw "didn't throw";
+}
+
 before(async function() {
   // Reset database
   let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
   let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
-  try {
-    await client.query(dropAllTables);
-    await client.query(initDb);
-  } catch (err) {
-    
-  }
-  
-})
+  await client.query(dropAllTables);
+  await client.query(initDb);
+});
 
 describe("transactions", function() {
   describe("#createUser()", function() {
     it("writes to the database", async function() {
-      try {
-        let id = await transactions.createUser(client, {
-          username: "uruwi",
-          password: "passwordOrUruwi",
-          securityQuestion: "What other name do you go by?",
-          securityAnswer: "blue_bear_94",
-        });
-        assert(id != 0);
-      } catch {
-
-      }
-
+      // Do not wrap this code in a try-catch block – this should not throw!
+      let id = await transactions.createUser(client, {
+        username: "uruwi",
+        password: "passwordOrUruwi",
+        securityQuestion: "What other name do you go by?",
+        securityAnswer: "blue_bear_94",
+      });
+      assert(id != 0);
     });
     it("rejects duplicate usernames", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "uruwi",
           password: "reject me",
           securityQuestion: "What is your favorite drink?",
           securityAnswer: "orange juice",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
     it("rejects empty usernames", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "",
           password: "404",
           securityQuestion: "What is your favorite number?",
           securityAnswer: "404",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
     it("rejects empty passwords", async function() {
-      try {
+      await shouldThrowException(async function() {
         let id = await transactions.createUser(client, {
           username: "null",
           password: "",
           securityQuestion: "What is your favorite number?",
           securityAnswer: "404",
         });
-        assert(false);
-      } catch {
-        // success
-      }
+      });
     });
   });
   describe("#validateUser()", function() {
@@ -98,6 +93,83 @@ describe("transactions", function() {
         res.reason == "Username or password is incorrect");
     });
     // TODO: test bans
+  });
+  describe("#updateUsername()", function() {
+    it("changes the username of an existing user", async function() {
+      const id = await transactions.getUserIdByUsername(client, "uruwi");
+      await transactions.updateUsername(client, id, "kozet");
+      const id2 = await transactions.getUserIdByUsername(client, "kozet");
+      assert(id == id2);
+    });
+    it("rejects nonexistent users", async function() {
+      await shouldThrowException(async function() {
+        await transactions.updateUsername(client, 4469, "dolphins");
+      });
+    })
+  });
+  describe("#validateSecurityQuestion()", function() {
+    it("accepts the correct answer", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "kozet", "blue_bear_94");
+      assert(stat);
+    });
+    it("rejects wrong answers", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "kozet", "arth_glas_94");
+      assert(!stat);
+    });
+    it("rejects nonexistent users", async function() {
+      const stat = await transactions.validateSecurityQuestion(client, "poodle", "golden retrievers");
+      assert(!stat);
+    });
+  });
+});
+
+describe("handFinder", function() {
+  describe("#finalhand", function() {
+    it("has 1s in positions with cards", function() {
+      const hand = [36, 27];
+      const table = [41, 2, 17, 8, 38];
+      const fmt = handFinder.finalhand(hand, table);
+      assert(fmt[2][1] == 1);
+      assert(fmt[0][2] == 1);
+      assert(fmt[3][3] == 0);
+    });
+  });
+});
+
+describe("display", function() {
+  describe("#nameCard", function() {
+    it("names cards correctly", function() {
+      assert(display.nameCard(0) == "2S");
+      assert(display.nameCard(5) == "7S");
+      assert(display.nameCard(9) == "JS");
+      assert(display.nameCard(10) == "QS");
+      assert(display.nameCard(11) == "KS");
+      assert(display.nameCard(12) == "AS");
+      assert(display.nameCard(13) == "2D");
+      assert(display.nameCard(20) == "9D");
+      assert(display.nameCard(24) == "KD");
+      assert(display.nameCard(26) == "2C");
+      assert(display.nameCard(39) == "2H");
+      assert(display.nameCard(51) == "AH");
+    });
+  });
+  describe("#namePlayerAndTableCards", function() {
+    it("returns the name of all player and table cards", function() {
+      const hands = [
+        [36, 27],
+        [11, 12],
+      ];
+      const table = [41, 2, 17, 8, 38];
+      const actual = display.namePlayerAndTableCards(hands, table);
+      const expected = [
+        [
+          ["QC", "3C"],
+          ["KS", "AS"],
+        ],
+        ["4H", "4S", "6D", "10S", "AC"]
+      ];
+      assert(_.isEqual(actual, expected));
+    })
   });
 });
 
