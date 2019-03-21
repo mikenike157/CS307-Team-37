@@ -206,4 +206,5 @@ module.exports = {
   validateUser: validateUser,
   getChipCount: getChipCount,
   deductChips: deductChips,
+  getSecurityQuestion: getSecurityQuestion,
 };
