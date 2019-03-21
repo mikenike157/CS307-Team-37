@@ -38,6 +38,7 @@ class Player {
         this.chips = chips;
         this.cards = [-1, -1];
         this.initialChips = chips; // Add
+        this.sidePot = 0; // Add
     }
 }
 
