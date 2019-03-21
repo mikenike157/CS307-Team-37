@@ -53,9 +53,11 @@ this.addPlayer = function(socketid, startingChips) {
 ///////////////////////////////////////
 
 this.startGame = function(game) {
+
   numbers = [];
   playerCards = [];
   tableCards = [];
+  //changed for testing purposes
   N = game.players.length;
 
   // 0. Generate random deck

@@ -19,28 +19,26 @@ async function getRooms(client) {
 
 async function createUser(client, userinfo) {
   /*if (userinfo.username === "" || userinfo.password === ""){
-    console.log( "empty username or password" );
+    //console.log( "empty username or password" );
     return undefined;
   }*/
 
-  const existCheck = await client.query(
-    "SELECT username FROM Users WHERE username = $1;",
-    [userinfo.username]
-  );
-  if (existCheck.rows.length != 0) {
-    throw "Username is taken";
+  try{
+    if (userinfo.username === "" || userinfo.password === ""){
+       //console.log( "empty username or password" );
+       throw "Error";
+    }
+  } catch(err) {
+    return false
   }
 
-  if (userinfo.username === "" || userinfo.password === ""){
-    throw "Username and password cannot be empty";
-  }
+  //console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
-  const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
-    type: argon2.argon2i
-  });
+
+  //console.log(hash);
 
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
@@ -52,6 +50,14 @@ async function createUser(client, userinfo) {
     userId: res.rows[0]["user_id"],
     username: userinfo.username,
   }
+  //console.log("client released");
+
+  return{
+  //returns user info for session purposes
+      userId: res.rows[0]["user_id"],
+      username: res.rows[0]["username"],
+      password: userinfo.password
+  };
 }
 
 /*
@@ -96,6 +102,24 @@ async function getSecurityQuestion(client, username) {
 }
 
 async function updateChips(client, userid, chips) {
+
+    const res = await client.query(
+      "UPDATE Users SET chips = $1 WHERE user_id = $2;",
+      [chips, userid]
+    );
+    if (res.rowCount == 0) {
+      throw "user not found";
+    }
+
+}
+
+async function validateUser(client, username, password) {
+  // Check if username and password is valid
+
+  try{
+    if (username === "" || password === ""){
+       //console.log( "empty username or password" );
+       throw "Error";
 
   const res = await client.query(
     "UPDATE Users SET chips = $1 WHERE user_id = $2;",

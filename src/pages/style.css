@@ -100,8 +100,8 @@ body {
 /* Game Page Specific */
 
 #pokerDisplay {
-    width: 100%;
     height: 70%;
+    width: 100%;
 }
 
 #gameBar {
