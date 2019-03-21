@@ -116,8 +116,7 @@ async function updateChips(client, userid, chips) {
 async function validateUser(client, username, password) {
   // Check if username and password is valid
 
-  try{
-    if (username === "" || password === ""){
+  if (username === "" || password === ""){
        //console.log( "empty username or password" );
        throw "Error";
 
