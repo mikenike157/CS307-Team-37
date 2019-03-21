@@ -39,6 +39,7 @@ class Player {
         this.cards = [-1, -1];
         this.initialChips = chips; // Add
         this.sidePot = 0; // Add
+        this.totalBets = 0; // total bets this round
     }
 }
 
