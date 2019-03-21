@@ -13,6 +13,7 @@
                 $("." + $(this).attr('name')).show();
             });
         });
+
     </script>
 </head>
 
@@ -40,13 +41,19 @@
             </div>
             <div class="sub-box" id="modeWindows">
                 <div class="mode-window pvp-option" id="pvpWindow">
-                    <input type="button" class="play-button" value="Join">
+									<form id="joinForm" action="join_game" method="POST">
+                    <input type="submit" class="play-button" id="joinButton" value="Join">
+									</form>
                 </div>
                 <div class="mode-window pvb-option" id="pvbWindow">
-                    <input type="button" class="play-button" value="Play">
+									<form id="botForm" action="join_bot_game" method="POST">
+                    <input type="submit" class="play-button" id="botsButton" value="Play">
+									</form>
                 </div>
                 <div class="mode-window tutorial-window-option" id="tutorialWindow">
-                    <input type="button" class="play-button" value="Play">
+									<form id="tutorialForm" action="join_tutorial" method="POST">
+                    <input type="submit" class="play-button" id="tutorialButton" value="Play">
+									</form>
                 </div>
                 <div class="mode-window host-lobby-option" id="hostLobbyWindow">
                     <form id="hostForm" action="host_game" method="POST">

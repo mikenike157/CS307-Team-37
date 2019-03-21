@@ -12,7 +12,7 @@ const bp = require("body-parser");
 const fs = require("fs")
 const session = require('client-sessions')
 const jq = require('jquery')
-//const pos = require('./src/possibility.js');
+const pos = require('./src/possibility.js');
 
 //The code for the database interaction
 const lg = require("./src/transactions/index.js")
@@ -183,6 +183,13 @@ const server = express()
       })
     })
   })
+
+  .post('/join_tutorial', function(req, res) {
+    console.log("FROM TUTORIAL JOIN: " + req.session.user.username);
+    return res.redirect('/tutorial.html');
+  })
+
+
   //validates login credentials of user
   .post('/login_post',  function(req, res){
 
@@ -215,6 +222,7 @@ const server = express()
         })
 
   })
+
 
   .get('/update_username', function(req,res){
     console.log("FROM USERNAME: " + req.session.user.username);
@@ -1021,13 +1029,22 @@ function createRoom(name, maxPlayers, password, numAI, anteOption, startChips) {
 
 
 //FOR HINT
-/*
+
 function createHint(currRoom, socket) {
+  var flop = [currRoom.fixedTCards[0], currRoom.fixedTCards[1], currRoom.fixedTCards[2]]
+  let tableArray;
+  if (currRoom.gameState == 0) {
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, []);
+  }
+  else if (currRoom.gameState == 1) {
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, flop);
+  }
+  else if (currRoom.gameState == 2) {
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, [currRoom.fixedTCards]);
+  }
   //get whoever clicked the hint button, do all of this with the currRoom.player[whatever]
-  let tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer]., whatever.tableCards)
   let match = hf.match(tableArray);
   let hintOutcome = pos.possibility(tableArray, match, 2+whatever.tableCards);
-
+  console.log(hintOutcome);
 
 }
-*/
