@@ -118,7 +118,7 @@ function possibility(tableArray,matchArray,numTableCards) {
 	  }
 
 	  //fullhouse
-	  console.log(secondhighmatch);
+	  
 	  if((cardsleft >= 3) || (secondhighmatch == 2 && currentHighMatch == 3) || (currentHighMatch >= 3 && cardsleft >= 1) || (currentHighMatch >= 2 && cardsleft >= 2) || (secondhighmatch>=2 && cardsleft >= 1)){
 			 rArray[6] = 1;		 
 	  }else{
