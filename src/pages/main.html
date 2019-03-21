@@ -4,7 +4,7 @@
 	<title>Poker University</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-        <script>
+    <script>
         $(document).ready(function(){
             //Only shows active tab.
             $(".mode-window:not(:first)").hide();
@@ -13,7 +13,6 @@
                 $("." + $(this).attr('name')).show();
             });
         });
-
     </script>
 </head>
 
@@ -21,7 +20,9 @@
 <body>
     <div class="main-header">
         <h1 id="mainTitle" class="page-title">Poker University</h1>
-        <input type="button" name="logout" value="logout">
+			<form id="logoutButton" action="logout_get" method="POST">
+        <input type="submit" id="logout" name="logout" value="logout">
+			</form>
     </div>
     <div class="main-body">
         <div class="sub-container" id="playModes">
@@ -78,6 +79,9 @@
                 <p>Friends online: </p>
                 <p>Active tables: </p>
             </div>
+						<form id="profile" action="profile_page" method="POST">
+							<input type="submit" id="profileButton" name="profileButton" value="Profile">
+						</form>
         </div>
         <div class="sub-container" id="playerInfo">
             <div class="sub-box" id="profile">

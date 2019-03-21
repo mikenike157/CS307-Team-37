@@ -69,7 +69,7 @@ this.findWinner = function(handArray) {
     }
     return 0;
   });
-  return sortArray[0];
+  return sortArray;
 };
 
 
