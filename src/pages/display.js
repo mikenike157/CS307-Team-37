@@ -68,12 +68,12 @@ function drawRoom(canvas, cHeight, cWidth) {
     c.renderAll();
 }
 
-function clearTable(){
-	c.clear();
+function clearTable() {
+    c.clear();
 
-	c.set({ backgroundColor: 'rgb(200,200,200)' })
-	
-	tableSpace = new fabric.Group([], {
+    c.set({ backgroundColor: 'rgb(200,200,200)' })
+
+    tableSpace = new fabric.Group([], {
         name: 'table-space',
         left: (CANVAS_WIDTH * (1 - TABLE_SCALE) / 2),
         top: (CANVAS_HEIGHT * (1 - TABLE_SCALE) / 2),
@@ -101,7 +101,7 @@ function clearTable(){
 
 function drawPlayerCards(visible, folded, cards, player) {
     //Draws the player's cards
-    return new Promise(function(res, rej){
+
 
     let loaded1 = false;
     let loaded2 = false;
@@ -130,37 +130,62 @@ function drawPlayerCards(visible, folded, cards, player) {
         originY: "center"
     });
 
-    fabric.Image.fromURL( "res/PNG/" + cards[0] + ".png", function(img) {
-        img.set('name', 'player-card-left' + player);
-        img.set('left', 0);
-        img.set('top', 0);
-        img.scale(CARD_WIDTH * CARD_SCALE / img.get('width'));
-        playerCards.add(img);
-        console.log("left");
-      	//c.renderAll();
-      	}
-      );
-    fabric.Image.fromURL( "res/PNG/" + cards[1] + ".png", function(img) {
-        img.set('name', 'player-card-right' + player);
-        img.set('left', CARD_WIDTH * CARD_SCALE + CARD_GAP);
-        img.set('top', 0);
-        img.scale(CARD_WIDTH * CARD_SCALE / img.get('width'));
-        console.log("right");
-        playerCards.add(img);
-        
-        //c.renderAll();
-      	}
-      );    
+    let getLeftCard = () => {
+        return new Promise(
+            (res, rej) => {
+                fabric.Image.fromURL("res/PNG/" + cards[0] + ".png", function(imgLeft) {
+                    imgLeft.set('name', 'player-card-left' + player);
+                    imgLeft.set('left', 0);
+                    imgLeft.set('top', 0);
+                    //imgLeft.set('originX', 'center');
+                    //imgLeft.set('originY', 'center');
+                    imgLeft.scale(CARD_WIDTH * CARD_SCALE / imgLeft.get('width'));
+                    playerCards.add(imgLeft);
+                    fabric.Image.fromURL( "res/PNG/" + cards[1] + ".png", function(imgRight) {
+	                    imgRight.set('name', 'player-card-right' + player);
+	                    imgRight.set('left', CARD_WIDTH * CARD_SCALE + CARD_GAP);
+	                    imgRight.set('top', 0);
+	                    //imgRight.set('originX', 'center');
+                    	//imgRight.set('originY', 'center');
+	                    imgRight.scale(CARD_WIDTH * CARD_SCALE / imgRight.get('width'));
+	                    
+	                    if (playerCards.add(imgRight)._objects.length > 1) {
+                        	console.dir(playerCards)	;
+                        	res();
+                    	} else {
+                       	 	rej();
+                    	}
+	                    //c.renderAll();
+	                  	}
+                  ); 
+                    
 
-}).then(()=>{
-	//Moves the newly created cards to a new position based on which player's turn it is.
-    transformTablePosRadial(player, playerCards, PLAYER_CARDS);
+                    
 
-    tableSpace.add(playerCards);
-    c.renderAll();
-})
-    
+                    //c.renderAll();
+                })
+                
+
+            
+        })
+
+    };
+
+    getLeftCard().then(() => {
+            //Moves the newly created cards to a new position based on which player's turn it is.
+            transformTablePosRadial(player, playerCards, PLAYER_CARDS);
+
+            playerCards.setObjectsCoords();
+            console.log(playerCards.length);
+
+            tableSpace.add(playerCards.item(0));
+            tableSpace.add(playerCards.item(1));
+            c.renderAll();
+         }
+    )
 }
+
+
 
 //blindType must be one of these three strings: 'dealer', 'big', 'small'
 function drawBlind(blindType, player) {
@@ -189,7 +214,7 @@ function drawBlind(blindType, player) {
 
 //pos must be an integer from 1 to 5, represents which stage of revealed cards to draw
 function drawTableCard(card, pos) {
-    fabric.Image.fromURL( "res/PNG/" + card + ".png", function(img) {
+    fabric.Image.fromURL("res/PNG/" + card + ".png", function(img) {
         img.set('name', 'table-card-' + pos);
         img.set('left', (CARD_WIDTH * CARD_SCALE + CARD_GAP) * (pos - 3));
         img.set('top', 0);
@@ -197,22 +222,21 @@ function drawTableCard(card, pos) {
         img.set("originY", 'center');
         img.scale(CARD_WIDTH * CARD_SCALE / img.get('width'));
         tableSpace.add(img);
-      	 c.renderAll();
-      	}
-      );
+        c.renderAll();
+    });
 
-    
-   
+
+
 }
 
 //Folded must be boolean
 function drawPlayer(name, totalChips, betChips, folded, player) {
 
-    let canvasText = getItemByName(c,'player-info-' + player);
+    let canvasText = getItemByName(c, 'player-info-' + player);
     if (canvasText != null) {
-        canvasText.item(0).set({ text: name});
+        canvasText.item(0).set({ text: name });
         canvasText.item(1).set({ text: 'Total chips: ' + totalChips });
-        canvasText.item(2).set({ text:'Current Bet: ' + betChips });
+        canvasText.item(2).set({ text: 'Current Bet: ' + betChips });
         if (folded) {
             canvasText.item(2).set({ text: 'folded' });
         }
@@ -286,12 +310,12 @@ function drawPlayer(name, totalChips, betChips, folded, player) {
 function transformTablePosRadial(player, object, type) {
     object.angle = (360 / 8) * player + 90;
 
-    object.set('left',Math.cos(player * (Math.PI / 4)) * (TABLE_WIDTH / 2) * type) ;
+    object.set('left', Math.cos(player * (Math.PI / 4)) * (TABLE_WIDTH / 2) * type);
     object.set('top', Math.sin(player * (Math.PI / 4)) * TABLE_HEIGHT / 2 * type);
 }
 
 //Searches the canvas for an item with a specific name so that it can be updated
-function getItemByName (thisCanvas, name) {
+function getItemByName(thisCanvas, name) {
     let currentObjects = thisCanvas.getObjects();
     for (let i = currentObjects.length - 1; i >= 0; i--) {
         if (currentObjects[i].name == name) {
