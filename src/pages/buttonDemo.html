@@ -9,7 +9,7 @@ window.onload = function() {
 	$.ajax({
 		async: false,
 		type: 'GET',
-		url: 'http://localhost/getRooms',
+		url: 'http://pokeruniversity.herokuapp.com/getRooms',
 		success: function(data) {
 				if (data == "") {
 					document.getElementById("roomForm").innerHTML = "There are no open rooms";
