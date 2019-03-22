@@ -419,7 +419,6 @@ io.sockets.on('connection', function (socket) {
     */
     socket.on('adduser', function(username, room) {
 
-      flag = 0;
       // get room index and set up socket information
       let currRoomIndex = findRoom(room);
       let currRoom = addPlayer(rooms[currRoomIndex], socket);
@@ -502,7 +501,10 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
       checkReadyState(socket)
       */
+
+
       rooms[roomIndex] = currRoom;
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
     })
 
@@ -548,6 +550,9 @@ io.sockets.on('connection', function (socket) {
           //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
       }
+      console.dir(currRoom.players[currRoom.currentPlayer]); 
+
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
     })
     socket.on('playerFold', function() {
@@ -563,6 +568,11 @@ io.sockets.on('connection', function (socket) {
         return;
       }
       currRoom.players[currRoom.currentPlayer].state = "FOLDED";
+      
+
+      io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, false, currRoom.currentPlayer);
+      io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+
       var counter = 0;
       for (var i = 0; i < currRoom.players.length; i++) {
         if (currRoom.players[i].state == "FOLDED") {
@@ -573,6 +583,7 @@ io.sockets.on('connection', function (socket) {
         currRoom.gameState = 3;
         progressGame(socket);
       }
+
       checkReadyState(socket);
     })
     socket.on('disconnect', function() {
@@ -863,6 +874,8 @@ function startGame(socket, currRoom) {
   currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
   currRoom = beginRound(socket, currRoom);
 
+  io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
+
   return currRoom;
 }
 
@@ -888,6 +901,7 @@ function checkReadyState(socket) {
     io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
 
   }
+  io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
   io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "It is your turn");
   io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updateTurn");
 
@@ -931,8 +945,20 @@ function beginRound(socket, currGame) {
   //players[bigBlindPlacement] = temp;
 
   //printInfo(socket);
+  let sanatizedPlayers = [];
+  for (var i = 0; i < newGame.players.length; i++) {
+    sanatizedPlayers.push({
+        username: io.sockets.connected[newGame.players[i].playerID].username,
+        chips: newGame.players[i].chips
+    });
+  }
+
+  console.dir(sanatizedPlayers);
+
+  io.sockets.in(socket.room).emit('renderBoardState',newGame.bigBlindPlacement, newGame.smallBlindPlacement, sanatizedPlayers);
+
   for (let i = 0; i < newGame.players.length; i++) {
-    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i]);
+    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
     io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
   }
   console.log(newGame.players)
@@ -972,6 +998,7 @@ function progressGame(socket) {
     */
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
+
     currRoom.gameState++;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('flop', flop);

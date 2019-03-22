@@ -98,8 +98,8 @@
 	//on fold button press call the fold method on server side
 
 	socket.on('updateTurn', function() {
-		/*
-		if (idleCounter == 0) {
+		
+		/*if (idleCounter == 0) {
 			timer = setTimeout(autofold, 3000)
 			idleCounter++;
 		}
@@ -110,7 +110,7 @@
 		else {
 			document.getElementById('leave').click();
 		}
-		*/
+		
 		if (idleCounter == 0) {
 			setTimeout(autoFold, 500000)
 			idleCounter++;
@@ -121,8 +121,19 @@
 		}
 		else {
 			document.getElementById('leave').click();
-		}
+		} */
 
+
+
+	}) 
+
+
+	socket.on('updatePlayer', function(name, totalChips, betChips, folded, active, player){
+		drawPlayer(name, totalChips, betChips, folded, active, player);
+	});
+
+	socket.on('updatePlayerCards', function(visible, folded, cards, pos){
+		drawPlayerCards(visible, folded, cards, pos)
 	})
 
 	socket.on	('updatechat', function (username, data) {
@@ -131,14 +142,21 @@
 		obj.scrollTop = obj.scrollHeight;
 	});
 
-	socket.on('dealCards', function(cards) {
-		console.log("raw cards:" +cards);
-		$('#chatDisplay').append("Cards: " + cards + '<br>');
-		cards = cards.toString().split(',');
-		for(let i = 1; i < 8; i++){
+	socket.on('renderBoardState', function(bigBlind, smallBlind, players){
+		for (var i = 0; i < players.length; i++) {
+			drawPlayer(players[i].username, players[i].chips, 0, false, false, i);
+			drawBlind('big', bigBlind);
+			drawBlind('small', smallBlind);
 			drawPlayerCards( false, false, [], i );
 		}
-		drawPlayerCards( true, false, [processCard(cards[0]), processCard(cards[1])], 0 );
+	});
+
+	socket.on('dealCards', function(cards, pos) {
+		//console.log("raw cards:" + cards);
+		$('#chatDisplay').append("Cards: " + cards + '<br>');
+		cards = cards.toString().split(',');
+
+		drawPlayerCards( true, false, [processCard(cards[0]), processCard(cards[1])], pos );
 
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
@@ -148,13 +166,17 @@
 		$('#chatDisplay').append("The winners of the hand are: " + data + '<br>');
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
+		clearTable();
 	})
 
 	socket.on('flop', function(data) {
+		//console.log("flop cards:" + data);
 		$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
-		let cards = data.toString.split(',');
+		let cards = data.toString().split(',');
 		for (var i = 0; i < cards.length; i++) {
-			drawPlayerCards( true, false, processCard(cards[i]), i );
+			let newCard = processCard(cards[i]);
+			console.log("newCard" + newCard);
+			drawTableCard(newCard, i );
 		}
 		
 		let obj = document.getElementById("chatDisplay");
@@ -162,13 +184,17 @@
 	})
 
 	socket.on('turn', function(data) {
+		//console.log("turn cards:" + data);
 		$('#chatDisplay').append("Turn: " + data.toString() + '<br>');
+		drawTableCard( processCard(data.toString()), 4 );
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	})
 
 	socket.on('river', function(data) {
+		//console.log("river cards:" + data);
 		$('#chatDisplay').append("River: " + data.toString() + '<br>');
+		drawTableCard( processCard(data.toString()), 5 );
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	})
@@ -226,7 +252,7 @@
 			card = card.replace("J", 'jack');
 			card = card.replace("K", 'king')
 		//}
-		console.log("card:" +  card);
+		//console.log("card:" +  card);
 		return card;
 	}
 
