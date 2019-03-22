@@ -82,7 +82,28 @@ const server = express()
 
   })
 
+  .get('/getRooms', function(req, res) {
+    console.log("in rooms");
+    let innerHTMLForm = "";
+    for (let i = 0; i < rooms.length; i++) {
+      if (rooms[i].name != undefined) {
+        innerHTMLForm += '<input type="radio" id="' + rooms[i].name + '" name="radio" value="' + rooms[i].name + '"/>' + rooms[i].name + '</br>';
+      }
+    }
+    if (rooms.length != 1) {
+      innerHTMLForm += '<input type="submit" name="submit" value="Join Room"/>';
+    }
+    console.log(innerHTMLForm);
+    return res.send(innerHTMLForm);
+  })
+
   .post('/join_game', function(req, res) {
+    /*
+    for (let i = 0; i < 5; i++) {
+      let name = "room" + i;
+      createRoom(name, 3, "", 0, 0, 100);
+      console.log(rooms[i].name);
+    }
     /* Update the current players current room, redirect them to the game
     page.
     */
@@ -91,7 +112,8 @@ const server = express()
   })
   .post('/room_post', function(req, res) {
     //console.log("IN ROOM POST: " + req.session.user.username);
-    req.session.user.room = req.body.room;
+    console.log(req.body.radio)
+    req.session.user.room = req.body.radio;
     //console.log(req.session.user.room + " " + req.session.user.username);
     return res.redirect('/game.html');
   })
@@ -243,13 +265,14 @@ const server = express()
   })
 
   .post('/username_post', function(req, res) {
+    let content;
     pool.connect()
       .then(client => {
         return lg.updateUsername(client, req.session.user.userId, req.body.newUsername)
         .then(validate => {
           client.release();
             req.session.user.username = req.body.newUsername;
-            return res.redirect("/resetPass.html");
+            return res.redirect("/main.html");
           })
         .catch(err => {
           console.log(err.stack);
@@ -267,6 +290,7 @@ const server = express()
         return lg.profileQuery(client, req.session.user.userId)
         .then(profileResult => {
           client.release()
+
           let thisPath = path.join(__dirname, "/src/pages/profile.html");
           fs.readFile(thisPath, "utf-8", function(err, data) {
             if (err) {
@@ -339,7 +363,7 @@ const server = express()
   })
 
   .get('/update_room', function(req, res) {
-    console.log("FROM ROOM: " + req.session.user);
+    console.log("FROM ROOM: " + req.session.user.room);
     if (req.session && req.session.user) {
       return res.send(req.session.user.room);
     }
@@ -394,6 +418,7 @@ var mainPot = 0; // parallel currentPot
 
 // rooms which are currently available in chat
 var rooms = ['room1'];
+
 io.sockets.on('connection', function (socket) {
   // when the client emits 'adduser', this listesns and executes
   /*
@@ -425,19 +450,21 @@ io.sockets.on('connection', function (socket) {
     socket.emit('updaterooms', rooms, 'room1');
     */
     socket.on('adduser', function(username, room) {
-      flag = 0;
+      flag = 1;
       if (flag == 0) {
         var tempRoom = createRoom("room1", 3, "", 0, 0, 100);
         rooms.push(tempRoom);
         flag = 1;
       }
       // get room index and set up socket information
+      console.log(room);
+      socket.username = username;
+      socket.room = room;
       let currRoomIndex = findRoom(room);
       console.log(currRoomIndex);
       let currRoom = addPlayer(rooms[currRoomIndex], socket);
 
-      socket.username = username;
-      socket.room = room;
+
       //add a player to the room, set the returned room to currRoom
       //if room was full
       if (currRoom == null) {

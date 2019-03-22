@@ -1,14 +1,36 @@
 <!DOCTYPE html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+
+
+<script>
+
+window.onload = function() {
+	$.ajax({
+		async: false,
+		type: 'GET',
+		url: 'http://localhost/getRooms',
+		success: function(data) {
+				if (data == "") {
+					document.getElementById("roomForm").innerHTML = "There are no open rooms";
+				}
+				else {
+					document.getElementById("roomForm").innerHTML = data;
+				}
+		}
+	})
+}
+
+</script>
+
+
+
 <html>
 <head>
 	<title>Host Game</title>
 </head>
 <body>
 	  <form id="roomForm" action="room_post" method="POST">
-    	<input type="radio" name="room" value="room1"/>Room 1</br>
-    	<input type="radio" name="room" value="room2"/>Room 2</br>
-    	<input type="radio" name="room" value="room3"/>Room 3</br>
-    	<input type="submit" name="submit" value="Join Room"/>
   </form>
 </body>
 </html>
