@@ -128,7 +128,7 @@
 			socket.emit('adduser', name, room);
 		})
 	});
-	
+
 	socket.on('updateScreen', function(pot, amountToCall, chips) {
 			updateScreen(pot, amountToCall, chips);
 	});
@@ -183,7 +183,7 @@
 
 	socket.on('flop', function(data) {
 		$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
-		let cards = data.toString.split(',');
+		let cards = data.toString().split(',');
 		for (var i = 0; i < cards.length; i++) {
 			drawPlayerCards( true, false, processCard(cards[i]), i );
 		}
