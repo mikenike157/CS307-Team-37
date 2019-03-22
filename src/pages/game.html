@@ -25,7 +25,7 @@
 				//getImg(cName);
 			}
 		}
-		
+
 
 		drawRoom('pokerDisplay', $("#pokerDisplay").height(), $("#pokerDisplay").width());
 		//Test block, remove later
@@ -69,12 +69,49 @@
 		document.getElementById('amountToCall').innerHTML=amountToCall;
 		document.getElementById('chips').innerHTML=chips;
 	}
+
+	function boardHint(data) {
+		for(let i = 0; i < data.length; i++) {
+			if (data[i] == 0) {
+				data[i] = "It is impossible.";
+			}
+			else if (data[i] == 1) {
+				data[i] = "It is still possible";
+			}
+			else if (data[i] == 2) {
+				data[i] = "You currently have";
+			}
+		}
+		alert("High Card: " + data[0] + "\nPair: " + data[1] + "\nTwo Pair: " + data[2] + "\nThree of a kind: " + data[3] + "\nStraight: " + data[4] + "\nFLUSH: " + data[5] + "\nFull House: " + data[6] + "\nFour of a kind: " + data[7] + "\nStraight Flush: " + data[8]);
+	}
+
+	function handHint(data) {
+		if (data == 1) {
+			alert("Your hand isnt too great");
+		}
+		else if (data == 2) {
+			alert("Your hand could be better");
+		}
+		else if (data == 3) {
+			alert("Your hand is decent")
+		}
+		else if (data == 4) {
+			alert("Your have a good hand");
+		}
+		else {
+			alert("You have a great hand")
+		}
+	}
+
 	function setTimer() {
 
 	}
 
 	function autoFold() {
-		document.getElementById('fold').click();
+		idleCounter++;
+		clearTimeout(timer);
+		socket.emit('playerFold')
+		return;
 	}
 
 	var socket = io();
@@ -104,38 +141,32 @@
 			socket.emit('adduser', name, room);
 		})
 	});
-
+	
 	socket.on('updateScreen', function(pot, amountToCall, chips) {
 			updateScreen(pot, amountToCall, chips);
 	});
 	//on fold button press call the fold method on server side
 
 	socket.on('updateTurn', function() {
-		/*
+		console.log("TIMER RESET. IDLECOUNTER: " + idleCounter);
 		if (idleCounter == 0) {
-			timer = setTimeout(autofold, 3000)
-			idleCounter++;
-		}
-		else if (idleCounter != 5) {
-			timer = setTimeout(autofold, 20000);
-			idleCounter++;
-		}
-		else {
-			document.getElementById('leave').click();
-		}
-		*/
-		if (idleCounter == 0) {
-			setTimeout(autoFold, 5000)
-			idleCounter++;
+			timer = setTimeout(autoFold, 15000)
+			return;
 		}
 		else if (idleCounter < 5) {
-			setTimeout(autoFold, 3000);
-			idleCounter++;
+			timer = setTimeout(autoFold, 5000);
+			return;
 		}
 		else {
-			document.getElementById('leave').click();
+			document.getElementById('leaveButton').click();
 		}
+	})
 
+	socket.on('boardHint', function(data) {
+		boardHint(data);
+	})
+	socket.on('handHint', function(data) {
+		handHint(data);
 	})
 
 	socket.on	('updatechat', function (username, data) {
@@ -193,13 +224,19 @@
 
 	$(function() {
 		$('#fold').click( function() {
-			idleCounter = 0;
 			clearTimeout(timer);
+			idleCounter = 0;
 			socket.emit('playerFold');
 		})
 	})
-	$(function(){
+	$(function() {
+		$('#hint').click( function() {
+			socket.emit('playerHint');
+		})
+	})
 
+
+	$(function(){
 		// when the client clicks SEND
 		$('#send').click( function() {
 			var message = $('#text').val();
@@ -225,9 +262,8 @@
 
 
 <body>
-	<input type="button" id="leaveButton" style="position:ablsoulte; top:0; right:0;" value="Leave Room">
+	<input type="button" id="leaveButton" style="position:ablsoulte; top:0; right:0;" value="Leave Room" onclick="window.location.href = './main.html'">
 	<canvas id="pokerDisplay">
-
 	</canvas>
 	<div id="gameBar">
 		<div class="sub-container" id="chatBox">
@@ -248,7 +284,7 @@
 			</div>
 		</div>
 		<div class="sub-container" id="hintBox">
-			<input type="button" name="hint" value="HINT">
+			<input type="button" id="hint" name="hint" value="HINT">
 		</div>
 		<div class="sub-container" id="playerActions">
 			<div class="tab-select">
@@ -267,12 +303,9 @@
 				</div>
 			</div>
 			<div id="playerActionButtons">
-				<input type="button" id="fold" name="Fold" value="Fold" onclick="myVar = setTimeout()">
+				<input type="button" id="fold" name="Fold" value="Fold">
 				<input type="button" id="call" name="Call" value="Call">
 				<input type="button" id="raise" name="Raise" value="Raise">
-			</div>
-			<div id="leaveButtons">
-				<input type="button" id="leave" name="Leave game" value="Leave game" onclick="window.location.href = './main.html'">
 			</div>
 		</div>
 	</div>

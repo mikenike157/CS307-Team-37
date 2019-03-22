@@ -154,9 +154,9 @@ this. Fold = function(game, playerID) {
 }
 
 this.blind = function(game, playerID, amount) {
-  console.log("FULL GAME: " + game);
+  //console.log("FULL GAME: " + game);
   let playerIndex = getPlayer(game.players, playerID);
-  console.log("Player Index: " + playerIndex);
+  //console.log("Player Index: " + playerIndex);
   player = game.players[playerIndex];
   game.players[playerIndex].chips -= amount;
   game.players[playerIndex].lastBet = amount;
@@ -186,15 +186,15 @@ function fixCards(pCards, tCards) {
     var card4 = findCard(tCards[3]);
     var card5 = findCard(tCards[4]);
     retTCards = [card1, card2, card3, card4, card5];
-    console.log(retPCards + " " + retTCards);
+    //console.log(retPCards + " " + retTCards);
     return [retPCards, retTCards];
   }
 
 function findCard(card) {
-  console.log(card);
+  //console.log(card);
   var suit = Math.floor(card / 13);
   card = card - (13 * suit);
-  console.log(card)
+  //console.log(card)
   if (suit == 0) {
     if (card == 9) {
       return "JS"

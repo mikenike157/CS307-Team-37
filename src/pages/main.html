@@ -61,17 +61,17 @@
                 <div class="mode-window host-lobby-option" id="hostLobbyWindow">
                     <form id="hostForm" action="host_game" method="POST">
                         <p class="field-title">Room Name</p>
-                        <input type="text" id="roomName" name="roomName">
+                        <input type="text" id="roomName" name="roomName" required='required' pattern="[A-Za-z0-9]{1,20}" oninvalid="this.setCustomValidity('Please enter a valid username')" oninput="this.setCustomValidity('')">
                         <p class="field-title">Max players (2-8)</p>
-                        <input type="number" name="numPlayers">
+                        <input type="number" name="numPlayers" required='required'>
                         <p class="field-title">Password (Leave blank if public)</p>
                         <input type="text" name="roomPass">
                         <p class="field-title">Number of AI</p>
-                        <input type="number" name="numAI">
+                        <input type="number" name="numAI" required='required'>
                         <p class="field-title">Enable Antes</p>
                         <input type="checkbox" name="anteOption">
                         <p class="field-title">Starting Chips</p>
-                        <input type="number" name="startChips">
+                        <input type="number" name="startChips" required='true'>
                         <input type="submit" class="play-button" value="Create">
                     </form>
                 </div>

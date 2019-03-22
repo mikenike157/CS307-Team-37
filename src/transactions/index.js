@@ -51,13 +51,6 @@ async function createUser(client, userinfo) {
     username: userinfo.username,
   }
   //console.log("client released");
-
-  return{
-  //returns user info for session purposes
-      userId: res.rows[0]["user_id"],
-      username: res.rows[0]["username"],
-      password: userinfo.password
-  };
 }
 
 /*
@@ -101,15 +94,32 @@ async function getSecurityQuestion(client, username) {
   }
 }
 
-async function updateChips(client, userid, chips) {
+async function updateWin(userid) {
+  console.log(userid);
+  const res = await client.query(
+    "UPDATE Users SET num_wins = num_wins + 1 WHERE user_id = $2;",
+    [userid]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+  return {
+    numWins: res.rows[0]["num_wins"]
+  }
+}
 
-    const res = await client.query(
-      "UPDATE Users SET chips = $1 WHERE user_id = $2;",
-      [chips, userid]
-    );
-    if (res.rowCount == 0) {
-      throw "user not found";
-    }
+async function updateChips(client, userid, chips) {
+  console.log(userid);
+  const res = await client.query(
+    "UPDATE Users SET chips = $1 WHERE user_id = $2;",
+    [chips, userid]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+  return {
+    newChips: res.rows[0]["chips"]
+  }
 
 }
 
@@ -119,6 +129,7 @@ async function validateUser(client, username, password) {
   if (username === "" || password === ""){
        //console.log( "empty username or password" );
        throw "Error";
+  }
 
   const res = await client.query(
     "UPDATE Users SET chips = $1 WHERE user_id = $2;",
@@ -292,6 +303,7 @@ async function getUserIdByUsername(client, username) {
 }
 
 async function validateSecurityQuestion(client, username, answer) {
+  console.log(answer);
   let authRes;
   authRes = await client.query(
   "SELECT security_answer FROM Users WHERE Users.username = $1",
