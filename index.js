@@ -671,6 +671,9 @@ io.sockets.on('connection', function (socket) {
           break;
         }
       }
+      if (currRoom.players[i].length == 0) {
+        rooms.splice(i, 1);
+      }
       delete socket.room;
     })
 
