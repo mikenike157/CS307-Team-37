@@ -110,10 +110,17 @@ function drawPlayerCards(visible, folded, cards, player) {
 
 
     let canvasCards = getItemByName(c.getObjects(), 'name', 'player-cards-' + player);
-    if (canvasCards != null && canvasCards.get('isFolded') == folded && canvasCards.get('isVisible') == folded) {
-
-        c.renderAll();
-        return;
+    console.log("canvasCards:" + canvasCards);
+    if (canvasCards != null) {
+        if(canvasCards.get('isFolded') == folded && canvasCards.get('isVisible') == visible){
+            c.renderAll();
+            return;    
+        } else {
+            console.dir(c);
+            c.remove(canvasCards);
+            console.dir(c);
+        }
+        
     }
 
     //Creates cards in the default bottom center position of the table
@@ -154,7 +161,8 @@ function drawPlayerCards(visible, folded, cards, player) {
                             backgroundColor: 'black',
                             isVisible: visible,
                             isFolded: folded,
-                            flipY: true
+                            flipY: true,
+                            flipX: true
                         });
 
                         
@@ -201,19 +209,34 @@ function drawBlind(blindType, player) {
         return false;
     }
 
+    let bFill = 'yellow';
+    if (blindType == 'big'){
+        bFill = 'blue';
+    }
+
     let blind = new fabric.Circle({
         name: blindType + '-blind',
         left: 0,
         top: 0,
         originX: 'center',
         originY: 'center',
-        //placeholder for image
-        fill: 'blue',
+        fill: bFill,
         radius: BLIND_RAD
     })
 
+    let bName = new fabric.Text(blindType[0].toUpperCase(),{
+        name: blindType + '-blind',
+        left: 0,
+        top: 0,
+        originX: 'center',
+        originY: 'center',
+
+    })
+
     transformTablePosRadial(player, blind, PLAYER_BLIND);
-    tableSpace.add(blind);
+    bName.set('left',blind.left);
+    bName.set('top', blind.top)
+    tableSpace.add(blind, bName);
     c.renderAll();
 
 }
@@ -240,11 +263,14 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
 
     let canvasText = getItemByName(c.getObjects(), 'name', 'player-info-' + player);
     if (canvasText != null && canvasText._objects != undefined) {
-        canvasText.item(0).set({ text: name });
-        canvasText.item(1).set({ text: 'Total chips: ' + totalChips });
-        canvasText.item(2).set({ text: 'Current Bet: ' + betChips });
+        if(name != null)
+            getItemByName(canvasText.getObjects(), 'name', 'player-name-' + player).set({ text: name });
+        if(totalChips != null)
+            getItemByName(canvasText.getObjects(), 'name', 'player-total-chips-' + player).set({ text: 'Total chips: ' + totalChips });
+        if(betChips != null)
+            getItemByName(canvasText.getObjects(), 'name', 'player-bet-chips-' + player).set({ text: 'Current Bet: ' + betChips });
         if (folded) {
-            canvasText.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'red' });
+            getItemByName(canvasText.getObjects(), 'name', 'player-bet-chips-' + player).set({ text: 'FOLDED', fontWeight: 'bold', fill: 'red' });
         }
         if (active) {
             if (canvasText._objects.length < 4) {
@@ -255,7 +281,7 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
                     lastActive.set('active', false)
                 }
 
-                console.dir(lastActive);
+                //console.dir(lastActive);
 
                 canvasText.set('active', true)
                 canvasText.add(new fabric.Rect({
@@ -275,6 +301,10 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
         }
         //canvasText.sendToFront();
         c.renderAll();
+        return;
+    }
+
+    if(name == null || totalChips == null || betChips == null){
         return;
     }
 
@@ -336,14 +366,6 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
     if (folded) {
         textGroup.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'red' });
     }
-
-
-
-
-    if (textGroup.intersectsWithObject(c.item(0))) {
-        console.log("collides");
-    }
-
 
     c.add(textGroup);
     c.renderAll();

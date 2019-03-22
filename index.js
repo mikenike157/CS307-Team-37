@@ -450,12 +450,7 @@ io.sockets.on('connection', function (socket) {
     socket.emit('updaterooms', rooms, 'room1');
     */
     socket.on('adduser', function(username, room) {
-      flag = 1;
-      if (flag == 0) {
-        var tempRoom = createRoom("room1", 3, "", 0, 0, 100);
-        rooms.push(tempRoom);
-        flag = 1;
-      }
+
       // get room index and set up socket information
       console.log(room);
       socket.username = username;
@@ -542,7 +537,10 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
       checkReadyState(socket)
       */
+
+
       rooms[roomIndex] = currRoom;
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
     })
 
@@ -590,6 +588,9 @@ io.sockets.on('connection', function (socket) {
           //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
       }
+      console.dir(currRoom.players[currRoom.currentPlayer]);
+
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
     })
     socket.on('playerFold', function() {
@@ -607,6 +608,11 @@ io.sockets.on('connection', function (socket) {
         return;
       }
       currRoom.players[currRoom.currentPlayer].state = "FOLDED";
+
+
+      io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, false, currRoom.currentPlayer);
+      io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+
       var counter = 0;
       for (var i = 0; i < currRoom.players.length; i++) {
         if (currRoom.players[i].state == "FOLDED") {
@@ -617,6 +623,7 @@ io.sockets.on('connection', function (socket) {
         currRoom.gameState = 3;
         progressGame(socket);
       }
+
       checkReadyState(socket);
     })
 
@@ -937,6 +944,8 @@ function startGame(socket, currRoom) {
   currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
   currRoom = beginRound(socket, currRoom);
 
+  io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
+
   return currRoom;
 }
 
@@ -1006,8 +1015,20 @@ function beginRound(socket, currGame) {
   //players[bigBlindPlacement] = temp;
 
   //printInfo(socket);
+  let sanatizedPlayers = [];
+  for (var i = 0; i < newGame.players.length; i++) {
+    sanatizedPlayers.push({
+        username: io.sockets.connected[newGame.players[i].playerID].username,
+        chips: newGame.players[i].chips
+    });
+  }
+
+  console.dir(sanatizedPlayers);
+
+  io.sockets.in(socket.room).emit('renderBoardState',newGame.bigBlindPlacement, newGame.smallBlindPlacement, sanatizedPlayers);
+
   for (let i = 0; i < newGame.players.length; i++) {
-    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i]);
+    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
     io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
   }
   io.to(newGame.players[newGame.currentPlayer].playerID).emit("updatechat", "It is your turn");
@@ -1048,6 +1069,7 @@ function progressGame(socket) {
     */
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
+
     currRoom.gameState++;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('flop', flop);
