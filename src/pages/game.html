@@ -164,6 +164,12 @@
 
 	})
 
+	socket.on('handHint', function(data) {
+		handHint(data);
+	})
+	socket.on('boardHint', function(data) {
+		boardHint(data);
+	})
 
 	socket.on('updatePlayer', function(name, totalChips, betChips, folded, active, player){
 		drawPlayer(name, totalChips, betChips, folded, active, player);

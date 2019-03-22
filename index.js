@@ -471,7 +471,7 @@ io.sockets.on('connection', function (socket) {
       if (currRoom.players.length == currRoom.maxPlayers) {
         currRoom = startGame(socket, currRoom);
         for (let i = 0; i < currRoom.players.length; i++) {
-          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.current, currRoom.players[i].chips);
+          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
         }
       }
       rooms[currRoomIndex] = currRoom;
@@ -540,8 +540,9 @@ io.sockets.on('connection', function (socket) {
 
 
       rooms[roomIndex] = currRoom;
-      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
+
     })
 
     socket.on('playerCall', function() {
@@ -590,8 +591,9 @@ io.sockets.on('connection', function (socket) {
       }
       console.dir(currRoom.players[currRoom.currentPlayer]);
 
-      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
       checkReadyState(socket)
+      io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
+
     })
     socket.on('playerFold', function() {
       io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
@@ -610,8 +612,7 @@ io.sockets.on('connection', function (socket) {
       currRoom.players[currRoom.currentPlayer].state = "FOLDED";
 
 
-      io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, false, currRoom.currentPlayer);
-      io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+
 
       var counter = 0;
       for (var i = 0; i < currRoom.players.length; i++) {
@@ -623,7 +624,8 @@ io.sockets.on('connection', function (socket) {
         currRoom.gameState = 3;
         progressGame(socket);
       }
-
+      io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
+      io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
       checkReadyState(socket);
     })
 
@@ -841,6 +843,7 @@ function findRoom(roomName) {
       var counter = 0;
       for (var i = 0; i < players.length; i++) {
         if (players[i].state == "FOLDED") {
+
           counter++;
         }
       }
@@ -1029,6 +1032,7 @@ function beginRound(socket, currGame) {
 
   for (let i = 0; i < newGame.players.length; i++) {
     io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
+
     io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
   }
   io.to(newGame.players[newGame.currentPlayer].playerID).emit("updatechat", "It is your turn");
@@ -1128,6 +1132,7 @@ function progressGame(socket) {
     }
 
     //console.log("WINNER HAS BEEN CALCULATED")
+
     let winnerArray = hf.findWinner(handRanks);
 
 
@@ -1142,11 +1147,12 @@ function progressGame(socket) {
       }
     }
 
-    let winner = winnersArray[0];
+    let winner = winnerArray[0];
 
     var winnersArr = []
     var winString = winner.toString();
     //console.log(winString);
+
 
     for (var i = 0; i < currRoom.players.length; i++) {
       if (currRoom.players[i].state != "FOLDED") {

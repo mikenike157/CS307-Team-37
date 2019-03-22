@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/fabric.js/2.4.6/fabric.min.js"></script>
+<script type ="text/javascript" src="display.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="style.css">
 <script>
+
+
+  $(document).ready(function() {
+    drawRoom('pokerDisplay', $("#pokerDisplay").height(), $("#pokerDisplay").width());
+  })
 
   var tutorialStage = 0;
 
@@ -56,8 +66,28 @@
 		})
 	})
 
+  function processCard(card){
+    //if(card.length <= 2){
+      card = card =card.replace('D','_of_diamonds');
+      card = card.replace('H','_of_hearts');
+      card = card.replace('S','_of_spades');
+      card = card.replace('C','_of_clubs');
+      card = card.replace("A", 'ace');
+      card = card.replace("Q", 'queen');
+      card = card.replace("J", 'jack');
+      card = card.replace("K", 'king')
+    //}
+    //console.log("card:" +  card);
+    return card;
+  }
+
   window.onload = function() {
+
+
      alert("Welcome to Poker University! Let's get started.\nClick OK to pass through the tutorial. When the tutorial is finished,\nwe will play a guided hand against an AI opponent.");
+     drawPlayerCards(false, false, [], 0);
+     drawPlayerCards(false, false, [], 1);
+
      setTimeout(function(){alert("The goal of poker is to score the best hand given your two\nprivate cards and the five table cards. The ranking of different\nhands can be seen by pressing the hint button. Press it now to see.");}, 1000);
   }
 
@@ -110,6 +140,7 @@
      $('#chatDisplay').append("Flop: " + flop.toString() + '<br>');
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
+     drawPlayerCards(true, false, [processCard(playerCard[0]), processCard(playerCard[1])], 0);
      updateScreen(pot, 0, chips);
      tutorialStage++;
    }
@@ -137,6 +168,8 @@
      $('#chatDisplay').append("Your Cards: " + playerHand.toString() + '<br>');
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
+     drawPlayerCards()
+
    }
    function doAlert() {
      alert("Looks like you have a decent hand! you should try making a bet. Click the text box in the bottom right corner and type 20 to bet 20 chips. Then, click the raise button to make your bet.");

@@ -114,13 +114,13 @@ function drawPlayerCards(visible, folded, cards, player) {
     if (canvasCards != null) {
         if(canvasCards.get('isFolded') == folded && canvasCards.get('isVisible') == visible){
             c.renderAll();
-            return;    
+            return;
         } else {
             console.dir(c);
             c.remove(canvasCards);
             console.dir(c);
         }
-        
+
     }
 
     //Creates cards in the default bottom center position of the table
@@ -165,7 +165,7 @@ function drawPlayerCards(visible, folded, cards, player) {
                             flipX: true
                         });
 
-                        
+
 
                         if (playerCards._objects.length > 1) {
                             transformTablePosRadial(player, playerCards, PLAYER_CARDS);
@@ -260,7 +260,6 @@ function drawTableCard(card, pos) {
 
 //Folded must be boolean
 function drawPlayer(name, totalChips, betChips, folded, active, player) {
-
     let canvasText = getItemByName(c.getObjects(), 'name', 'player-info-' + player);
     if (canvasText != null && canvasText._objects != undefined) {
         if(name != null)
@@ -270,7 +269,7 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
         if(betChips != null)
             getItemByName(canvasText.getObjects(), 'name', 'player-bet-chips-' + player).set({ text: 'Current Bet: ' + betChips });
         if (folded) {
-            getItemByName(canvasText.getObjects(), 'name', 'player-bet-chips-' + player).set({ text: 'FOLDED', fontWeight: 'bold', fill: 'red' });
+            getItemByName(canvasText.getObjects(), 'name', 'player-bet-chips-' + player).set({ text: 'FOLDED', fontWeight: 'bold', fill: 'BLACK' });
         }
         if (active) {
             if (canvasText._objects.length < 4) {
@@ -364,7 +363,7 @@ function drawPlayer(name, totalChips, betChips, folded, active, player) {
     textGroup.set('top', textGroup.get('top') - textGroup.get('height') / 2)
 
     if (folded) {
-        textGroup.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'red' });
+        textGroup.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'BLACK' });
     }
 
     c.add(textGroup);
