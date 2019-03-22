@@ -30,23 +30,26 @@
 		drawRoom('pokerDisplay', $("#pokerDisplay").height(), $("#pokerDisplay").width());
 		//Test block, remove later
 		for(let i = 0; i < 8; i++){
-			drawPlayerCards( true, false, ["ace_of_spades","queen_of_hearts"], i );
+			drawPlayerCards( i % 2, false, ["ace_of_spades","queen_of_hearts"], i );
 			if(i < 6 && i > 0){
 				drawTableCard("ace_of_spades", i);
 				if(i < 4){
 					drawBlind('dealer', i );
 				}
 			}
+			drawPlayer("Jamison", 500, 50, false, false,  i);
 		}
+
+		drawPlayerCards( false, true, ["ace_of_spades","queen_of_hearts"], i );
 		/////////////////////////////
 
 
 
-		drawPlayer("Jimbo", 500, 50, false, 0);
-		drawPlayer("Michael", 500, 50, false, 0);
-		drawPlayer("Jamison", 500, 50, true, 1);
+		drawPlayer("Jimbo", 500, 50, false, false, 0);
+		drawPlayer("Michael", 500, 50, false, true, 0);
+		drawPlayer("Jamison", 500, 50, true, true, 1);
 
-		logObjects();
+		//logObjects();
 
 	});
 
@@ -225,7 +228,7 @@
 
 
 <body>
-	<input type="button" id="leaveButton" style="position:ablsoulte; top:0; right:0;" value="Leave Room">
+	<input type="button" id="leaveButton" style="position:ablsoulte; top:0; right:0;" value="Leave Room"	>
 	<canvas id="pokerDisplay">
 
 	</canvas>

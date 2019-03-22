@@ -101,6 +101,7 @@ body {
 
 #pokerDisplay {
     height: 70%;
+    min-width: 750px;
     width: 100%;
 }
 

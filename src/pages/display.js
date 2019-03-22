@@ -5,6 +5,9 @@ let c = new fabric.StaticCanvas();
 
 let tableSpace = new fabric.Group([], );
 
+const URL = 'res/PNG/';
+const BACK = 'cardback';
+
 //These values depend on the size of the canvas, so they will be assigned on the first drawRoom call.
 let CANVAS_WIDTH = 0;
 let CANVAS_HEIGHT = 0;
@@ -17,16 +20,18 @@ const CARD_HEIGHT = 3;
 const CARD_SCALE = 25;
 const CARD_GAP = 3;
 
-const BLIND_RAD = 3;
+const BLIND_RAD = 12;
 
 const TABLE_SCALE = 0.8;
 
 //types for transformTablePosRadial
 const PLAYER_CARDS = 0.75;
 const PLAYER_FOLDED = 0.5;
-const PLAYER_BLIND = 0.6;
+const PLAYER_BLIND = 0.5;
 const PLAYER_CHIPS_OUT = 0;
 const PLAYER_CHIPS_IN = 0;
+
+const PLAYER_PADDING = 36;
 
 let players = [];
 let playerCards;
@@ -36,6 +41,7 @@ function drawRoom(canvas, cHeight, cWidth) {
     c = new fabric.StaticCanvas(canvas, { backgroundColor: 'rgb(200,200,200)' });
     c.setHeight(cHeight);
     c.setWidth(cWidth);
+
 
     //Creates a group as the reference point for all objects on the table
     tableSpace = new fabric.Group([], {
@@ -65,7 +71,7 @@ function drawRoom(canvas, cHeight, cWidth) {
     CANVAS_HEIGHT = cHeight;
     TABLE_WIDTH = CANVAS_WIDTH * TABLE_SCALE;
     TABLE_HEIGHT = CANVAS_HEIGHT * TABLE_SCALE;
-    c.renderAll();
+    //c.renderAll();
 }
 
 function clearTable() {
@@ -103,86 +109,78 @@ function drawPlayerCards(visible, folded, cards, player) {
     //Draws the player's cards
 
 
-    let loaded1 = false;
-    let loaded2 = false;
+    let canvasCards = getItemByName(c.getObjects(), 'name', 'player-cards-' + player);
+    if (canvasCards != null && canvasCards.get('isFolded') == folded && canvasCards.get('isVisible') == folded) {
 
-    let canvasCards = getItemByName(c, 'player-cards-' + player);
-    if (canvasCards != null) {
-
-        if (folded) {
-            visible = false;
-            transformTablePosRadial(player, canvasCards, PLAYER_FOLDED);
-        }
-        if (visible) {
-            canvasCards.item(0).set({ text: cards[0] });
-            canvasCards.item(1).set({ text: cards[1] });
-        }
         c.renderAll();
         return;
     }
 
     //Creates cards in the default bottom center position of the table
-    let playerCards = new fabric.Group([], {
-        name: 'player-cards-' + player,
-        left: 0,
-        top: 0,
-        originX: "center",
-        originY: "center"
-    });
+    let playerCards = new fabric.Group([]);
 
-    let getLeftCard = () => {
+    let loadPlayerCards = () => {
         return new Promise(
             (res, rej) => {
-                fabric.Image.fromURL("res/PNG/" + cards[0] + ".png", function(imgLeft) {
+
+                if (folded || !visible) {
+                    cards = [BACK, BACK];
+                }
+
+                if (folded) {
+                    visible = false;
+                    transformTablePosRadial(player, canvasCards, PLAYER_FOLDED);
+                }
+
+                fabric.Image.fromURL(URL + cards[0] + ".png", function(imgLeft) {
                     imgLeft.set('name', 'player-card-left' + player);
                     imgLeft.set('left', 0);
                     imgLeft.set('top', 0);
-                    //imgLeft.set('originX', 'center');
-                    //imgLeft.set('originY', 'center');
                     imgLeft.scale(CARD_WIDTH * CARD_SCALE / imgLeft.get('width'));
-                    playerCards.add(imgLeft);
-                    fabric.Image.fromURL( "res/PNG/" + cards[1] + ".png", function(imgRight) {
-	                    imgRight.set('name', 'player-card-right' + player);
-	                    imgRight.set('left', CARD_WIDTH * CARD_SCALE + CARD_GAP);
-	                    imgRight.set('top', 0);
-	                    //imgRight.set('originX', 'center');
-                    	//imgRight.set('originY', 'center');
-	                    imgRight.scale(CARD_WIDTH * CARD_SCALE / imgRight.get('width'));
-	                    
-	                    if (playerCards.add(imgRight)._objects.length > 1) {
-                        	console.dir(playerCards)	;
-                        	res();
-                    	} else {
-                       	 	rej();
-                    	}
-	                    //c.renderAll();
-	                  	}
-                  ); 
-                    
 
-                    
+                    fabric.Image.fromURL(URL + cards[1] + ".png", function(imgRight) {
+                        imgRight.set('name', 'player-card-right' + player);
+                        imgRight.set('left', CARD_WIDTH * CARD_SCALE + CARD_GAP);
+                        imgRight.set('top', 0);
+                        imgRight.scale(CARD_WIDTH * CARD_SCALE / imgRight.get('width'));
 
-                    //c.renderAll();
+                        playerCards = new fabric.Group([imgLeft, imgRight], {
+                            name: 'player-cards-' + player,
+                            left: CANVAS_WIDTH / 2,
+                            top: CANVAS_HEIGHT / 2,
+                            originX: "center",
+                            originY: "center",
+                            hasBorders: "true",
+                            backgroundColor: 'black',
+                            isVisible: visible,
+                            isFolded: folded,
+                            flipY: true
+                        });
+
+                        if (playerCards._objects.length > 1) {
+                            res();
+                        } else {
+                            rej();
+                        }
+                    });
+
+
                 })
-                
 
-            
-        })
+
+
+            })
 
     };
 
-    getLeftCard().then(() => {
-            //Moves the newly created cards to a new position based on which player's turn it is.
-            transformTablePosRadial(player, playerCards, PLAYER_CARDS);
+    loadPlayerCards().then(() => {
+        //Moves the newly created cards to a new position based on which player's turn it is.
+        transformTablePosRadial(player, playerCards, PLAYER_CARDS);
 
-            playerCards.setObjectsCoords();
-            console.log(playerCards.length);
+        c.add(playerCards);
 
-            tableSpace.add(playerCards.item(0));
-            tableSpace.add(playerCards.item(1));
-            c.renderAll();
-         }
-    )
+        c.renderAll();
+    })
 }
 
 
@@ -214,7 +212,7 @@ function drawBlind(blindType, player) {
 
 //pos must be an integer from 1 to 5, represents which stage of revealed cards to draw
 function drawTableCard(card, pos) {
-    fabric.Image.fromURL("res/PNG/" + card + ".png", function(img) {
+    fabric.Image.fromURL(URL + card + ".png", function(img) {
         img.set('name', 'table-card-' + pos);
         img.set('left', (CARD_WIDTH * CARD_SCALE + CARD_GAP) * (pos - 3));
         img.set('top', 0);
@@ -230,16 +228,44 @@ function drawTableCard(card, pos) {
 }
 
 //Folded must be boolean
-function drawPlayer(name, totalChips, betChips, folded, player) {
+function drawPlayer(name, totalChips, betChips, folded, active, player) {
 
-    let canvasText = getItemByName(c, 'player-info-' + player);
-    if (canvasText != null) {
+    let canvasText = getItemByName(c.getObjects(), 'name', 'player-info-' + player);
+    if (canvasText != null && canvasText._objects != undefined) {
         canvasText.item(0).set({ text: name });
         canvasText.item(1).set({ text: 'Total chips: ' + totalChips });
         canvasText.item(2).set({ text: 'Current Bet: ' + betChips });
         if (folded) {
-            canvasText.item(2).set({ text: 'folded' });
+            canvasText.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'red' });
         }
+        if (active) {
+            if (canvasText._objects.length < 4) {
+
+                let lastActive = getItemByName(c.getObjects(), 'active', true);
+                if (lastActive != null && lastActive._objects.length == 4) {
+                    lastActive.remove(lastActive.item(0));
+                    lastActive.set('active', false)
+                }
+
+                console.dir(lastActive);
+
+                canvasText.set('active', true)
+                canvasText.add(new fabric.Rect({
+                    name: 'active-rect',
+                    left: 0 - canvasText.get('width') / 2,
+                    top: 0 - canvasText.get('height') / 2,
+                    width: canvasText.get('width'),
+                    height: canvasText.get('height'),
+                    fill: 'red'
+                }))
+                getItemByName(c.getObjects(), 'name', 'active-rect').sendToBack();
+            }
+        } else {
+            if (canvasText._objects.length > 3) {
+                canvasText.remove(canvasText.item(3));
+            }
+        }
+        //canvasText.sendToFront();
         c.renderAll();
         return;
     }
@@ -248,6 +274,7 @@ function drawPlayer(name, totalChips, betChips, folded, player) {
     let playerName = new fabric.Text(name, {
         name: 'player-name-' + player,
         top: 0,
+        left: 0,
         fontSize: 20,
         textAlign: 'left',
         fontWeight: 'bold'
@@ -255,43 +282,55 @@ function drawPlayer(name, totalChips, betChips, folded, player) {
 
     let playerTotalChips = new fabric.Text('Total chips: ' + totalChips, {
         name: 'player-total-chips-' + player,
-        top: playerName.height + 6,
+        top: 6 + playerName.height,
+        left: 0,
         fontSize: 14,
         textAlign: 'left',
     });
 
     let playerBetChips = new fabric.Text('Current Bet: ' + betChips, {
         name: 'player-bet-chips-' + player,
-        top: playerTotalChips.height + 6,
-        fontSize: 14,
-        textAlign: 'left',
-    });
-
-    let playerFolded = new fabric.Text('FOLDED', {
-        name: 'player-folded-' + player,
-        top: playerTotalChips.height + 6,
         left: 0,
+        top: 6 + playerTotalChips.height + playerName.height,
         fontSize: 14,
         textAlign: 'left',
-        fontWeight: 'bold',
-        color: 'red'
     });
 
-    let textGroup = new fabric.Group([playerName, playerTotalChips], {
+    let textFromCenter = 0.9;
+    if (player % 2) {
+        textFromCenter = 1.1;
+    }
+
+    let textGroup = new fabric.Group([playerName, playerTotalChips, playerBetChips], {
         name: 'player-info-' + player,
         originX: 'center',
-        originy: 'center'
+        originy: 'center',
+        backgroundColor: 'red',
+        active: false,
+        left: CANVAS_WIDTH / 2 + Math.cos(player * (Math.PI / 4)) * (CANVAS_WIDTH / 2) * textFromCenter,
+        top: CANVAS_HEIGHT / 2 + Math.sin(player * (Math.PI / 4)) * (CANVAS_HEIGHT / 2) * textFromCenter
     });
 
-    if (!folded) {
-        textGroup.add(playerBetChips)
-    } else {
-        textGroup.add(playerFolded)
+    if (active) {
+        textGroup.add(new fabric.Rect({
+            name: 'active-rect',
+            left: 0 - textGroup.get('width') / 2,
+            top: 0 - textGroup.get('height') / 2,
+            width: textGroup.get('width'),
+            height: textGroup.get('height'),
+            fill: 'red'
+        }))
+        textGroup.set('active', true);
+    }
+
+    textGroup.set('top', textGroup.get('top') - textGroup.get('height') / 2)
+
+    if (folded) {
+        textGroup.item(2).set({ text: 'FOLDED', fontWeight: 'bold', color: 'red' });
     }
 
 
-    textGroup.left = Math.cos(player * (Math.PI / 4)) * (CANVAS_WIDTH / 2) * 0.8;
-    textGroup.top = Math.sin(player * (Math.PI / 4)) * CANVAS_WIDTH / 2 * 0.8;
+
 
     if (textGroup.intersectsWithObject(c.item(0))) {
         console.log("collides");
@@ -310,19 +349,23 @@ function drawPlayer(name, totalChips, betChips, folded, player) {
 function transformTablePosRadial(player, object, type) {
     object.angle = (360 / 8) * player + 90;
 
-    object.set('left', Math.cos(player * (Math.PI / 4)) * (TABLE_WIDTH / 2) * type);
-    object.set('top', Math.sin(player * (Math.PI / 4)) * TABLE_HEIGHT / 2 * type);
+    object.set('left', object.left + Math.cos(player * (Math.PI / 4)) * (TABLE_WIDTH / 2) * type);
+    object.set('top', object.top + Math.sin(player * (Math.PI / 4)) * TABLE_HEIGHT / 2 * type);
 }
 
 //Searches the canvas for an item with a specific name so that it can be updated
-function getItemByName(thisCanvas, name) {
-    let currentObjects = thisCanvas.getObjects();
-    for (let i = currentObjects.length - 1; i >= 0; i--) {
-        if (currentObjects[i].name == name) {
-            return currentObjects[i];
+function getItemByName(currentObjArr, type, value) {
+    for (let i = currentObjArr.length - 1; i >= 0; i--) {
+        //console.log(currentObjArr[i].name);
+        if (currentObjArr[i].get(type) == value) {
+            return currentObjArr[i];
+        } else if (currentObjArr[i]._objects != undefined && currentObjArr[i].getObjects().length != 0) {
+            let res = getItemByName(currentObjArr[i].getObjects(), type, value)
+            if (res != null) {
+                return res;
+            }
         }
     }
-    console.log("Could not find object");
     return null;
 }
 
