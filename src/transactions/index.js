@@ -50,7 +50,6 @@ async function createUser(client, userinfo) {
     userId: res.rows[0]["user_id"],
     username: userinfo.username,
   }
-  //console.log("client released");
 }
 
 /*

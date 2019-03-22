@@ -679,6 +679,224 @@ function findRoom(roomName) {
   return "ERR";
 }
 
+/*
+  // when the client emits 'sendchat', this listens and executes
+  socket.on('sendchat', function (data) {
+    // we tell the client to execute 'updatechat' with 2 parameters
+    var parsed = data.split(" ");
+
+    if (parsed == "/start") {
+      //console.log(players);
+      if (gameStatus == 1) {
+        io.to(socket.id).emit('updatechat', "Server", "There is already a game going on.");
+        return;
+      }
+      if (players.length == 1) {
+        io.to(socket.id).emit('updatechat', "Server", "You cannot play a game with one person.");
+        return;
+      }
+
+      gameStatus = 1;
+      gameState = 0;
+      smallBlindPlacement = 0;
+      bigBlindPlacement = 1;
+      currentPlayer = (bigBlindPlacement + 1) % players.length;
+
+      beginRound(socket);
+      //io.sockets.in(socket.room).emit('updatechat', "Player Cards: ", playerCards);
+      //io.sockets.in(socket.room).emit('updatechat', "Table Cards: ", tableCards)
+    }
+    else if (parsed[0] == "/raise") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        return;
+      }
+      var raiseTo = parsed[1];
+      var currPlayer = players[currentPlayer];
+      var retArray = game.playerRaise(currPlayer, currentBet, raiseTo);
+      if (retArray == -1) {
+        io.to(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
+        return;
+      }
+      currentPot += retArray[1];
+      currentBet = raiseTo;
+      players[currentPlayer] = retArray[0];
+
+      // Added: If some prior player was all-in, divert amount to main pot and side pot
+      for (var i = 0; i < players.length; i++)
+      {
+        if (players[i].state == "ALLIN") {
+          sidePot += (retArray[1]-mainPot);
+          mainPot += mainPot;
+          break;
+        }
+      }
+
+      for (var i = 0; i < players.length; i++) {
+        if (players[i].state == "READY") {
+          players[i].state = "NOTREADY";
+        }
+        console.log(players[i]);
+      }
+      players[currentPlayer].state = "READY";
+      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
+      checkReadyState(socket)
+    }
+    else if (parsed[0] == "/ignore") {
+      ignoreList.push(socket.id);
+      return;
+    }
+    else if (parsed[0] == "/call") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        return;
+      }
+      if (currentBet == 0) {
+        players[currentPlayer].state = "READY";
+        io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
+      }
+      else {
+        var amount = currentBet;
+        var retArray = game.playerCall(players[currentPlayer], currentBet);
+        if (retArray == -1) {
+          currentPot += players[currentPlayer].chips;
+          players[currentPlayer].chips = 0;
+          players[currentPlayer].state = "ALLIN";
+        }
+        else {
+          currentPot += retArray[1];
+
+          // Added: If some prior player was all-in, divert amount to main pot and side pot
+          for (var i = 0; i < players.length; i++)
+          {
+            if (players[i].state == "ALLIN") {
+              sidePot += (retArray[1]-mainPot);
+             mainPot += mainPot;
+             break;
+           }
+          }
+
+          players[currentPlayer] = retArray[0];
+          io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
+        }
+      }
+      checkReadyState(socket)
+    }
+    else if (parsed[0] == "/blinds") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      io.to(socket.id).emit('updatechat', "Server", "The small blind is " + smallBlind + " and big blind is " + bigBlind + ".");
+    }
+    else if (parsed[0] == "/fold") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        return;
+      }
+      players[currentPlayer].state = "FOLDED";
+      var counter = 0;
+      for (var i = 0; i < players.length; i++) {
+        if (players[i].state == "FOLDED") {
+          counter++;
+        }
+      }
+      if (counter == players.length-1) {
+        gameState = 3;
+        progressGame(socket);
+      }
+      checkReadyState(socket);
+    }
+    else if (parsed[0] == "/check") {
+      if (gameStatus == 0) {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      if (!validatePlayer(socket)) {
+        console.log("validate player")
+        return;
+      }
+      console.log("Validate player succeeds.");
+      if (currentBet != 0 && currentPlayer != bigBlindPlacement && gameState != 0 && players[bigBlindPlacement].lastBet == bigBlind) {
+        io.to(socket.id).emit("You cannot check when the current bet is higher than 0");
+      }
+      else{ console.log("Can check"); }
+      players[currentPlayer].state = "READY";
+      console.log(players[currentPlayer].state);
+      checkReadyState(socket);
+    }
+    else if (parsed[0] == "/allin")
+    {
+      // Check game started
+      if (gameStatus == 0)
+      {
+        io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
+        return;
+      }
+      // Check valid player
+      if (!validatePlayer(socket)) {
+        console.log("vadlidate player")
+        return;
+      }
+
+      var currPlayer = players[currentPlayer];
+      var retArray = game.allIn(currPlayer);
+      mainPot += retArray[1]; // subsequent bets match this to make this the winnable amount for the all-in player
+      players[currentPlayer] = retArray[0];
+
+      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " went all-in at" + retArray[1] + ". The Pot is now " + currentPot + ". mainPot is now " + mainPot + ".");
+      checkReadyState(socket)
+    }
+    else {
+      if (data != "") {
+        var newdata = validator.escape(data);
+          for (var i = 0; i < players.length; i++) {
+            if (!(ignoreList.includes(players[i].playerID))) {
+              io.to(players[i].playerID).emit('updatechat', socket.username, newdata);
+            }
+          }
+        return;
+      }
+      return;
+    }
+    printInfo(socket)
+  });
+
+
+  // when the user disconnects.. perform this
+  socket.on('disconnect', function() {
+    // remove the username from global usernames list
+    delete usernames[socket.username];
+    for (var i = 0; i < players.length; i++) {
+      if (players[i].playerID == socket.id) {
+        players.splice(i, 1);
+      }
+    }
+    if (players.length <= 1) {
+      gameStatus = 0;
+      if (players.length == 1) {
+        players[0] = game.addPlayerplayer(players[0].playerID);
+      }
+    }
+    console.log(players);
+    // update list of users in chat, client-side
+    io.sockets.emit('updateusers', usernames);
+    // echo globally that this client has left
+    socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+    socket.leave(socket.room);
+  });
+});
+*/
+
 function addPlayer(currRoom, socket) {
   currRoom = room.addPlayer(currRoom, socket);
   return currRoom;
@@ -875,7 +1093,7 @@ function progressGame(socket) {
       }
     }
 
-    let winner = winnerArray[0];
+    let winner = winnersArray[0];
 
     var winnersArr = []
     var winString = winner.toString();
