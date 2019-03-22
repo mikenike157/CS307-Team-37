@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+
+
+
+<html>
+<head>
+	<title>Profile</title>
+</head>
+<body>
+  <h1> Change Username </h1>
+  <form id="usernameForm" action="username_post" method="POST">
+    <p class="field-title">Pick a new username</p>
+    <input type="text" name="newUsername" required="required" pattern="[A-Za-z0-9]{1,20}"  oninvalid="this.setCustomValidity('Please enter 1-20 Characters and/or numbers')" oninput="this.setCustomValidity('')">
+    <input type="submit"  name="submit" value="Submit">
+  </form>
+</body>
+</html>

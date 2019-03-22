@@ -2,6 +2,7 @@
 
 const express = require("express");
 const game = require("./src/GameActions.js");
+const display = require("./src/display.js");
 const room = require("./src/Gamerooms.js");
 const validator = require("validator");
 const path = require("path");
@@ -12,7 +13,7 @@ const bp = require("body-parser");
 const fs = require("fs")
 const session = require('client-sessions')
 const jq = require('jquery')
-const gr = require("./src/Gamerooms.js");
+const pos = require('./src/possibility.js');
 
 //The code for the database interaction
 const lg = require("./src/transactions/index.js")
@@ -67,9 +68,21 @@ const server = express()
     need to be redirected to the game lobby. This also needs to call
     the function that creates a room and inserts it into the rooms array
     */
+    console.log(req.body);
+    let roomName = req.body.roomName;
+    let maxPlayers = req.body.numPlayers;
+    let roomPass = req.body.roomPass;
+    let numAI = req.body.numAI;
+    let anteOption = req.body.anteOption
+    let startChips = req.body.startChips;
+    createRoom(roomName, maxPlayers, roomPass, numAI, anteOption, startChips);
+    req.session.user.room = roomName;
+
+    return res.redirect('/game.html');
+
   })
 
-  .get('/join_game', function(req, res) {
+  .post('/join_game', function(req, res) {
     /* Update the current players current room, redirect them to the game
     page.
     */
@@ -128,24 +141,72 @@ const server = express()
           }
         })
         .catch(err => {
+          console.log("HERE");
           client.release()
           console.log(err.stack);
-          return res.redirect('/')
+          return res.send("Username is taken");
         })
 
       })
 
   })
 
-  .get('/logout_get', function(req, res) {
-    //Make sure current room is equal to null
-    res.redirect('/index.html');
+  .post('/reset_pass', function(req, res) {
+    let passOne = req.body.password_one;
+    let passTwo = req.body.password_two;
+    if (passOne != passTwo) {
+      return res.redirect('/');
+    }
+    else {
+      pool.connect()
+        .then(client => {
+          return lg.updatePassword(client, req.session.username, passOne)
+          .then(validate => {
+            client.release();
+            if (validate == true) {
+              console.log("SUCCESS");
+              return res.redirect('/');
+            }
+            else {
+              return res.redirect('/');
+            }
+          })
+        });
+    }
   })
 
-  .post('/password_post', function(req, res) {
+  .post('/logout_get', function(req, res) {
+    //Make sure current room is equal to null
+    delete req.session.user;
+    console.log(req.session.user);
+    res.redirect('/index.html');
+  })
+  .post('/question_post', function(req, res) {
     pool.connect()
       .then(client => {
-        console.log(client);
+        return lg.validateSecurityQuestion(client, req.session.username, req.body.answer)
+        .then(validate => {
+          client.release();
+          if (validate == false) {
+            return res.redirect('/');
+          }
+          else {
+            return res.redirect("/resetPass.html");
+          }
+        })
+        .catch(err => {
+          console.log(err.stack);
+          client.release();
+          return res.redirect('/')
+        })
+    })
+  })
+
+  .post('/password_post', function(req, res, next) {
+    req.session.username = req.body.username;
+    let content;
+    pool.connect()
+      .then(client => {
         return lg.getSecurityQuestion(client, req.body.username)
         .then(question => {
         client.release()
@@ -154,14 +215,15 @@ const server = express()
             return res.redirect('/');
           }
           else {
-            let thispath = path.join(__dirname, "/pages/question.html")
-            fs.readFile(thispath, function(err, data) {
+            let thisPath = path.join(__dirname, "/src/pages/question.html");
+            fs.readFile(thisPath, "utf-8", function(err, data) {
               if (err) {
                 console.log(err, 'error');
                 return null;
               };
-              data = data.replace('{QUESTION}', question.question);
-              next(data);
+              content = data;
+              content = content.replace('{QUESTION}', question.question);
+              res.send(content);
             })
           }
       })
@@ -173,9 +235,63 @@ const server = express()
       })
     })
   })
+
+  .post('/username_post', function(req, res) {
+    pool.connect()
+      .then(client => {
+        return lg.updateUsername(client, req.session.user.userId, req.body.newUsername)
+        .then(validate => {
+          client.release();
+            req.session.user.username = req.body.newUsername;
+            return res.redirect("/resetPass.html");
+          })
+        .catch(err => {
+          console.log(err.stack);
+          client.release();
+          return res.redirect('/')
+        })
+    })
+  })
+
+  .post('/profile_page', function(req, res) {
+    console.log(req.session.user);
+    let content;
+    pool.connect()
+      .then(client => {
+        return lg.profileQuery(client, req.session.user.userId)
+        .then(profileResult => {
+          client.release()
+          let thisPath = path.join(__dirname, "/src/pages/profile.html");
+          fs.readFile(thisPath, "utf-8", function(err, data) {
+            if (err) {
+              console.log(err, 'error');
+              return null;
+            };
+            content = data;
+            content = content.replace('{USER}', req.session.user.username);
+            content = content.replace('{CHIPS}', profileResult.numChips);
+            content = content.replace('{WINS}', profileResult.numWins);
+            res.send(content);
+          })
+        })
+        .catch(err => {
+          console.log("HERE");
+          client.release()
+          console.log(err.stack);
+          return res.redirect('/');
+        })
+      })
+    })
+
+  .post('/join_tutorial', function(req, res) {
+    console.log("FROM TUTORIAL JOIN: " + req.session.user.username);
+    return res.redirect('/tutorial.html');
+  })
+
+
   //validates login credentials of user
   .post('/login_post',  function(req, res){
-    
+
     console.log("begin login");
       //create promise that returns a user from the database
       //const result = lg.validateUser(client, req.body.username, req.body.password);
@@ -191,7 +307,7 @@ const server = express()
               console.log(user.reason);
               return res.redirect('/');
             } else {
-              console.log("197");
+              console.log(user);
               req.session.user = user;
               return res.redirect('/game.html');
             }
@@ -205,6 +321,7 @@ const server = express()
         })
 
   })
+
 
   .get('/update_username', function(req,res){
     console.log("FROM USERNAME: " + req.session.user.username);
@@ -250,6 +367,8 @@ io.sockets.on('connection', function (socket) {
   // when the client emits 'adduser', this listesns and executes
 
     socket.on('adduser', function(username, room) {
+
+      flag = 0;
       // get room index and set up socket information
       if(flag){
         for (let i = 0; i < 3; i++){
@@ -262,10 +381,11 @@ io.sockets.on('connection', function (socket) {
       room = "room1";
 
       let currRoomIndex = findRoom(room);
+      let currRoom = addPlayer(rooms[currRoomIndex], socket);
+
       socket.username = username;
       socket.room = room;
       //add a player to the room, set the returned room to currRoom
-      let currRoom = addPlayer(rooms[currRoomIndex], socket);
       //if room was full
       if (currRoom == null) {
         return;
@@ -280,6 +400,7 @@ io.sockets.on('connection', function (socket) {
         }
       }
       rooms[currRoomIndex] = currRoom;
+      io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
       console.log("JOINED ROOM");
       return;
     })
@@ -413,7 +534,53 @@ io.sockets.on('connection', function (socket) {
       }
       checkReadyState(socket);
     })
+    socket.on('disconnect', function() {
+      let roomIndex = findRoom(socket.room);
+      let currRoom = rooms[roomIndex];
+      let winFlag = 0;
+      if (currRoom.players.length == 1) {
+        winFlag == 1;
+      }
+      for (let i = 0; i < currRoom.players.length; i++) {
+        if (currRoom.players[i].playerID == socket.ID) {
+          let currChips = currRoom.players[i].chips;
+          updateHistory(currChips, winFlag);
+          break;
+        }
+      }
+      delete socket.room;
+
+    })
+
 });
+
+function updateHistory(userID, chips, winFlag) {
+  pool.connect()
+  .then(client => {
+    return lg.updateChips(client, userID, chips)
+    .then(updatedChips => {
+      client.release()
+    })
+    .catch(err => {
+      client.release()
+      console.log(err.stack);
+    })
+  })
+  if (winFlag) {
+    pool.connect()
+    .then(client => {
+      return lg.updateWin(client, userID, chips)
+      .then(amountWins => {
+
+        client.release()
+      })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+      })
+    })
+  }
+}
 
 function findRoom(roomName) {
   for (let i = 0; i < rooms.length; i++) {
@@ -604,7 +771,21 @@ function progressGame(socket) {
     }
 
     console.log("WINNER HAS BEEN CALCULATED")
-    let winner = hf.findWinner(handRanks)
+    let winnerArray = hf.findWinner(handRanks);
+
+
+    let winPlayers = [];
+    for (let j = 0; j < winnersArray.length; j++) {
+      for (let i = 0; i < currRoom.players.length; i++) {
+        if (currRoom.players[i].state != "FOLDED") {
+          if (winnersArray[j].toString() == currRoom.players[i].handRank.toString()) {
+            winPlayers.push(currRoom.players[i]);
+          }
+        }
+      }
+    }
+
+    let winner = winnerArray[0];
 
     var winnersArr = []
     var winString = winner.toString();
@@ -674,26 +855,29 @@ function progressGame(socket) {
   return currRoom;
 } // end of progressGame()
 
-function sendLog(socket) {
+function printInfo(socket) {
+  let fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);
+  let fixedPCards = fixedCards[0];
+  let fixedTCards = fixedCards[1];
   io.sockets.in(socket.room).emit('updatechat', "Server", "Pot: " + currentPot);
   io.sockets.in(socket.room).emit('updatechat', "Server", "Current Bet: " + currentBet);
-  for (var i = 0; i < players.length; i++) {
+  for (let i = 0; i < players.length; i++) {
     var variable = players[i];
     io.sockets.in(socket.room).emit('updatechat', "Chips: ", variable.username + ": " + variable.chips);
   }
-  for (var i = 0; i < players.length; i++) {
+  for (let i = 0; i < players.length; i++) {
     io.to(players[i].playerID).emit('updatechat', 'Your Cards: ', fixedPCards[i]);
   }
   if (gameState >= 1) {
-    var flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]]
-    io.sockets.in(socket.room).emit('updatechat', "Server", "Flop: " + flop)
+    let flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]];
+    io.sockets.in(socket.room).emit('updatechat', "Server", "Flop: " + flop);
   }
   if (gameState >= 2) {
-    var turn = fixedTCards[3];
-    io.sockets.in(socket.room).emit('updatechat', "Server", "Turn: " + turn)
+    let turn = fixedTCards[3];
+    io.sockets.in(socket.room).emit('updatechat', "Server", "Turn: " + turn);
   }
   if (gameState >= 3) {
-    var river = fixedTCards[4];
+    let river = fixedTCards[4];
     io.sockets.in(socket.room).emit('updatechat', "Server", "River: " + river);
   }
   io.sockets.in(socket.room).emit('updatechat', "Server", "It is now " + players[currentPlayer].username + "\'s turn.");
@@ -750,9 +934,39 @@ function joinRoom(socket, newRoom) {
 }
 
 //Will take the game options as arguments
-function createRoom(name) {
+function createRoom(name, maxPlayers, password, numAI, anteOption, startChips) {
   //Do stuff with the database here. Insert into the games table
-  var newRoom = room.createRoom(name);
+  var newRoom = room.createRoom(name, maxPlayers, password, numAI, anteOption, startChips);
   console.log(newRoom);
   rooms.push(newRoom);
+}
+
+
+//FOR HINT
+
+function createHint(currRoom, socket) {
+  let flop = [currRoom.fixedTCards[0], currRoom.fixedTCards[1], currRoom.fixedTCards[2]]
+  let turn = currRoom.fixedTCards[3];
+  let river = currRoom.fixedTCards[4];
+  let tableArray;
+  if (currRoom.gameState == 0) {
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, []);
+  }
+  else if (currRoom.gameState == 1) {
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, flop);
+  }
+  else if (currRoom.gameState == 2) {
+    flop.push(turn);
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, flop);
+  }
+  else if (currRoom.gameState == 3) {
+    flop.push(turn);
+    flop.push(river);
+    tableArray = hf.finalhand(currRoom.players[currRoom.currentPlayer].cards, flop);
+  }
+  //get whoever clicked the hint button, do all of this with the currRoom.player[whatever]
+  let match = hf.match(tableArray);
+  let hintOutcome = pos.possibility(tableArray, match, 2+whatever.tableCards);
+  console.log(hintOutcome);
+
 }

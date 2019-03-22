@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script>
+
+  var tutorialStage = 0;
+
+  var playerHand = ["10C", "KC"];
+  var aiHand = ["2H", "JH"];
+  var flop = ["AC", "7D", "2S"];
+  var turn = "QC";
+  var river = "JC";
+	var pot = "Pot";
+	var amountToCall = "Call Amount";
+	var chips = "Total Chips";
+	function updateScreen(newPot, newAmountToCall, newChips) {
+		pot = newPot;
+		amountToCall = newAmountToCall;
+		chips = newChips;
+		document.getElementById('fullPotTab').innerHTML=pot;
+		document.getElementById('amountToCall').innerHTML=amountToCall;
+		document.getElementById('chips').innerHTML=chips;
+	}
+	function setTimer() {
+
+	}
+
+	function autoFold() {
+		document.getElementById('fold').click();
+	}
+
+	//on connection to page load the username and call adduser on server side
+
+
+	$(function() {
+		$('#raise').click( function() {
+      if (tutorialStage == 1) {
+        let betAmount = document.getElementById("customBet").value;
+        if (betAmount != 20) {
+          alert("Please raise only 20 chips.")
+        }
+        else {
+          updateScreen(20, 20, 80);
+          setTimeout(tutorialStepThree, 500);
+        }
+      }
+      else if (tutorialStage == 4) {
+        let betAmount = document.getElementById("customBet").value;
+        if (betAmount != chips) {
+          alert("Bet your total amount of chips")
+        }
+        else {
+          updateScreen(pot+chips, chips, 0);
+          setTimeout(finalTutorialStep, 1000);
+        }
+      }
+		})
+	})
+
+  window.onload = function() {
+     alert("Welcome to Poker University! Let's get started.\nClick OK to pass through the tutorial. When the tutorial is finished,\nwe will play a guided hand against an AI opponent.");
+     setTimeout(function(){alert("The goal of poker is to score the best hand given your two\nprivate cards and the five table cards. The ranking of different\nhands can be seen by pressing the hint button. Press it now to see.");}, 1000);
+  }
+
+  function finalTutorialStep() {
+    alert("It looks like he called us and we're both all in! The river will decide who wins this hand. Lets hope you get the flush you're looking for!");
+    updateScreen(200, 0, 200);
+    tutorialRiver();
+  }
+
+   function tutorialStepTwo() {
+     alert("In the bottom right corner, you will see the actions you can perform on a given turn.\nOnly one action can be performed when it is your turn. If you do not\nlike your hand, you can press " +
+     "Fold to pass the current hand.\nIf you would like to play the hand, then you can press either Call or Raise.\nCall will match the previous bet. Raise will increase the current bet to an amount of your choosing.\nOnce " +
+     "all players have either folded or called, the game will move to the next stage. Click OK to continue.");
+     alert("The first round of betting is called the 'preflop'. The only cards you have\nin the preflop are the two cards dealt to you. Once the preflop has ended,\n the game moves to the flop. In the flop, " +
+     "you will recieve an additional three cards that are open to the table.\nAny player is able to use them to improve their hand. Another round of betting happens. When all players have\nfolded or called, " +
+     "then one more card will be dealt.\nAgain, a betting round happens, followed by a final card and then a final round of betting.");
+     alert("Once the final round of betting has ended, then all hands remaining are shown.\nThe player who has the best hand takes the pot and another round starts.\n");
+     alert("Let's start a hand and take it step by step. Your cards will be dealt in front of you. Right now, you will be against one other computer player.");
+
+     startTutorialHand();
+     setTimeout(doAlert, 500);
+     updateScreen(0, 0, 100)
+     tutorialStage++;
+   }
+
+   function tutorialStepThree() {
+     alert("Great! Betting shows that you have interest in your hand and have confidence in it. You can also try to\nbluff your hand and get people to think you have a good hand to get them to fold when you actually\ndon't have anything.");
+     alert("Looks like they're calling your bet. The game moves onto the second round now: the flop. The flop will be shown on the table.");
+     updateScreen(pot+20, 0, chips);
+     tutorialFlop();
+     setTimeout(flopContinued, 1000);
+   }
+
+   function tutorialRiver(){
+     $('#chatDisplay').append("River: " + flop.toString() + " " + turn + " " + river + '<br>');
+     $('#chatDisplay').append("Opponent's hand: AC, JH, JC, 2S, 2H.<br>Two Pair Jack and Twos.<br>")
+     $('#chatDisplay').append("Your Hand: AC, KC, QC, JC, 10C.<br>Royal Flush..<br>");
+     $('#chatDisplay').append("You Win");
+     let obj = document.getElementById("chatDisplay");
+     obj.scrollTop = obj.scrollHeight;
+     setTimeout(finalAlert, 1000);
+   }
+
+   function finalAlert() {
+     alert("Wow! You got a Royal Flush and won! Great job! Now you know the basics of poker and can play against real opponents.\nTake these chips as a prize for completing the tutorial. Press leave when you are ready to leave.");
+   }
+
+
+   function tutorialFlop() {
+     $('#chatDisplay').append("Flop: " + flop.toString() + '<br>');
+     let obj = document.getElementById("chatDisplay");
+     obj.scrollTop = obj.scrollHeight;
+     updateScreen(pot, 0, chips);
+     tutorialStage++;
+   }
+
+   function tutorialTurn() {
+     $('#chatDisplay').append("Turn: " + flop.toString() + " " + turn + '<br>');
+     let obj = document.getElementById("chatDisplay");
+     obj.scrollTop = obj.scrollHeight;
+     updateScreen(pot, 0, chips);
+     tutorialStage++;
+     setTimeout(turnContinued, 500);
+   }
+
+   function flopContinued() {
+     alert("Our flop doesn't look too great. We have no pairs, but there are still some high valued hands we can make.\nWhen the current bet is 0, it is possible to 'check' your opponent. This is the same as\nbetting 0 chips. They can either" +
+   "call or raise based off of it. There is\nnever any harm in checking so lets go ahead and try that. Click the call button to check.")
+   }
+
+   function turnContinued() {
+     alert("The turn saved our hand a little! We have four clubs on the table, which means we can hope for a flush on the last card.\nThere are also four jacks in the deck, so we can hope to get one for a striaght.\n" +
+    "We could take him all in now and go for the win. Raise all your chips and see if he takes the bait.");
+   }
+
+   function startTutorialHand() {
+     $('#chatDisplay').append("Your Cards: " + playerHand.toString() + '<br>');
+     let obj = document.getElementById("chatDisplay");
+     obj.scrollTop = obj.scrollHeight;
+   }
+   function doAlert() {
+     alert("Looks like you have a decent hand! you should try making a bet. Click the text box in the bottom right corner and type 20 to bet 20 chips. Then, click the raise button to make your bet.");
+   }
+
+	$(function() {
+		$('#call').click( function() {
+      if (tutorialStage == 2) {
+        alert("Good! Now your opponent can check as well or raise.");
+        setTimeout(function() {
+          updateScreen(pot+30, 30, chips);
+        }, 500);
+          alert("Looks like he is raising 30 chips. He could have a pretty good hand, but based on the cards on the table there is nothing too good he could have. Let's call his bet and move to the turn.");
+          tutorialStage++;
+      }
+      else if (tutorialStage == 3) {
+        updateScreen(pot+30, 30, chips-30);
+        tutorialTurn();
+      }
+		})
+	})
+
+	$(function() {
+		$('#fold').click( function() {
+			alert("You can't fold in the tutorial!");
+		})
+	})
+	$(function(){
+		// when the client clicks SEND
+		$('#send').click( function() {
+		    alert("There is no one else in the tutorial to type to!");
+		});
+		// when the client hits ENTER on their keyboard
+		$('#text').keypress(function(e) {
+			if(e.which == 13) {
+				$(this).blur();
+				$('#send').focus().click();
+			}
+		});
+	});
+
+  $(function() {
+    $('#hint').click( function() {
+      if (tutorialStage == 0) {
+        //DRAW THE STUFF
+        alert("While you play, you will be able to click the hint option to \ncheck what hands you have, which are still available, and which ones are impossible.\n" +
+        "Lets move onto how a game works. Click OK when you are ready to learn how to play.");
+        tutorialStepTwo();
+      }
+    })
+  })
+
+
+
+</script>
+
+
+
+<html>
+<head>
+	<title>Poker Game</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+	<canvas id="pokerDisplay">
+	</canvas>
+	<div id="gameBar">
+		<div class="sub-container" id="chatBox">
+			<div class="tab-select">
+
+				<input class="logButtons" type="button" id="chatButton" value="Chat">
+
+				<input class="logButtons" type="button" id="histButton" value="History">
+
+				<input class="logButtons" type="button" id="hintLogButton" value="Hint Log">
+			</div>
+			<div id="chatDisplay" style="overflow-y:scroll">
+
+			</div>
+			<div id="chatInputField">
+					<input type="text" id="text" name="chatMessage">
+					<input type="submit" id="send" name="chatSubmit" value="Send">
+			</div>
+		</div>
+		<div class="sub-container" id="hintBox">
+			<input type="button" id="hint" name="hint" value="HINT">
+		</div>
+		<div class="sub-container" id="playerActions">
+			<div class="tab-select">
+				<div class="tab-head" id="amountToCall">
+				Amount To Call
+				</div>
+
+				<div class="tab-head" id="fullPotTab">
+				Pot
+				</div>
+				<div class="tab-head" id="chips">
+					Total Chips
+				</div>
+				<div class="tab-head" id="customTab">
+					<input class="bet" type="number" id="customBet" name="customBet" min="0">
+				</div>
+			</div>
+			<div id="playerActionButtons">
+				<input type="button" id="fold" name="Fold" value="Fold" onclick="myVar = setTimeout()">
+				<input type="button" id="call" name="Call" value="Call">
+				<input type="button" id="raise" name="Raise" value="Raise">
+			</div>
+			<div id="leaveButtons">
+				<input type="button" id="leave" name="Leave game" value="Leave game" onclick="window.location.href = './main.html'">
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -6,7 +6,7 @@
 	<title>Poker University</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-        <script>
+    <script>
         $(document).ready(function(){
             //Only shows active tab.
             $(".mode-window:not(:first)").hide();
@@ -22,7 +22,9 @@
 <body>
     <div class="main-header">
         <h1 id="mainTitle" class="page-title">Poker University</h1>
-        <input type="button" name="logout" value="logout">
+			<form id="logoutButton" action="logout_get" method="POST">
+        <input type="submit" id="logout" name="logout" value="logout">
+			</form>
     </div>
     <div class="main-body">
         <div class="sub-container" id="playModes">
@@ -42,18 +44,24 @@
             </div>
             <div class="sub-box" id="modeWindows">
                 <div class="mode-window pvp-option" id="pvpWindow">
-                    <input type="button" class="play-button" value="Join">
+									<form id="joinForm" action="join_game" method="POST">
+                    <input type="submit" class="play-button" id="joinButton" value="Join">
+									</form>
                 </div>
                 <div class="mode-window pvb-option" id="pvbWindow">
-                    <input type="button" class="play-button" value="Play">
+									<form id="botForm" action="join_bot_game" method="POST">
+                    <input type="submit" class="play-button" id="botsButton" value="Play">
+									</form>
                 </div>
                 <div class="mode-window tutorial-window-option" id="tutorialWindow">
-                    <input type="button" class="play-button" value="Play">
+									<form id="tutorialForm" action="join_tutorial" method="POST">
+                    <input type="submit" class="play-button" id="tutorialButton" value="Play">
+									</form>
                 </div>
                 <div class="mode-window host-lobby-option" id="hostLobbyWindow">
                     <form id="hostForm" action="host_game" method="POST">
                         <p class="field-title">Room Name</p>
-                        <input type="text" name="roomName">
+                        <input type="text" id="roomName" name="roomName">
                         <p class="field-title">Max players (2-8)</p>
                         <input type="number" name="numPlayers">
                         <p class="field-title">Password (Leave blank if public)</p>
@@ -73,6 +81,9 @@
                 <p>Friends online: </p>
                 <p>Active tables: </p>
             </div>
+						<form id="profile" action="profile_page" method="POST">
+							<input type="submit" id="profileButton" name="profileButton" value="Profile">
+						</form>
         </div>
         <div class="sub-container" id="playerInfo">
             <div class="sub-box" id="profile">

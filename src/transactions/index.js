@@ -23,35 +23,35 @@ async function createUser(client, userinfo) {
     return undefined;
   }*/
 
-  try{
-    if (userinfo.username === "" || userinfo.password === ""){
-       //console.log( "empty username or password" );
-       throw "Error";
-    }
-  } catch(err) {
-    return false
+  const existCheck = await client.query(
+    "SELECT username FROM Users WHERE username = $1;",
+    [userinfo.username]
+  );
+  if (existCheck.rows.length != 0) {
+    throw "Username is taken";
   }
 
-  //console.log(userinfo);
+  if (userinfo.username === "" || userinfo.password === ""){
+    throw "Username and password cannot be empty";
+  }
 
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
-
-  //console.log(hash);
+  const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
+    type: argon2.argon2i
+  });
 
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
-    [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
+    [userinfo.username, hash, userinfo.securityQuestion, securityAnswerHash, DEFAULT_CHIPS]);
 
-  //console.log("client released");
-
-  return{
-  //returns user info for session purposes
-      userId: res.rows[0]["user_id"],
-      username: res.rows[0]["username"],
-      password: userinfo.password
-  };
+  // I don't know why someone changed this to return the username and password
+  // as well. These are already known to the caller!
+  return {
+    userId: res.rows[0]["user_id"],
+    username: userinfo.username,
+  }
 }
 
 /*
@@ -83,7 +83,6 @@ async function getSecurityQuestion(client, username) {
   }catch(err) {
     return userID
   }
-  console.log(authRes);
   if (authRes.rows.length == 0) {
     return {
       question: undefined,
@@ -96,46 +95,51 @@ async function getSecurityQuestion(client, username) {
   }
 }
 
+async function updateChips(client, userid, chips) {
+
+  const res = await client.query(
+    "UPDATE Users SET chips = $1 WHERE user_id = $2;",
+    [chips, userid]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+}
+
 async function validateUser(client, username, password) {
   // Check if username and password is valid
 
-  try{
-    if (username === "" || password === ""){
-       //console.log( "empty username or password" );
-       throw "Error";
-
-    }
-  } catch(err) {
-    return undefined;
+  if (username === "" || password === ""){
+    return {
+      userId: undefined,
+      reason: "Username and password must not be empty",
+    };
   }
-
-  //console.log("begin validation");
 
   let authRes = [];
 
   try {
-     authRes = await client.query(
+    authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
       [username]
     );
-    if(authRes === undefined) {
+    if (authRes === undefined) {
       throw "Query unsuccessful";
+    }
+  } catch (err) {
+    console.log(err);
+    return {
+      userId: undefined,
+      reason: "Cannot connect to database",
+    };
+  }
 
-    }
- } catch(err) {
-    //console.log(err);
-      return {
-        userId: undefined,
-      };
-    }
-    //console.log(authRes);
-    if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
-      //console.log("incorrect");
-      return {
-        userId: undefined,
-        reason: "Username or password is incorrect"
-      };
-    }
+  if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
+    return {
+      userId: undefined,
+      reason: "Username or password is incorrect"
+    };
+  }
 
   // Check if user is not banned
   const banRes = await client.query(
@@ -149,11 +153,11 @@ async function validateUser(client, username, password) {
       reason: "Banned: " + banRes.rows[0]["reason"]
     };
   }
+
   return {
-    //returns user info for session purposes
+    // returns user info for session purposes
     userId: authRes.rows[0]["user_id"],
     username: username,
-    password: password
   };
 }
 
@@ -167,7 +171,29 @@ async function getChipCount(client, id) {
     [id]
   );
   if (res.rows.length == 0) throw "User not found";
-  return res.rows[0]["chips"];
+  let updatedChips = res.rows[0]["chips"];
+  console.log(updatedChips);
+  return {
+    newChipCount: updatedChips
+  }
+}
+
+async function profileQuery(client, id) {
+  const res = await client.query(
+    "SELECT chips, num_wins FROM Users WHERE user_id = $1",
+    [id]
+  );
+  if (res.rows.length == 0) throw "USER NOT FOUND";
+  let numChips = res.rows[0]["chips"];
+  let numWins = res.rows[0]["num_wins"];
+  console.log(numChips + " " + numWins);
+  if (numWins == null) {
+    numWins = 0;
+  }
+  return {
+    numWins: numWins,
+    numChips: numChips
+  }
 }
 
 /*
@@ -199,9 +225,76 @@ async function deductChips(client, id, amount) {
   }
 }
 
+/*
+  updates username of user #id
+  throws if user is not found
+*/
+async function updateUsername(client, id, newUsername) {
+  const res = await client.query(
+    "UPDATE Users SET username = $1 WHERE user_id = $2;",
+    [newUsername, id]
+  );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+  return true;
+}
+
+async function updatePassword(client, username, newPass) {
+  console.log(username);
+  const hash = await argon2.hash(newPass, {
+    type: argon2.argon2i
+  });
+  const res = await client.query(
+    "UPDATE Users SET password = $1 WHERE username = $2;",
+    [hash, username]
+  );
+  console.log(res);
+  if (res.rowCount == 0) {
+    return {
+      validate: false,
+    }
+  }
+  return {
+    validate: true,
+  }
+}
+
+async function getUserIdByUsername(client, username) {
+  const res = await client.query(
+    "SELECT user_id FROM Users WHERE username = $1;",
+    [username]
+  );
+  return res.rows[0]["user_id"];
+}
+
+async function validateSecurityQuestion(client, username, answer) {
+  let authRes;
+  authRes = await client.query(
+  "SELECT security_answer FROM Users WHERE Users.username = $1",
+    [username]
+  );
+  console.log(authRes);
+  if (authRes.rows.length == 0 || authRes.rows[0]["security_answer"] != answer) {
+    return {
+      validate: false
+    }
+  }
+  return {
+    validate: true
+  }
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
   getChipCount: getChipCount,
   deductChips: deductChips,
+  updateUsername: updateUsername,
+  getUserIdByUsername: getUserIdByUsername,
+  validateSecurityQuestion: validateSecurityQuestion,
+  getSecurityQuestion: getSecurityQuestion,
+  updatePassword: updatePassword,
+  updateChips: updateChips,
+  profileQuery: profileQuery,
 };

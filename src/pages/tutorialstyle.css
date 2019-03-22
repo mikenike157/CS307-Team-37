@@ -1,0 +1,161 @@
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    width: 80%;
+    min-width: 300px;
+    margin: 0 auto;
+}
+
+/*Main Page Header*/
+.main-header {
+    position: static;
+    height: 20%;
+}
+
+.main-header .page-title {
+    margin: 6px auto;
+    text-align: center;
+}
+
+.main-header input {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+}
+
+.main-body {
+    display: inline-flex;
+    width: 100%;
+    height: 80%;
+}
+
+/* Areas of pages which contain related active elements */
+.sub-container {
+    display: inline-block;
+    flex-basis: 33%;
+}
+
+.sub-box {
+    display: inline-block;
+    width: 100%;
+}
+
+/* Layout for a set of selectable tabs */
+.tab-select {
+    display: inline-flex;
+    width: 100%;
+}
+
+.tab-head {
+    text-align: center;
+    flex: auto;
+    border: 2px solid #000;
+    padding: 4px;
+
+}
+
+#playModes {
+    flex-grow: 2;
+}
+
+.mode-window {
+	height: 360px;
+	border: 1px solid black;
+	padding: 6px 12px;
+}
+
+.mode-window p {
+	margin-bottom: 6px;
+	margin-top: 18px;
+}
+
+#hostLobbyWindow {
+	overflow-y: scroll;
+}
+
+.mode-window .play-button {
+	margin-top: 18px;
+    width: 100%;
+    padding: 18px 6px;
+    font-size: 24px;
+}
+
+#playerInfo {
+    flex-grow: 2;
+}
+
+.form-section {
+    width: 50%;
+}
+
+/*Main page profile*/
+#profile {
+	padding: 12px;
+}
+
+/* Game Page Specific */
+
+#pokerDisplay {
+    height: 70%;
+}
+
+#gameBar {
+    height: 30%;
+    width: 100%;
+    display: inline-flex;
+}
+
+#chatDisplay {
+    height: 120px;
+    border: 2px solid #000;
+    overflow-y: scroll;
+}
+
+#hintBox input {
+    width: 80%;
+    height: 80%;
+    margin: 0 auto;
+    display: inherit;
+}
+/*Room options style */
+.block {
+  display: block; /* Make the buttons appear below each other */
+}
+.tab-select {
+	width: 34%;
+}
+
+.tab-select .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.tab-select .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.bet {
+	width: 100%
+}

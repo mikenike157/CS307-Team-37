@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Password Reset</title>
+</head>
+<body>
+  <h1> Reset Password </h1>
+  <form id="newPasswordForm" action="reset_pass" method="POST">
+    <p class="field-title">Type your new Password</p>
+    <input type="password" name="password_one" required='required' pattern={1-40} oninvalid="this.setCustomValidity('Please enter 1-40 Characters')" oninput="this.setCustomValidity('')">
+    <p class="field-title">Retype your new password Password</p>
+    <input type="password" name="password_two" required='required' patther={1-40} oninvalid="this.setCustomValidity('Please enter 1-40 Characters')" oninput="this.setCustomValidity('')">
+    <input type="submit" name="submit" value="Submit">
+  </form>
+</body>
+</html>
