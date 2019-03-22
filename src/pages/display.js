@@ -157,8 +157,16 @@ function drawPlayerCards(visible, folded, cards, player) {
                             flipY: true
                         });
 
+                        
+
                         if (playerCards._objects.length > 1) {
+                            transformTablePosRadial(player, playerCards, PLAYER_CARDS);
+
+                            c.add(playerCards);
+
+                             c.renderAll();
                             res();
+
                         } else {
                             rej();
                         }
@@ -175,11 +183,11 @@ function drawPlayerCards(visible, folded, cards, player) {
 
     loadPlayerCards().then(() => {
         //Moves the newly created cards to a new position based on which player's turn it is.
-        transformTablePosRadial(player, playerCards, PLAYER_CARDS);
+        //transformTablePosRadial(player, playerCards, PLAYER_CARDS);
 
-        c.add(playerCards);
+        //c.add(playerCards);
 
-        c.renderAll();
+        // c.renderAll();
     })
 }
 

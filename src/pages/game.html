@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -14,21 +15,10 @@
 	let dir = 'res/PNG/';
 
 	$(document).ready(function(){
-		let suits = ["hearts","clubs","spades","diamonds"];
-		let faces = ["ace", "1", "2", "3", "4", '5', "6", "7", "8", "9", "10", "jack", "queen", "king"];
-
-		let cName = "";
-		for (var i = 0; i < 4; i++) {
-			for(var j = 0; j < 13; j++) {
-
-				cName = faces[j] + "_of_" + suits[i];
-				//getImg(cName);
-			}
-		}
 		
 
 		drawRoom('pokerDisplay', $("#pokerDisplay").height(), $("#pokerDisplay").width());
-		//Test block, remove later
+		/*Test block, remove later
 		for(let i = 0; i < 8; i++){
 			drawPlayerCards( i % 2, false, ["ace_of_spades","queen_of_hearts"], i );
 			if(i < 6 && i > 0){
@@ -41,23 +31,17 @@
 		}
 
 		drawPlayerCards( false, true, ["ace_of_spades","queen_of_hearts"], i );
-		/////////////////////////////
+		////////////////////////////*/
 
 
 
-		drawPlayer("Jimbo", 500, 50, false, false, 0);
-		drawPlayer("Michael", 500, 50, false, true, 0);
-		drawPlayer("Jamison", 500, 50, true, true, 1);
+		//drawPlayer("Jimbo", 500, 50, false, false, 0);
+		//drawPlayer("Michael", 500, 50, false, true, 0);
+		//drawPlayer("Jamison", 500, 50, true, true, 1);
 
 		//logObjects();
 
 	});
-
-	function getImg(name){
-
-		$('body').append('<i src="'+ dir + name + '" id="'+ name +'">');
-
-	}
 
 	var idleCounter = 0;
 	var timer;
@@ -128,7 +112,7 @@
 		}
 		*/
 		if (idleCounter == 0) {
-			setTimeout(autoFold, 5000)
+			setTimeout(autoFold, 500000)
 			idleCounter++;
 		}
 		else if (idleCounter < 5) {
@@ -148,7 +132,14 @@
 	});
 
 	socket.on('dealCards', function(cards) {
+		console.log("raw cards:" +cards);
 		$('#chatDisplay').append("Cards: " + cards + '<br>');
+		cards = cards.toString().split(',');
+		for(let i = 1; i < 8; i++){
+			drawPlayerCards( false, false, [], i );
+		}
+		drawPlayerCards( true, false, [processCard(cards[0]), processCard(cards[1])], 0 );
+
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	})
@@ -161,6 +152,11 @@
 
 	socket.on('flop', function(data) {
 		$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
+		let cards = data.toString.split(',');
+		for (var i = 0; i < cards.length; i++) {
+			drawPlayerCards( true, false, processCard(cards[i]), i );
+		}
+		
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	})
@@ -218,6 +214,21 @@
 			}
 		});
 	});
+
+	function processCard(card){
+		//if(card.length <= 2){
+			card = card =card.replace('D','_of_diamonds');
+			card = card.replace('H','_of_hearts');
+			card = card.replace('S','_of_spades');
+			card = card.replace('C','_of_clubs');
+			card = card.replace("A", 'ace');
+			card = card.replace("Q", 'queen');
+			card = card.replace("J", 'jack');
+			card = card.replace("K", 'king')
+		//}
+		console.log("card:" +  card);
+		return card;
+	}
 
 
 
