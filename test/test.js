@@ -21,7 +21,7 @@ async function shouldThrowException(f) {
     await f();
     ok = false;
   } catch { /* nothing */ }
-  if (!ok) throw "didn't throw";
+  if (!ok) throw new Error("didn't throw");
 }
 
 before(async function() {
@@ -110,15 +110,30 @@ describe("transactions", function() {
   describe("#validateSecurityQuestion()", function() {
     it("accepts the correct answer", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "kozet", "blue_bear_94");
-      assert(stat);
+      assert(stat.validate);
     });
     it("rejects wrong answers", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "kozet", "arth_glas_94");
-      assert(!stat);
+      assert(!stat.validate);
     });
     it("rejects nonexistent users", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "poodle", "golden retrievers");
-      assert(!stat);
+      assert(!stat.validate);
+    });
+  });
+  describe("#getProfilePicture()", function() {
+    it("returns null if profile picture is not set", async function() {
+      const id = await transactions.getUserIdByUsername(client, "kozet");
+      const pic = await transactions.getProfilePicture(client, id);
+      assert(pic == null);
+    });
+    it("returns the last profile picture set", async function() {
+      const id = await transactions.getUserIdByUsername(client, "kozet");
+      const pic = fs.readFileSync("test/boxes.png");
+      const stat = await transactions.setProfilePicture(client, id, pic);
+      assert(stat);
+      const pic2 = await transactions.getProfilePicture(client, id);
+      assert(pic.compare(pic2) == 0);
     });
   });
 });

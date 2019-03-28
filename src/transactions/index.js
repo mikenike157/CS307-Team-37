@@ -23,18 +23,18 @@ async function createUser(client, userinfo) {
     return undefined;
   }*/
 
-  try{
-    if (userinfo.username === "" || userinfo.password === ""){
-       //console.log( "empty username or password" );
-       throw "Error";
-    }
-  } catch(err) {
-    return false
+  if (userinfo.username === "" || userinfo.password === ""){
+      //console.log( "empty username or password" );
+      throw "Error";
   }
 
   //console.log(userinfo);
 
   const hash = await argon2.hash(userinfo.password, {
+    type: argon2.argon2i
+  });
+
+  const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
     type: argon2.argon2i
   });
 
@@ -309,7 +309,8 @@ async function validateSecurityQuestion(client, username, answer) {
     [username]
   );
   console.log(authRes);
-  if (authRes.rows.length == 0 || authRes.rows[0]["security_answer"] != answer) {
+  if (authRes.rows.length == 0 ||
+      !await argon2.verify(authRes.rows[0]["security_answer"].toString(), answer)) {
     return {
       validate: false
     }
@@ -317,6 +318,28 @@ async function validateSecurityQuestion(client, username, answer) {
   return {
     validate: true
   }
+}
+
+async function getProfilePicture(client, userId) {
+  const res = await client.query(
+    "SELECT profile_picture FROM Users WHERE user_id = $1",
+    [userId]
+  );
+  if (res.rows.length == 0) {
+    return null;
+  }
+  return res.rows[0]["profile_picture"];
+}
+
+async function setProfilePicture(client, userId, pic) {
+  const res = await client.query(
+    "UPDATE Users SET profile_picture = $1 WHERE user_id = $2",
+    [pic, userId]
+  );
+  if (res.rowCount == 0) {
+    return false;
+  }
+  return true;
 }
 
 module.exports = {
@@ -331,4 +354,6 @@ module.exports = {
   updatePassword: updatePassword,
   updateChips: updateChips,
   profileQuery: profileQuery,
+  getProfilePicture: getProfilePicture,
+  setProfilePicture: setProfilePicture,
 };
