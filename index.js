@@ -300,6 +300,7 @@ const server = express()
               return null;
             };
             content = data;
+            content = content.replace('{ID}', req.session.user.userId);
             content = content.replace('{USER}', req.session.user.username);
             content = content.replace('{CHIPS}', profileResult.numChips);
             content = content.replace('{WINS}', profileResult.numWins);
