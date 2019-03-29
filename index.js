@@ -591,9 +591,9 @@ function progressGame(socket) {
     updateSidePots();
     
     // TODO get: var winnersArray = [player object with highest hand rank, player object with next highest hand rank, ...]
-    // var finalArray = distributeWinnings(winnersArray); // uncomment
+    // var finalArray = distributeWinnings(winnersArray, pot, []); // uncomment
     // once that is done, the commented out code below shouldn't be needed
-    // just iterate through finalArray or players array to see changes
+    // just iterate through finalArray or players array to see changes to players[i].currentChips 
     
     
     /* 
@@ -753,55 +753,65 @@ function fixCards(pCards, tCards) {
 //////////////////////////////////////////////////////
 /* For all-in logic                                 */
 /* 1. updateSidePots -- Called between rounds       */ 
+/* ---- Parameters: GameRoom object                 */
+/* ---- Return: Updated players array               */
 /* 2. distributeWinnings -- Called after game ends  */
+/* ---- Parameters: winnersArray, pot, finalArray   */
+/* ---- Return: Updated finalArray                  */
 //////////////////////////////////////////////////////
-function updateSidePots() {
-  var players = game.players; // 
-  var totalPot = game.currentPot; // 
+function updateSidePots(game) {
+  var players = game.players; 
+  var totalPot = game.currentPot; 
   for (var i = 0; i < players.length; i++) {
-    if (players[i].state == "ALLIN_OK") continue;
+    if (players[i].state == "ALLIN_OK" || players[i].state == "FOLDED") { continue; }  
+    // Update sidepot variable for all players as if they were all-in
     for (var j = 0; j < players.length; j++) {
       if (i == j) continue;
-      if (players[i].lastBet > players[j].lastBet) { // originally players[j].totalBet
-        players[i].sidePot += players[j].lastBet; // originally players[j].totalBet
+      if (players[i].lastBet > players[j].lastBet) { 
+        players[i].sidePot += players[j].lastBet; 
       } else {
         players[i].sidePot += players[i].lastBet;
       }
-    }
+    }   
+    // Check player states and re-update sidepot to be correct based on state
     if (players[i].state == "ALLIN") {
       players[i].state = "ALLIN_OK";
       players[i].sidePot += players[i].lastBet;
-    } else if (players[i].state != "FOLDED") {
+    } else if (players[i].state == "READY") {
       players[i].state = "NOTREADY";
       players[i].sidePot = totalPot;
     }
-  }
+  }  
+  return players; 
 }
-var finalArray = []; 
-function distributeWinnings(winnersArray) {
-  var pot = game.currentPot; // 
+
+function distributeWinnings(winnersArray, pot, finalArray) {
   if (pot < 0) {
     console.log("ERROR: Negative pot"); return;
-  } else if (pot === 0 || winnersArray.length === 0) return;
-
+  } else if (pot === 0 || winnersArray.length === 0) { 
+    return finalArray; 
+  }
   var player = winnersArray[0];
   var sidePot = player.sidePot;
   if (player.state == "ALLIN_OK") {
-    if (sidePot < pot) {
+    if (sidePot < pot) { 
+      // Case 1: Current winner went all-in, can only win part of the remaining pot
       player.currentChips += sidePot;
       pot -= sidePot;
-    } else
-    {
+    } else {
+      // Case 2: Current winner went all-in, can win entire remaining pot 
       player.currentChips += pot;
       pot -= pot;
     }
-  } else
-  {
+  } else {
+    // Case 3: Current winner not all-in, so can win entire remaining pot 
     player.currentChips += pot;
     pot -= pot;
   }
+  
+  // Remove current winner and recur with remaining pot 
   finalArray.push(winnersArray.shift());
-  distributeWinnings(winnersArray, pot);
+  distributeWinnings(winnersArray, pot, finalArray);
   return finalArray;
 }
 
