@@ -93,7 +93,7 @@ async function getSecurityQuestion(client, username) {
   }
 }
 
-async function updateWin(userid) {
+async function updateWin(client, userid) {
   console.log(userid);
   const res = await client.query(
     "UPDATE Users SET num_wins = num_wins + 1 WHERE user_id = $2;",
@@ -108,7 +108,7 @@ async function updateWin(userid) {
 }
 
 async function updateChips(client, userid, chips) {
-  console.log(userid);
+  // console.log(userid);
   const res = await client.query(
     "UPDATE Users SET chips = $1 WHERE user_id = $2;",
     [chips, userid]
@@ -160,7 +160,7 @@ async function validateUser(client, username, password) {
       throw "Query unsuccessful";
     }
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return {
       userId: undefined,
       reason: "Cannot connect to database",
@@ -205,7 +205,7 @@ async function getChipCount(client, id) {
   );
   if (res.rows.length == 0) throw "User not found";
   let updatedChips = res.rows[0]["chips"];
-  console.log(updatedChips);
+  // console.log(updatedChips);
   return {
     newChipCount: updatedChips
   }
@@ -219,7 +219,7 @@ async function profileQuery(client, id) {
   if (res.rows.length == 0) throw "USER NOT FOUND";
   let numChips = res.rows[0]["chips"];
   let numWins = res.rows[0]["num_wins"];
-  console.log(numChips + " " + numWins);
+  // console.log(numChips + " " + numWins);
   if (numWins == null) {
     numWins = 0;
   }
@@ -274,7 +274,7 @@ async function updateUsername(client, id, newUsername) {
 }
 
 async function updatePassword(client, username, newPass) {
-  console.log(username);
+  // console.log(username);
   const hash = await argon2.hash(newPass, {
     type: argon2.argon2i
   });
@@ -282,7 +282,7 @@ async function updatePassword(client, username, newPass) {
     "UPDATE Users SET password = $1 WHERE username = $2;",
     [hash, username]
   );
-  console.log(res);
+  // console.log(res);
   if (res.rowCount == 0) {
     return {
       validate: false,
@@ -302,13 +302,13 @@ async function getUserIdByUsername(client, username) {
 }
 
 async function validateSecurityQuestion(client, username, answer) {
-  console.log(answer);
+  // console.log(answer);
   let authRes;
   authRes = await client.query(
   "SELECT security_answer FROM Users WHERE Users.username = $1",
     [username]
   );
-  console.log(authRes);
+  // console.log(authRes);
   if (authRes.rows.length == 0 ||
       !await argon2.verify(authRes.rows[0]["security_answer"].toString(), answer)) {
     return {
@@ -342,6 +342,52 @@ async function setProfilePicture(client, userId, pic) {
   return true;
 }
 
+/*
+  return a list of objects as such:
+  {
+    "id": (user id),
+    "username": (user name),
+  }
+*/
+async function getAllFriends(client, userId) {
+  const res = await client.query(
+    "WITH Friends AS (\n" +
+    "SELECT recipient AS user_id FROM FriendList WHERE sender = $1 AND accepted UNION\n" +
+    "SELECT sender AS user_id FROM FriendList WHERE recipient = $1 AND accepted)\n" +
+    "SELECT Users.user_id AS id, Users.username AS username\n" +
+    "FROM Users JOIN Friends ON Users.user_id = Friends.user_id;",
+    [userId]
+  );
+  return res.rows;
+}
+
+/*
+  add a friend request from user #`from` to user #`to` that is not yet accepted
+*/
+async function requestFriend(client, from, to) {
+  if (from == to)
+    throw new Error("Cannot be friends with self!");
+  const res = await client.query(
+    "INSERT INTO FriendList (sender, recipient, accepted)\n" +
+    "VALUES ($1, $2, FALSE);",
+    [from, to]
+  );
+}
+
+/*
+  get a list of all pending friend requests to user #`to`
+*/
+async function getIncomingFriendRequests(client, to) {
+  const res = await client.query(
+    "WITH Friends AS (\n" +
+    "SELECT sender AS user_id FROM FriendList WHERE recipient = $1 AND NOT accepted)\n" +
+    "SELECT Users.user_id AS id, Users.username AS username\n" +
+    "FROM Users JOIN Friends ON Users.user_id = Friends.user_id;",
+    [to]
+  );
+  return res.rows;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -356,4 +402,7 @@ module.exports = {
   profileQuery: profileQuery,
   getProfilePicture: getProfilePicture,
   setProfilePicture: setProfilePicture,
+  getAllFriends: getAllFriends,
+  requestFriend: requestFriend,
+  getIncomingFriendRequests: getIncomingFriendRequests,
 };
