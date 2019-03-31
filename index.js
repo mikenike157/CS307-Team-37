@@ -607,7 +607,6 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
 
     })
-    //On player fold
     socket.on('playerFold', function() {
       io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
       console.log("Registered fold click");
