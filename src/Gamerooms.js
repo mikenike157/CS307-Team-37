@@ -8,6 +8,7 @@ class gameRoom {
     this.numAI = parseInt(numAI);
     this.startChips = parseInt(startChips);
     this.players = [];
+    this.playerQueue = [];
     this.smallBlindPlacement = 0;
     this.bigBlindPlacement = 1;
     this.currentPot = 0;
@@ -56,5 +57,11 @@ this.addPlayer = function(room, socket) {
   }
   var player = game.addPlayer(socket.id, room.startChips);
   room.players.push(player);
+  return room;
+}
+
+this.addPlayerQueue = function(room, socket) {
+  var player = game.addPlayer(socket.id, room.startChips);
+  room.playerQueue.push(player);
   return room;
 }

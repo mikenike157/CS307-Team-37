@@ -119,8 +119,12 @@ const server = express()
   })
 
   .post('/redirect_main', function(req, res) {
-    console.log(req.data.chips + " " + req.data.win);
+    console.log(req.data.playerChips + " " + req.data.winStatus);
 
+    update
+
+
+    res.redirect('/main.html');
   })
 
   .post('/search_rooms', function(req, res) {
@@ -457,28 +461,36 @@ io.sockets.on('connection', function (socket) {
       socket.room = room;
       let currRoomIndex = findRoom(room);
       console.log(currRoomIndex);
-      let currRoom = addPlayer(rooms[currRoomIndex], socket);
 
+      let currRoom = rooms[currRoomIndex];
+      if (currRoom.gameStatus != 0) {
+        game.addPlayerQueue(currRoom, socket);
+        rooms[currRoomIndex] = currRoom;
+        return;
+      }
+      else {
+        currRoom = addPlayer(currRoom, socket);
 
       //add a player to the room, set the returned room to currRoom
       //if room was full
-      if (currRoom == null) {
+        if (currRoom == null) {
+          return;
+        }
+        socket.join(room);
+        console.log(currRoom);
+        // if max numebr of players have joined
+        if (currRoom.players.length == currRoom.maxPlayers) {
+          currRoom = startGame(socket, currRoom);
+          for (let i = 0; i < currRoom.players.length; i++) {
+            io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+          }
+        }
+        rooms[currRoomIndex] = currRoom;
+        //updateLog
+        io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
+        console.log("JOINED ROOM");
         return;
       }
-      socket.join(room);
-      console.log(currRoom);
-      // if max numebr of players have joined
-      if (currRoom.players.length == currRoom.maxPlayers) {
-        currRoom = startGame(socket, currRoom);
-        for (let i = 0; i < currRoom.players.length; i++) {
-          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-        }
-      }
-      rooms[currRoomIndex] = currRoom;
-      //updateLog
-      io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
-      console.log("JOINED ROOM");
-      return;
     })
 
     socket.on('sendchat', function (data) {
@@ -648,6 +660,7 @@ io.sockets.on('connection', function (socket) {
         if (currRoom.players[i].playerID == socket.id) {
           currChips = currRoom.players[i].chips;
           currRoom.players.splice(i, 1);
+          console.log(currRoom.players);
           break;
         }
       }
