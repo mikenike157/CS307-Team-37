@@ -165,20 +165,6 @@
 
 
 	})
-
-	socket.on('redirect', function(chips, winflag) {
-		$.ajax({
-			async: true,
-			type: 'POST',
-			url: 'http://localhost/redirect_main',
-			data: {
-				playerChips: chips,
-				winStatus: winflag
-			}
-		})
-	}
-
-
 	socket.on('handHint', function(data) {
 		handHint(data);
 	})
@@ -319,14 +305,7 @@
 		//console.log("card:" +  card);
 		return card;
 	}
-
-
-
 </script>
-
-
-
-
 
 <body>
 	<input type="button" id="leaveButton" style="position:ablsoulte; top:0; right:0;" value="Leave Room" onclick="window.location.href = './main.html'">

@@ -607,6 +607,7 @@ io.sockets.on('connection', function (socket) {
       io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
 
     })
+    //On player fold
     socket.on('playerFold', function() {
       io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
       console.log("Registered fold click");
@@ -647,28 +648,6 @@ io.sockets.on('connection', function (socket) {
       createHint(currRoom, socket);
     })
 
-    socket.on('leaveRoom', function() {
-      console.log("leaveroom");
-      let roomIndex = findRoom(socket.room);
-      let currRoom = rooms[roomIndex];
-      let winFlag = 0;
-      let currChips;
-      if (currRoom.players.length == 1) {
-        winFlag == 1;
-      }
-      for (let i = 0; i < currRoom.players.length; i++) {
-        if (currRoom.players[i].playerID == socket.id) {
-          currChips = currRoom.players[i].chips;
-          currRoom.players.splice(i, 1);
-          console.log(currRoom.players);
-          break;
-        }
-      }
-      console.log("bottom");
-      delete socket.room;
-      io.sockets.to(socket.id).emit('redirect', currChips, winFlag);
-    })
-
     socket.on('disconnect', function() {
       console.log("DISCONNECT");
       let roomIndex = findRoom(socket.room);
@@ -678,14 +657,28 @@ io.sockets.on('connection', function (socket) {
         winFlag == 1;
       }
       for (let i = 0; i < currRoom.players.length; i++) {
-        if (currRoom.players[i].playerID == socket.ID) {
+        if (currRoom.players[i].playerID == socket.id) {
           let currChips = currRoom.players[i].chips;
           updateHistory(currChips, winFlag);
+          if (currRoom.currentPlayer == i) {
+            io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
+            io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+          }
+          currRoom.players.splice(i, 1);
+          currRoom.playerCards.splice(i, 1);
+          rooms[roomIndex] = currRoom;
           break;
         }
       }
-      if (currRoom.players[i].length == 0) {
-        rooms.splice(i, 1);
+      for (let k = 0; k < currRoom.players.length; k++) {
+        console.log("PLAYER DISCONNECT PRINT");
+        console.log(currRoom.players[k]);
+      }
+      if (currRoom.players.length == 0) {
+        rooms.splice(roomIndex, 1);
+      }
+      else {
+        checkReadyState(socket);
       }
       delete socket.room;
     })
