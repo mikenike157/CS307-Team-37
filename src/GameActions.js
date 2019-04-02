@@ -40,6 +40,7 @@ class Player {
         this.initialChips = chips; // Add
         this.sidePot = 0; // Add
         this.totalBets = 0; // total bets this round
+        this.isAI = 0; // 0 if user, 1-2-3 for easy-medium-hard AI 
     }
 }
 
