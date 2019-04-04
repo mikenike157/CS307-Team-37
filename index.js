@@ -471,7 +471,6 @@ io.sockets.on('connection', function (socket) {
       socket.room = room;
       let currRoomIndex = findRoom(room);
       console.log(currRoomIndex);
-
       let currRoom = rooms[currRoomIndex];
       if (currRoom.gameStatus != 0) {
         game.addPlayerQueue(currRoom, socket);
