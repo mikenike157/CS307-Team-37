@@ -28,11 +28,11 @@
 				<p class="field-title">Username</p>
 				<input type="text" name="username" required='required' pattern="[A-Za-z0-9]{1,20}" oninvalid="this.setCustomValidity('Please enter a valid username')" oninput="this.setCustomValidity('')">
 				<p class="field-title">Password</p>
-				<input type="text" name="password" required='required' oninvalid="this.setCustomValidity('Please enter 1-40 characters')" oninput="this.setCustomValidity('')">
+				<input type="text" name="password" required='required' pattern="[a-zA-Z][a-zA-Z0-9\s]{1,40}" oninvalid="this.setCustomValidity('Please enter 1-40 characters')" oninput="this.setCustomValidity('')">
 				<p class="field-title">Security Question:</p>
-				<input type="text" name="securityQuestion" required='required' pattern="[A-Za-z0-9]{1,20}" oninvalid="this.setCustomValidity('Enter a statement you will remember the answer to')" oninput="this.setCustomValidity('')">
+				<input type="text" name="securityQuestion" required='required' pattern="[a-zA-Z][a-zA-Z0-9\s\\?]{1,40}" oninvalid="this.setCustomValidity('Enter a question you will remember the answer to')" oninput="this.setCustomValidity('')">
 				<p class="field-title">Security Answer:</p>
-				<input type="text" name="securityAnswer" required='required' pattern="[A-Za-z0-9]{1,20}" oninvalid="this.setCustomValidity('Enter the answer to above question')" oninput="this.setCustomValidity('')">
+				<input type="text" name="securityAnswer" required='required' pattern="[a-zA-Z][a-zA-Z0-9\s]{1,40}}" oninvalid="this.setCustomValidity('Enter the answer to above question')" oninput="this.setCustomValidity('')">
 				<input type="submit" name="submit" value="Submit">
 			</form>
 		</div>

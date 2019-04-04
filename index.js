@@ -658,6 +658,39 @@ io.sockets.on('connection', function (socket) {
     })
 
     socket.on('disconnect', function() {
+      let roomIndex = findRoom(socket.room);
+      let currRoom = rooms[roomIndex];
+      let winFlag = 0;
+      let chipAmount = 0;
+      let leaver;
+      let leaverIndex;
+      for (leaverIndex = 0; i < currRoom.players.length; i++) {
+        if (currRoom.players[i].playerID == socket.id) {
+          leaver = currRoom.players[i];
+          currRoom.players.splice(i, 1);
+          break;
+        }
+      }
+      if (currRoom.players.length == 0) {
+        if (gameStatus == 1) {
+          winFlag = 1;
+          chipAmount = leaver.chips;
+        }
+        rooms.splice(roomIndex, 1);
+      }
+      else {
+        if (gameStatus == 1) {
+          currRoom.playerCards.splice(leaverIndex, 1);
+          if (currRoom.currPlayer == leaverIndex) {
+            //Move the turn idleCounter
+            //Move the turn indicator on client
+          }
+        }
+      }
+
+
+
+      /*
       console.log("DISCONNECT");
       let roomIndex = findRoom(socket.room);
       let currRoom = rooms[roomIndex];
@@ -690,7 +723,8 @@ io.sockets.on('connection', function (socket) {
         checkReadyState(socket);
       }
       delete socket.room;
-    })
+      */
+  })
 
 });
 
