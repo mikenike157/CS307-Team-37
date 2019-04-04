@@ -298,7 +298,7 @@ async function getUserIdByUsername(client, username) {
     "SELECT user_id FROM Users WHERE username = $1;",
     [username]
   );
-  return res.rows[0]["user_id"];
+  return +res.rows[0]["user_id"];
 }
 
 async function validateSecurityQuestion(client, username, answer) {
@@ -388,6 +388,15 @@ async function getIncomingFriendRequests(client, to) {
   return res.rows;
 }
 
+async function acceptFriendRequest(client, from, to) {
+  const res = await client.query(
+    "UPDATE FriendList SET accepted = TRUE\n" +
+    "WHERE sender = $1 AND recipient = $2 AND NOT accepted;",
+    [from, to]
+  );
+  if (res.rowCount == 0) throw new Error("No such pending friend request");
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -405,4 +414,5 @@ module.exports = {
   getAllFriends: getAllFriends,
   requestFriend: requestFriend,
   getIncomingFriendRequests: getIncomingFriendRequests,
+  acceptFriendRequest: acceptFriendRequest,
 };

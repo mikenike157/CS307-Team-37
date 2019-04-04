@@ -24,6 +24,10 @@ async function shouldThrowException(f) {
   if (!ok) throw new Error("didn't throw");
 }
 
+function idsOnly(objs) {
+  return objs.map((e) => +e.id).sort((a, b) => a - b);
+}
+
 before(async function() {
   // Reset database
   let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
@@ -175,8 +179,47 @@ describe("transactions", function() {
       await transactions.requestFriend(client, kozet, aaaaa);
       await transactions.requestFriend(client, rain, taco);
       const requestsToKozet = await transactions.getIncomingFriendRequests(client, kozet);
-      const ids = requestsToKozet.map((e) => +e.id).sort((a, b) => a - b);
-      assert.deepStrictEqual(ids, [3, 4]);
+      const ids = idsOnly(requestsToKozet);
+      assert.deepStrictEqual(ids, [rain, taco]);
+    });
+    it("reject friending yourself", async function() {
+      shouldThrowException(async function() {
+        const aaaaa = await transactions.getUserIdByUsername(client, "aaaaa");
+        await transactions.requestFriend(client, aaaaa, aaaaa);
+      });
+    });
+  });
+  describe("#acceptFriendRequest", function() {
+    it("registers friends", async function() {
+      // Test that there are no accepted friends yet
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const friendsBeforeAccepting = await transactions.getAllFriends(client, kozet);
+      assert.deepStrictEqual(friendsBeforeAccepting, []);
+      // Accept friend request from rain
+      await transactions.acceptFriendRequest(client, rain, kozet);
+      const friendsAfterAccepting = idsOnly(await transactions.getAllFriends(client, kozet));
+      assert.deepStrictEqual(friendsAfterAccepting, [rain]);
+      const rainFriends = idsOnly(await transactions.getAllFriends(client, rain));
+      assert.deepStrictEqual(rainFriends, [kozet]);
+    });
+    it("rejects accepts from nonexistent requests", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, taco, aaaaa);
+      });
+      shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, taco, rain);
+      });
+    });
+    it("rejects accepts for requests that are already accepted", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, rain, kozet);
+      });
     });
   });
 });
