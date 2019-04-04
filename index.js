@@ -112,17 +112,27 @@ const server = express()
   })
   .post('/room_post', function(req, res) {
     //console.log("IN ROOM POST: " + req.session.user.username);
-    console.log(req.body.radio)
     req.session.user.room = req.body.radio;
+    console.log(req.body.radio)
+    let roomIndex = findRoom(req.body.radio);
+    let currRoom = rooms[roomIndex];
+    if (currRoom.password == "") {
+      return res.redirect('/game.html');
+    }
+    else {
+      //Do password verification
+    }
     //console.log(req.session.user.room + " " + req.session.user.username);
-    return res.redirect('/game.html');
+  })
+
+  .get('/search_players', function(req, res) {
+    //Get the input from the page
+    //Query for LIKE username in the database
+    //Display all results to the user with a view profile and send button
   })
 
   .post('/redirect_main', function(req, res) {
     console.log(req.data.playerChips + " " + req.data.winStatus);
-
-    update
-
 
     res.redirect('/main.html');
   })

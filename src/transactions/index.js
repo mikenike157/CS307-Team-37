@@ -17,6 +17,23 @@ async function getRooms(client) {
   return res;
 }
 
+async function leaderBoards(client) {
+
+  const res = await client.query(
+    "SELECT * from Users ORDER BY numWins  LIMIT 100;"
+  )
+  let retArray = [];
+
+  for (let i = 0; i < res.rows.length; i++) {
+    
+  }
+
+  return {
+
+  }
+
+}
+
 async function createUser(client, userinfo) {
   /*if (userinfo.username === "" || userinfo.password === ""){
     //console.log( "empty username or password" );
