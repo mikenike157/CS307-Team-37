@@ -104,7 +104,7 @@ async function updateWin(client, userid) {
   }
   return {
     numWins: res.rows[0]["num_wins"]
-  }
+  };
 }
 
 async function updateChips(client, userid, chips) {
@@ -429,6 +429,24 @@ async function isMuted(client, sender, recipient) {
   return res.rowCount != 0;
 }
 
+async function getLeaderboardChips(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, chips) FROM Users\n" +
+    "ORDER BY chips DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
+async function getLeaderboardWins(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, wins) FROM Users\n" +
+    "ORDER BY num_wins DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -450,4 +468,7 @@ module.exports = {
   deleteUser: deleteUser,
   setMute: setMute,
   isMuted: isMuted,
+  getLeaderboardChips: getLeaderboardChips,
+  getLeaderboardWins: getLeaderboardWins,
+  updateWin: updateWin,
 };

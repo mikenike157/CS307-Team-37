@@ -15,6 +15,7 @@ CREATE TABLE Users (
   profile_picture BYTEA,
   chips INT NOT NULL,
   is_admin BOOL,
+  num_wins INT DEFAULT 0,
   PRIMARY KEY (user_id)
 );
 
