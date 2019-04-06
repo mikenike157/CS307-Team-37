@@ -447,6 +447,34 @@ async function getLeaderboardWins(client) {
   return res.rows;
 }
 
+/*
+  bans or silences a user
+  client - PG client
+  sender - user id of who issues the ban
+  recipient - user id of who is banned
+  reason - reason given to user,
+  expiry - when it expires (null for permanent)
+  type - 'ban' for ban; 'silence' for silence
+*/
+async function banUser(client, sender, recipient, reason, expiry, type) {
+  await client.query("BEGIN;");
+  const res = await client.query(
+    "SELECT is_admin FROM Users WHERE user_id = $1",
+    [sender]
+  );
+  if (res.rowCount == 0) throw new Error("Nonexistent user");
+  if (!res.rows[0]["is_admin"]) {
+    await client.query("ROLLBACK;");
+    throw new Error("Only admins can ban or silence");
+  }
+  await client.query(
+    "INSERT INTO BanList (user_id, reason, expiry, issuer_id, type)\n" +
+    "VALUES ($1, $2, $3, $4, $5)",
+    [recipient, reason, expiry, sender, type]
+  );
+  await client.query("COMMIT;");
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -471,4 +499,5 @@ module.exports = {
   getLeaderboardChips: getLeaderboardChips,
   getLeaderboardWins: getLeaderboardWins,
   updateWin: updateWin,
+  banUser: banUser,
 };
