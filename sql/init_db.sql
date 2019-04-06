@@ -51,7 +51,8 @@ CREATE TABLE FriendList (
   FOREIGN KEY (sender) REFERENCES Users(user_id)
     ON DELETE CASCADE,
   FOREIGN KEY (recipient) REFERENCES Users(user_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  UNIQUE (sender, recipient)
 );
 
 CREATE TABLE MuteList (
@@ -60,7 +61,8 @@ CREATE TABLE MuteList (
   FOREIGN KEY (sender) REFERENCES Users(user_id)
     ON DELETE CASCADE,
   FOREIGN KEY (recipient) REFERENCES Users(user_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  UNIQUE (sender, recipient)
 );
 
 CREATE TABLE BanList (

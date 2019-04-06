@@ -233,6 +233,31 @@ describe("transactions", function() {
       await transactions.getUserIdByUsername(client, "kozet");
     });
   });
+  describe("#setMute", function() {
+    it("mutes users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      // Shut up! JUST SHUT UP!!!
+      await transactions.setMute(client, kozet, rain, true);
+      assert(await transactions.isMuted(client, kozet, rain));
+      // Mutes are not commutative
+      assert(!await transactions.isMuted(client, rain, kozet));
+      assert(!await transactions.isMuted(client, kozet, taco));
+    });
+    it("is idempotent", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      await transactions.setMute(client, kozet, rain, true);
+      assert(await transactions.isMuted(client, kozet, rain));
+    });
+    it("unmutes users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      await transactions.setMute(client, kozet, rain, false);
+      assert(!await transactions.isMuted(client, kozet, rain));
+    });
+  });
 });
 
 describe("handFinder", function() {

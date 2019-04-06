@@ -406,6 +406,29 @@ async function deleteUser(client, id) {
   if (res.rowCount == 0) throw new Error("No such user");
 }
 
+async function setMute(client, sender, recipient, value) {
+  if (value) {
+    await client.query(
+      "INSERT INTO MuteList (sender, recipient) VALUES ($1, $2)\n" +
+      "ON CONFLICT  DO NOTHING;",
+      [sender, recipient]
+    );
+  } else {
+    await client.query(
+      "DELETE FROM MuteList WHERE sender = $1 AND recipient = $2;",
+      [sender, recipient]
+    );
+  }
+}
+
+async function isMuted(client, sender, recipient) {
+  const res = await client.query(
+    "SELECT * FROM MuteList WHERE sender = $1 AND recipient = $2;",
+    [sender, recipient]
+  );
+  return res.rowCount != 0;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -425,4 +448,6 @@ module.exports = {
   getIncomingFriendRequests: getIncomingFriendRequests,
   acceptFriendRequest: acceptFriendRequest,
   deleteUser: deleteUser,
+  setMute: setMute,
+  isMuted: isMuted,
 };
