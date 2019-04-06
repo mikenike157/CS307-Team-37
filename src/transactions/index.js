@@ -298,6 +298,7 @@ async function getUserIdByUsername(client, username) {
     "SELECT user_id FROM Users WHERE username = $1;",
     [username]
   );
+  if (res.rowCount == 0) throw new Error("No such user " + username);
   return +res.rows[0]["user_id"];
 }
 
@@ -397,6 +398,14 @@ async function acceptFriendRequest(client, from, to) {
   if (res.rowCount == 0) throw new Error("No such pending friend request");
 }
 
+async function deleteUser(client, id) {
+  const res = await client.query(
+    "DELETE FROM Users WHERE user_id = $1",
+    [id]
+  );
+  if (res.rowCount == 0) throw new Error("No such user");
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -415,4 +424,5 @@ module.exports = {
   requestFriend: requestFriend,
   getIncomingFriendRequests: getIncomingFriendRequests,
   acceptFriendRequest: acceptFriendRequest,
+  deleteUser: deleteUser,
 };

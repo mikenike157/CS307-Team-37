@@ -207,19 +207,30 @@ describe("transactions", function() {
       const kozet = await transactions.getUserIdByUsername(client, "kozet");
       const rain = await transactions.getUserIdByUsername(client, "rain");
       const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
-      shouldThrowException(async function() {
+      await shouldThrowException(async function() {
         await transactions.acceptFriendRequest(client, taco, aaaaa);
       });
-      shouldThrowException(async function() {
+      await shouldThrowException(async function() {
         await transactions.acceptFriendRequest(client, taco, rain);
       });
     });
     it("rejects accepts for requests that are already accepted", async function() {
       const kozet = await transactions.getUserIdByUsername(client, "kozet");
       const rain = await transactions.getUserIdByUsername(client, "rain");
-      shouldThrowException(async function() {
+      await shouldThrowException(async function() {
         await transactions.acceptFriendRequest(client, rain, kozet);
       });
+    });
+  });
+  describe("#deleteUser", function() {
+    it("deletes users", async function() {
+      const aaaaa = await transactions.getUserIdByUsername(client, "aaaaa");
+      // Goodbye, cruel world
+      await transactions.deleteUser(client, aaaaa);
+      await shouldThrowException(async function() {
+        await transactions.getUserIdByUsername(client, "aaaaa");
+      });
+      await transactions.getUserIdByUsername(client, "kozet");
     });
   });
 });
