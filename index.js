@@ -1099,7 +1099,7 @@ function resetStates(currRoom)
 {
   for (var i = 0; i < currRoom.players.length; i++)
   {
-      if (currRoom.players[i].state != "FOLDED")
+      if (currRoom.players[i].state != "FOLDED" || currRoom.players[i].state != "ALLIN_OK")
       {
         currRoom.players[i].state = "NOTREADY";
         currRoom.players[i].lastBet = 0;
@@ -1114,6 +1114,7 @@ function progressGame(socket) {
   //check if the game is preflop
   if (currRoom.gameState == 0) { // Pre-flop
     var flop = [currRoom.fixedTCards[0], currRoom.fixedTCards[1], currRoom.fixedTCards[2]]
+    updateSidePots(currRoom);
     resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
@@ -1131,6 +1132,7 @@ function progressGame(socket) {
     io.sockets.in(socket.room).emit('flop', flop);
   }
   else if (currRoom.gameState == 1) { // Flop
+    updateSidePots(currRoom);
     resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
@@ -1147,6 +1149,7 @@ function progressGame(socket) {
     io.sockets.in(socket.room).emit('turn', currRoom.fixedTCards[3])
   }
   else if (currRoom.gameState == 2) { // Turn
+    updateSidePots(currRoom);
     resetStates(currRoom);
     /*
     for (var i = 0; i < players.length; i++) {
@@ -1164,8 +1167,10 @@ function progressGame(socket) {
 
   }
   else if (currRoom.gameState == 3) { // River
+    updateSidePots(currRoom);
 
-    var handRanks = [];
+    // At the end of this loop, you are given player list of hand winners
+    var playerHandRanks = [];
     for (var i = 0; i < currRoom.playerCards.length; i++) {
       if (currRoom.players[i].state != "FOLDED") {
         var hand = hf.finalhand(currRoom.playerCards[i], currRoom.tableCards)
@@ -1173,20 +1178,39 @@ function progressGame(socket) {
         var handArray0 = hf.kinds(matchArray);
         var handArray1 = hf.flushAndStraight(hand,matchArray);
         if(handArray0[0]>handArray1[0]){
-          handRanks.push(handArray0);
+
           currRoom.players[i].handRank = handArray0;
+          playerHandRanks.push(currRoom.players[i]);
         }
         else {
-          handRanks.push(handArray1);
           currRoom.players[i].handRank = handArray1;
+          playerHandRanks.push(currRoom.players[i]);
         }
       }
     }
 
     //console.log("WINNER HAS BEEN CALCULATED")
+    let winnerArray = hf.findWinner(playerHandRanks);
+    console.log("WINNERS ARRAY HERE");
+    console.log(winnerArray);
+    let updatedPlayers = distributeWinnings(winnerArray, currRoom.currentPot, [])
+    console.log("UPDATED PLAYERS");
+    console.log(updatedPlayers)
+    for (var k = 0; k < currRoom.players.length; k++)
+    {
+      if (currRoom.players[k].state == "FOLDED") continue;
+      for (var m = 0; m < updatedPlayers.length; m++)
+      {
+        if (updatedPlayers[m].playerID == currRoom.players[k].playerID)
+        {
+          currRoom.players[k] = updatedPlayers[m];
+          delete currRoom.players[k].handRank;
+          break;
+        }
+      }
+    }
 
-    let winnerArray = hf.findWinner(handRanks);
-
+    /*
 
     let winPlayers = [];
     for (let j = 0; j < winnerArray.length; j++) {
@@ -1218,27 +1242,28 @@ function progressGame(socket) {
        }
       }
     }
-
+    */
     //Modulo the hand winnings add that to whatever players
     //At this point we have an array of the usernames of winners.
-    var winnings = Math.floor((currRoom.currentPot / winnersArr.length));
-    let winnersNames = [];
-    for (let k = 0; k < winnersArr.length; k++) {
-      winnersNames.push(winnersArr[k].playerID)
-    }
-    io.sockets.in(socket.room).emit('winner', winnersNames.toString());
+    //var winnings = Math.floor((currRoom.currentPot / winnersArr.length));
+    //let winnersNames = [];
+    //for (let k = 0; k < winnersArr.length; k++) {
+    //  winnersNames.push(winnersArr[k].playerID)
+    //}
+    //io.sockets.in(socket.room).emit('winner', winnersNames.toString());
 
     /*for (var i = 0; i < winnersArr.length; i++) {
       io.sockets.in(socket.room).emit('winners', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
     }
     */
+    io.sockets.in(socket.room).emit('winner', "Hello");
     for (var i = 0; i < currRoom.players.length; i++) {
-      for (var j = 0; j < winnersArr.length; j++) {
-        if (currRoom.players[i].playerID == winnersArr[j].playerID) {
-          currRoom.players[i].chips += winnings;
+      //for (var j = 0; j < winnersArr.length; j++) {
+        //if (currRoom.players[i].playerID == winnersArr[j].playerID) {
+        //  currRoom.players[i].chips += winnings;
           //console.log(currRoom.players[i].chips);
-        }
-      }
+        //}
+      //}
       currRoom.players[i].state = "NOTREADY";
       currRoom.players[i].lastBet = 0;
     }
@@ -1392,4 +1417,61 @@ function createHint(currRoom, socket) {
   }
   //get whoever clicked the hint button, do all of this with the currRoom.player[whatever]
   console.log(hintOutcome);
+}
+
+function updateSidePots(game) {
+  var players = game.players;
+  var totalPot = game.currentPot;
+  for (var i = 0; i < players.length; i++) {
+    if (players[i].state == "ALLIN_OK" || players[i].state == "FOLDED") { continue; }
+    // Update sidepot variable for all players as if they were all-in
+    for (var j = 0; j < players.length; j++) {
+      if (i == j) continue;
+      if (players[i].lastBet > players[j].lastBet) {
+        players[i].sidePot += players[j].lastBet;
+      } else {
+        players[i].sidePot += players[i].lastBet;
+      }
+    }
+    // Check player states and re-update sidepot to be correct based on state
+    if (players[i].state == "ALLIN") {
+      players[i].state = "ALLIN_OK";
+      players[i].sidePot += players[i].lastBet;
+    } else if (players[i].state == "READY") {
+      players[i].state = "NOTREADY";
+      players[i].sidePot = totalPot;
+    }
+  }
+  game.players = players;
+  return game;
+}
+
+function distributeWinnings(winnersArray, pot, finalArray) {
+  if (pot < 0) {
+    console.log("ERROR: Negative pot"); return;
+  } else if (pot === 0 || winnersArray.length === 0) {
+    return finalArray;
+  }
+  var player = winnersArray[0];
+  var sidePot = player.sidePot;
+  if (player.state == "ALLIN_OK") {
+    if (sidePot < pot) {
+      // Case 1: Current winner went all-in, can only win part of the remaining pot
+      player.chips += sidePot;
+      pot -= sidePot;
+    } else {
+      // Case 2: Current winner went all-in, can win entire remaining pot
+      player.chips += pot;
+      pot -= pot;
+    }
+  } else {
+    // Case 3: Current winner not all-in, so can win entire remaining pot
+    player.chips += pot;
+    pot -= pot;
+  }
+
+  // Remove current winner and recur with remaining pot
+  finalArray.push(winnersArray.shift());
+  distributeWinnings(winnersArray, pot, finalArray);
+  return finalArray;
 }

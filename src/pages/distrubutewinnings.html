@@ -1,0 +1,30 @@
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Poker Hand</title>
+<script type="text/javascript" src = "handFinder.js"></script>
+<script type="text/javascript" src = "index.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+
+var player = [4,10]; //MAKE ANY NUMBER OF HANDS YOU WANT TO TEST WITH
+var b = [36,43,28,34,20]; //THIS IS THE TABLE CARDS
+var x = finalhand(a,b);
+var matchArray = match(x);
+var handArray0 = kinds(matchArray);
+var handArray1 = flushAndStriaght(x,matchArray);
+
+console.log(x);
+console.log(match(x));
+
+if(handArray0[0]>handArray1[0]){
+	console.log(handArray0);
+}else{
+	console.log(handArray1);
+}
+
+</script>
+
+</body>
+</html>

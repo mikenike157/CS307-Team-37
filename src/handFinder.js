@@ -59,11 +59,11 @@ this.match = function(x){
 
 this.findWinner = function(handArray) {
   let sortArray = handArray.sort(function(x, y) {
-    let minArray = Math.min(x.length, y.length);
+    let minArray = Math.min(x.handRank.length, y.handRank.length);
     for (let i = 0; i < minArray; i++) {
-      if (x[i] > y[i]) {
+      if (x.handRank[i] > y.handRank[i]) {
         return -1;
-      } else if (x[i] < y[i]) {
+      } else if (x.handRank[i] < y.handRank[i]) {
         return 1;
       }
     }
