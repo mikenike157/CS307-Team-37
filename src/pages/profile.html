@@ -1,7 +1,23 @@
 <!DOCTYPE html>
 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+
 <script>
-  
+  $(function() {
+    $('#leader').click( function() {
+      $.ajax({
+        async: false,
+        type: 'GET',
+        url: 'http://localhost/get_leaderboard',
+        success: function(data) {
+          document.getElementById('board').innerHTML = "";
+          for (let i = 0; i < data.length; i++) {
+            document.getElementById('board').innerHTML += (data[i] + "</br>")
+          }
+        }
+      })
+    })
+  })
 </script>
 
 
@@ -17,7 +33,10 @@
     <p class="field-title">Total Chips: {CHIPS}</br></p>
     <p class="field-title">Total Wins: {WINS}</br></p>
     <a id="passwordRecoveryLink" href="/recover.html">Change Password</br></a>
-    <a id="changeUsernameLink" href="/username.html">Change Username</a>
-  </div<
+    <a id="changeUsernameLink" href="/username.html">Change Username</br></a>
+    <p id='board'>
+    </p>
+    <input type="button" id="leader" name="leader" value="Leaderboard">
+  </div>
 </body>
 </html>

@@ -131,6 +131,30 @@ const server = express()
     //Display all results to the user with a view profile and send button
   })
 
+  .get('/get_leaderboard', function(req, res) {
+    var boardArray = [];
+    pool.connect()
+      .then(client => {
+        return lg.getLeaderboardChips(client)
+        .then(leaderBoard => {
+          client.release();
+          console.log(leaderBoard.length);
+          for (let i = 0; i < leaderBoard.length; i++){
+            let temp = leaderBoard[i].row;
+            boardArray.push(temp);
+            //console.log(boardArray);
+          }
+          console.log(boardArray);
+          return res.send(boardArray);
+        })
+        .catch(err => {
+          client.release();
+          console.log(err.stack);
+        })
+      })
+
+  })
+
   .post('/redirect_main', function(req, res) {
     console.log(req.data.playerChips + " " + req.data.winStatus);
 

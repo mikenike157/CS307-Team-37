@@ -25,7 +25,7 @@ async function leaderBoards(client) {
   let retArray = [];
 
   for (let i = 0; i < res.rows.length; i++) {
-    
+
   }
 
   return {
@@ -345,6 +345,25 @@ async function validateSecurityQuestion(client, username, answer) {
   }
 }
 
+async function getLeaderboardChips(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, chips) FROM Users\n" +
+    "ORDER BY chips DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
+async function getLeaderboardWins(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, wins) FROM Users\n" +
+    "ORDER BY num_wins DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -357,4 +376,6 @@ module.exports = {
   updatePassword: updatePassword,
   updateChips: updateChips,
   profileQuery: profileQuery,
+  getLeaderboardChips: getLeaderboardChips,
+  getLeaderboardWins: getLeaderboardWins
 };
