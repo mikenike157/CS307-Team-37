@@ -6,6 +6,7 @@
 	<title>Poker University</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
     <script>
         $(document).ready(function(){
             //Only shows active tab.
@@ -15,6 +16,47 @@
                 $("." + $(this).attr('name')).show();
             });
         });
+				var socket = io();
+				socket.on('connect', function() {
+					$(function() {
+						let name = "guest";
+						$.ajax({
+							async: false,
+							type: 'GET',
+							//url: 'http://pokeruniversity.herokuapp.com/update_username',
+							url: 'http://localhost/update_username',
+							success: function(data) {
+								name = data;
+								console.log(name);
+							}
+						})
+						socket.emit('joinMain', name);
+				})
+			})
+
+			socket.on	('updatechat', function (username, data) {
+				$('#adminChatBox').append(username + ':</b> ' + data + '<br>');
+				let obj = document.getElementById("adminChatBox");
+				obj.scrollTop = obj.scrollHeight;
+			});
+
+			$(function(){
+				// when the client clicks SEND
+				$('#send').click( function() {
+					var message = $('#text').val();
+					$('#text').val('');
+					// tell server to execute 'sendchat' and send along one parameter
+					socket.emit('sendchat', message);
+				});
+				// when the client hits ENTER on their keyboard
+				$('#text').keypress(function(e) {
+					if(e.which == 13) {
+						$(this).blur();
+						$('#send').focus().click();
+					}
+				});
+			});
+
     </script>
 </head>
 

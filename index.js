@@ -473,6 +473,13 @@ socket.room gets the current room that the player is in. */
 //On any request
 io.sockets.on('connection', function (socket) {
 
+    socket.on('joinMain', function(username) {
+      socket.username = username;
+      socket.room = "main";
+      socket.join("main");
+      return;
+    })
+
     //addUser is emitted
     socket.on('adduser', function(username, room) {
 
@@ -514,6 +521,10 @@ io.sockets.on('connection', function (socket) {
     })
 
     socket.on('sendchat', function (data) {
+      
+
+
+
       //console.log(data);
       //make sure not empty
       if (data != "") {
@@ -676,6 +687,10 @@ io.sockets.on('connection', function (socket) {
 
     // When a player leaves the game and disconnects from the socket
     socket.on('disconnect', function() {
+      if (socket.room == "main") {
+        socket.leave(socket.room);
+        return;
+      }
       let roomIndex = findRoom(socket.room);
       let currRoom = rooms[roomIndex];
       let winFlag = 0;
