@@ -454,6 +454,15 @@ async function setAdmin(client, user, value) {
   );
 }
 
+async function isAdmin(client, user) {
+  const res = await client.query(
+    "SELECT is_admin FROM Users WHERE user_id = $1",
+    [user]
+  );
+  if (res.rowCount == 0) throw new Error("Nonexistent user");
+  return res.rows[0]["is_admin"];
+}
+
 /*
   bans or silences a user
   client - PG client
@@ -465,21 +474,20 @@ async function setAdmin(client, user, value) {
 */
 async function banUser(client, sender, recipient, reason, expiry, type) {
   await client.query("BEGIN;");
-  const res = await client.query(
-    "SELECT is_admin FROM Users WHERE user_id = $1",
-    [sender]
-  );
-  if (res.rowCount == 0) throw new Error("Nonexistent user");
-  if (!res.rows[0]["is_admin"]) {
-    await client.query("ROLLBACK;");
-    throw new Error("Only admins can ban or silence");
+  try {
+    if (!await isAdmin(client, sender)) {
+      throw new Error("Only admins can ban or silence");
+    }
+    await client.query(
+      "INSERT INTO BanList (user_id, reason, expiry, issuer_id, type)\n" +
+      "VALUES ($1, $2, $3, $4, $5)",
+      [recipient, reason, expiry, sender, type]
+    );
+    await client.query("COMMIT;");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
   }
-  await client.query(
-    "INSERT INTO BanList (user_id, reason, expiry, issuer_id, type)\n" +
-    "VALUES ($1, $2, $3, $4, $5)",
-    [recipient, reason, expiry, sender, type]
-  );
-  await client.query("COMMIT;");
 }
 
 /*
@@ -535,4 +543,5 @@ module.exports = {
   getBans: getBans,
   setAdmin: setAdmin,
   removeBan: removeBan,
+  isAdmin: isAdmin,
 };
