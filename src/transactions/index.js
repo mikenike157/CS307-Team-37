@@ -18,32 +18,18 @@ async function getRooms(client) {
 }
 
 async function createUser(client, userinfo) {
-  /*if (userinfo.username === "" || userinfo.password === ""){
-    //console.log( "empty username or password" );
-    return undefined;
-  }*/
-
   if (userinfo.username === "" || userinfo.password === ""){
-      //console.log( "empty username or password" );
-      throw "Error";
+      throw new Error("empty username or password");
   }
-
-  //console.log(userinfo);
-
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
-
   const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
     type: argon2.argon2i
   });
-
-  //console.log(hash);
-
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, securityAnswerHash, DEFAULT_CHIPS]);
-
   // I don't know why someone changed this to return the username and password
   // as well. These are already known to the caller!
   return {
@@ -52,18 +38,10 @@ async function createUser(client, userinfo) {
   }
 }
 
-/*
-  returns an object with the following fields if successfully logged in:
-  * userId: user id
-  returns an object with the following fields if not successful:
-  * userId: undefined
-  * reason: string
-*/
-
 async function getSecurityQuestion(client, username) {
   try {
     if (username === "") {
-      throw "Error"
+      throw new Error("empty username");
     }
   } catch (err) {
     return undefined;
@@ -78,8 +56,8 @@ async function getSecurityQuestion(client, username) {
     if (authRes === undefined) {
       throw "Query unsuccessful";
     }
-  }catch(err) {
-    return userID
+  } catch (err) {
+    return userID;
   }
   if (authRes.rows.length == 0) {
     return {
@@ -118,39 +96,25 @@ async function updateChips(client, userid, chips) {
   }
   return {
     newChips: res.rows[0]["chips"]
-  }
-
+  };
 }
 
+/*
+  returns an object with the following fields if successfully logged in:
+  * userId: user id
+  returns an object with the following fields if not successful:
+  * userId: undefined
+  * reason: string
+*/
 async function validateUser(client, username, password) {
-  // Check if username and password is valid
-
-  if (username === "" || password === ""){
-       //console.log( "empty username or password" );
-       throw "Error";
-  }
-
-  const res = await client.query(
-    "UPDATE Users SET chips = $1 WHERE user_id = $2;",
-    [chips, userid]
-  );
-  if (res.rowCount == 0) {
-    throw "user not found";
-  }
-}
-
-async function validateUser(client, username, password) {
-  // Check if username and password is valid
-
+  // Check if username and password are valid
   if (username === "" || password === ""){
     return {
       userId: undefined,
       reason: "Username and password must not be empty",
     };
   }
-
   let authRes = [];
-
   try {
     authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
@@ -166,20 +130,17 @@ async function validateUser(client, username, password) {
       reason: "Cannot connect to database",
     };
   }
-
   if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
     return {
       userId: undefined,
       reason: "Username or password is incorrect"
     };
   }
-
   // Check if user is not banned
   const banRes = await client.query(
     "SELECT reason FROM BanList WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW()) and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
-
   if (banRes.rows.length != 0) {
     return {
       userId: undefined,
