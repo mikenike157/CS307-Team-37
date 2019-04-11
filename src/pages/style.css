@@ -117,6 +117,18 @@ body {
     overflow-y: scroll;
 }
 
+#mainChatContainer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
+
+#adminChatBox {
+  height: 120px;
+  border: 2px solid #000;
+  overflow-y: scroll;
+}
+
 #hintBox input {
     width: 80%;
     height: 80%;
