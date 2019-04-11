@@ -21,7 +21,7 @@ async function shouldThrowException(f) {
     await f();
     ok = false;
   } catch { /* nothing */ }
-  if (!ok) throw "didn't throw";
+  if (!ok) throw new Error("didn't throw");
 }
 
 before(async function() {
@@ -99,7 +99,7 @@ describe("transactions", function() {
       const id = await transactions.getUserIdByUsername(client, "uruwi");
       await transactions.updateUsername(client, id, "kozet");
       const id2 = await transactions.getUserIdByUsername(client, "kozet");
-      assert(id == id2);
+      assert.equal(id, id2);
     });
     it("rejects nonexistent users", async function() {
       await shouldThrowException(async function() {
@@ -110,15 +110,73 @@ describe("transactions", function() {
   describe("#validateSecurityQuestion()", function() {
     it("accepts the correct answer", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "kozet", "blue_bear_94");
-      assert(stat);
+      assert(stat.validate);
     });
     it("rejects wrong answers", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "kozet", "arth_glas_94");
-      assert(!stat);
+      assert(!stat.validate);
     });
     it("rejects nonexistent users", async function() {
       const stat = await transactions.validateSecurityQuestion(client, "poodle", "golden retrievers");
-      assert(!stat);
+      assert(!stat.validate);
+    });
+  });
+  describe("#getProfilePicture()", function() {
+    it("returns null if profile picture is not set", async function() {
+      const id = await transactions.getUserIdByUsername(client, "kozet");
+      const pic = await transactions.getProfilePicture(client, id);
+      assert(pic == null);
+    });
+    it("returns the last profile picture set", async function() {
+      const id = await transactions.getUserIdByUsername(client, "kozet");
+      const pic = fs.readFileSync("test/boxes.png");
+      const stat = await transactions.setProfilePicture(client, id, pic);
+      assert(stat);
+      const pic2 = await transactions.getProfilePicture(client, id);
+      assert.equal(pic.compare(pic2), 0);
+    });
+  });
+  /*
+    To test the friends list, we add some new users:
+    * kozet (already there)
+    * rain
+    * 38tacocat83
+    * aaaaa
+  */
+  describe("#requestFriend()", function() {
+    it("adds friend requests to the database", async function() {
+      let id = await transactions.createUser(client, {
+        username: "rain",
+        password: "mevu",
+        securityQuestion: "What is the word for 'rain' in Welsh?",
+        securityAnswer: "glaw",
+      });
+      assert(id != 0);
+      id = await transactions.createUser(client, {
+        username: "38tacocat83",
+        password: "burrito",
+        securityQuestion: "Do you like tacos?",
+        securityAnswer: "Of course!",
+      });
+      assert(id != 0);
+      id = await transactions.createUser(client, {
+        username: "aaaaa",
+        password: "eeeee",
+        securityQuestion: "Aaaaaaaah!",
+        securityAnswer: "Eeeeeeeeh!",
+      });
+      assert(id != 0);
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      const aaaaa = await transactions.getUserIdByUsername(client, "aaaaa");
+      await transactions.requestFriend(client, rain, kozet);
+      await transactions.requestFriend(client, taco, kozet);
+      await transactions.requestFriend(client, kozet, aaaaa);
+      await transactions.requestFriend(client, rain, taco);
+      const requestsToKozet = await transactions.getIncomingFriendRequests(client, kozet);
+      const ids = requestsToKozet.map((e) => +e.id).sort((a, b) => a - b);
+      assert.deepStrictEqual(ids, [3, 4]);
     });
   });
 });
@@ -129,9 +187,9 @@ describe("handFinder", function() {
       const hand = [36, 27];
       const table = [41, 2, 17, 8, 38];
       const fmt = handFinder.finalhand(hand, table);
-      assert(fmt[2][1] == 1);
-      assert(fmt[0][2] == 1);
-      assert(fmt[3][3] == 0);
+      assert.equal(fmt[2][1], 1);
+      assert.equal(fmt[0][2], 1);
+      assert.equal(fmt[3][3], 0);
     });
   });
 });
@@ -139,18 +197,18 @@ describe("handFinder", function() {
 describe("display", function() {
   describe("#nameCard", function() {
     it("names cards correctly", function() {
-      assert(display.nameCard(0) == "2S");
-      assert(display.nameCard(5) == "7S");
-      assert(display.nameCard(9) == "JS");
-      assert(display.nameCard(10) == "QS");
-      assert(display.nameCard(11) == "KS");
-      assert(display.nameCard(12) == "AS");
-      assert(display.nameCard(13) == "2D");
-      assert(display.nameCard(20) == "9D");
-      assert(display.nameCard(24) == "KD");
-      assert(display.nameCard(26) == "2C");
-      assert(display.nameCard(39) == "2H");
-      assert(display.nameCard(51) == "AH");
+      assert.equal(display.nameCard(0), "2S");
+      assert.equal(display.nameCard(5), "7S");
+      assert.equal(display.nameCard(9), "JS");
+      assert.equal(display.nameCard(10), "QS");
+      assert.equal(display.nameCard(11), "KS");
+      assert.equal(display.nameCard(12), "AS");
+      assert.equal(display.nameCard(13), "2D");
+      assert.equal(display.nameCard(20), "9D");
+      assert.equal(display.nameCard(24), "KD");
+      assert.equal(display.nameCard(26), "2C");
+      assert.equal(display.nameCard(39), "2H");
+      assert.equal(display.nameCard(51), "AH");
     });
   });
   describe("#namePlayerAndTableCards", function() {
@@ -168,7 +226,7 @@ describe("display", function() {
         ],
         ["4H", "4S", "6D", "10S", "AC"]
       ];
-      assert(_.isEqual(actual, expected));
+      assert.deepStrictEqual(actual, expected);
     })
   });
 });

@@ -32,6 +32,8 @@ const pool = new pg.Pool({
   ssl: true
 });
 
+const defaultProfilePic = fs.readFileSync("test/boxes.png");
+
 /*const test_pool = new pg.Pool({
   database: "poker-university-test",
   host:"localhost"
@@ -336,6 +338,7 @@ const server = express()
               return null;
             };
             content = data;
+            content = content.replace('{ID}', req.session.user.userId);
             content = content.replace('{USER}', req.session.user.username);
             content = content.replace('{CHIPS}', profileResult.numChips);
             content = content.replace('{WINS}', profileResult.numWins);
@@ -416,6 +419,22 @@ const server = express()
       currUser = req.session.user.username;
 
     }
+  })
+
+  .get('/avatar/:id', function(req, res) {
+    (async () => {
+      const client = await pool.connect();
+      try {
+        const pic = await lg.getProfilePicture(client, req.params.id);
+        res.attachment('avatar.png');
+        res.send((pic === null) ? defaultProfilePic : pic);
+      } catch (e) {
+        console.log(e);
+        res.sendStatus(500);
+      } finally {
+        client.release();
+      }
+    })();
   })
 
   .post('/')
