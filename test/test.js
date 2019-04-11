@@ -268,6 +268,7 @@ describe("transactions", function() {
       await transactions.banUser(client, kozet, rain, "I am the sun!", null, 'silence');
       const tb = await transactions.getBans(client, taco, true);
       assert.deepStrictEqual(tb, [{
+        id: "1",
         sender: kozet,
         reason: "being too tasty",
         expiry: null,
@@ -277,11 +278,18 @@ describe("transactions", function() {
       assert.deepStrictEqual(rb, []);
       const rs = await transactions.getBans(client, rain, false);
       assert.deepStrictEqual(rs, [{
+        id: "2",
         sender: kozet,
         reason: "I am the sun!",
         expiry: null,
         type: 'silence',
       }]);
+      // 38tacocat83 should be unable to log in
+      const login = await transactions.validateUser(client, "38tacocat83", "burrito");
+      assert.deepStrictEqual(login, {
+        userId: undefined,
+        reason: "Banned: being too tasty",
+      });
     });
   });
 });

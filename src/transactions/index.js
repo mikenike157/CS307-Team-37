@@ -484,6 +484,7 @@ async function banUser(client, sender, recipient, reason, expiry, type) {
 
 /*
   return a list of objects:
+  - id: id of ban
   - sender: user id of the user who banned the recipient
   - reason: reason provided
   - expiry: timestamp or null if permanent
@@ -491,12 +492,19 @@ async function banUser(client, sender, recipient, reason, expiry, type) {
 */
 async function getBans(client, recipient, onlyBans) {
   const res = await client.query(
-    "SELECT issuer_id AS sender, reason, expiry, type FROM BanList\n" +
+    "SELECT ban_id AS id, issuer_id AS sender, reason, expiry, type FROM BanList\n" +
     "WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW())\n" +
     (onlyBans ? "AND type = 'ban';" : ";"),
     [recipient]
   );
   return res.rows;
+}
+
+async function removeBan(client, banId) {
+  await client.query(
+    "DELETE FROM BanList WHERE ban_id = $1",
+    [banId]
+  );
 }
 
 module.exports = {
@@ -526,4 +534,5 @@ module.exports = {
   banUser: banUser,
   getBans: getBans,
   setAdmin: setAdmin,
+  removeBan: removeBan,
 };
