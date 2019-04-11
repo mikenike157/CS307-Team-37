@@ -258,6 +258,32 @@ describe("transactions", function() {
       assert(!await transactions.isMuted(client, kozet, rain));
     });
   });
+  describe("#banUser", function() {
+    it("bans and silences users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      await transactions.setAdmin(client, kozet, true);
+      await transactions.banUser(client, kozet, taco, "being too tasty", null, 'ban');
+      await transactions.banUser(client, kozet, rain, "I am the sun!", null, 'silence');
+      const tb = await transactions.getBans(client, taco, true);
+      assert.deepStrictEqual(tb, [{
+        sender: kozet,
+        reason: "being too tasty",
+        expiry: null,
+        type: 'ban',
+      }]);
+      const rb = await transactions.getBans(client, rain, true);
+      assert.deepStrictEqual(rb, []);
+      const rs = await transactions.getBans(client, rain, false);
+      assert.deepStrictEqual(rs, [{
+        sender: kozet,
+        reason: "I am the sun!",
+        expiry: null,
+        type: 'silence',
+      }]);
+    });
+  });
 });
 
 describe("handFinder", function() {

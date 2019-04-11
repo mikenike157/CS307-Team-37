@@ -176,7 +176,7 @@ async function validateUser(client, username, password) {
 
   // Check if user is not banned
   const banRes = await client.query(
-    "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",
+    "SELECT reason FROM BanList WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW()) and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
 
@@ -447,6 +447,13 @@ async function getLeaderboardWins(client) {
   return res.rows;
 }
 
+async function setAdmin(client, user, value) {
+  await client.query(
+    "UPDATE Users SET is_admin = $1 WHERE user_id = $2",
+    [value, user]
+  );
+}
+
 /*
   bans or silences a user
   client - PG client
@@ -475,6 +482,23 @@ async function banUser(client, sender, recipient, reason, expiry, type) {
   await client.query("COMMIT;");
 }
 
+/*
+  return a list of objects:
+  - sender: user id of the user who banned the recipient
+  - reason: reason provided
+  - expiry: timestamp or null if permanent
+  - type: 'ban' or 'silence'
+*/
+async function getBans(client, recipient, onlyBans) {
+  const res = await client.query(
+    "SELECT issuer_id AS sender, reason, expiry, type FROM BanList\n" +
+    "WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW())\n" +
+    (onlyBans ? "AND type = 'ban';" : ";"),
+    [recipient]
+  );
+  return res.rows;
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -500,4 +524,6 @@ module.exports = {
   getLeaderboardWins: getLeaderboardWins,
   updateWin: updateWin,
   banUser: banUser,
+  getBans: getBans,
+  setAdmin: setAdmin,
 };
