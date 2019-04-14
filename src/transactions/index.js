@@ -35,14 +35,8 @@ async function leaderBoards(client) {
 }
 
 async function createUser(client, userinfo) {
-  /*if (userinfo.username === "" || userinfo.password === ""){
-    //console.log( "empty username or password" );
-    return undefined;
-  }*/
-
   if (userinfo.username === "" || userinfo.password === ""){
-      //console.log( "empty username or password" );
-      throw "Error";
+      throw new Error("empty username or password");
   }
 
   //console.log(userinfo);
@@ -59,13 +53,9 @@ async function createUser(client, userinfo) {
   const hash = await argon2.hash(userinfo.password, {
     type: argon2.argon2i
   });
-
   const securityAnswerHash = await argon2.hash(userinfo.securityAnswer, {
     type: argon2.argon2i
   });
-
-  //console.log(hash);
-
   const res = await client.query(
     "INSERT INTO Users (username, password, security_question, security_answer, chips) VALUES ($1, $2, $3, $4, $5) RETURNING user_id;",
     [userinfo.username, hash, userinfo.securityQuestion, userinfo.securityAnswer, DEFAULT_CHIPS]);
@@ -78,18 +68,10 @@ async function createUser(client, userinfo) {
   }
 }
 
-/*
-  returns an object with the following fields if successfully logged in:
-  * userId: user id
-  returns an object with the following fields if not successful:
-  * userId: undefined
-  * reason: string
-*/
-
 async function getSecurityQuestion(client, username) {
   try {
     if (username === "") {
-      throw "Error"
+      throw new Error("empty username");
     }
   } catch (err) {
     return undefined;
@@ -104,8 +86,8 @@ async function getSecurityQuestion(client, username) {
     if (authRes === undefined) {
       throw "Query unsuccessful";
     }
-  }catch(err) {
-    return userID
+  } catch (err) {
+    return userID;
   }
   if (authRes.rows.length == 0) {
     return {
@@ -130,7 +112,7 @@ async function updateWin(client, userid) {
   }
   return {
     numWins: res.rows[0]["num_wins"]
-  }
+  };
 }
 
 async function updateChips(client, userid, chips) {
@@ -144,39 +126,25 @@ async function updateChips(client, userid, chips) {
   }
   return {
     newChips: res.rows[0]["chips"]
-  }
-
+  };
 }
 
+/*
+  returns an object with the following fields if successfully logged in:
+  * userId: user id
+  returns an object with the following fields if not successful:
+  * userId: undefined
+  * reason: string
+*/
 async function validateUser(client, username, password) {
-  // Check if username and password is valid
-
-  if (username === "" || password === ""){
-       //console.log( "empty username or password" );
-       throw "Error";
-  }
-
-  const res = await client.query(
-    "UPDATE Users SET chips = $1 WHERE user_id = $2;",
-    [chips, userid]
-  );
-  if (res.rowCount == 0) {
-    throw "user not found";
-  }
-}
-
-async function validateUser(client, username, password) {
-  // Check if username and password is valid
-
+  // Check if username and password are valid
   if (username === "" || password === ""){
     return {
       userId: undefined,
       reason: "Username and password must not be empty",
     };
   }
-
   let authRes = [];
-
   try {
     authRes = await client.query(
       "SELECT user_id, password FROM Users WHERE Users.username = $1",
@@ -192,20 +160,17 @@ async function validateUser(client, username, password) {
       reason: "Cannot connect to database",
     };
   }
-
   if (authRes.rows.length == 0 || !await argon2.verify(authRes.rows[0]["password"].toString(), password)) {
     return {
       userId: undefined,
       reason: "Username or password is incorrect"
     };
   }
-
   // Check if user is not banned
   const banRes = await client.query(
-    "SELECT reason FROM BanList WHERE user_id = $1 AND expiry > NOW() and type = 'ban'",
+    "SELECT reason FROM BanList WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW()) and type = 'ban'",
     [authRes.rows[0]["user_id"]]
   );
-
   if (banRes.rows.length != 0) {
     return {
       userId: undefined,
@@ -324,7 +289,8 @@ async function getUserIdByUsername(client, username) {
     "SELECT user_id FROM Users WHERE username = $1;",
     [username]
   );
-  return res.rows[0]["user_id"];
+  if (res.rowCount == 0) throw new Error("No such user " + username);
+  return +res.rows[0]["user_id"];
 }
 
 async function validateSecurityQuestion(client, username, answer) {
@@ -435,6 +401,132 @@ async function getIncomingFriendRequests(client, to) {
   return res.rows;
 }
 
+async function acceptFriendRequest(client, from, to) {
+  const res = await client.query(
+    "UPDATE FriendList SET accepted = TRUE\n" +
+    "WHERE sender = $1 AND recipient = $2 AND NOT accepted;",
+    [from, to]
+  );
+  if (res.rowCount == 0) throw new Error("No such pending friend request");
+}
+
+async function deleteUser(client, id) {
+  const res = await client.query(
+    "DELETE FROM Users WHERE user_id = $1",
+    [id]
+  );
+  if (res.rowCount == 0) throw new Error("No such user");
+}
+
+async function setMute(client, sender, recipient, value) {
+  if (value) {
+    await client.query(
+      "INSERT INTO MuteList (sender, recipient) VALUES ($1, $2)\n" +
+      "ON CONFLICT  DO NOTHING;",
+      [sender, recipient]
+    );
+  } else {
+    await client.query(
+      "DELETE FROM MuteList WHERE sender = $1 AND recipient = $2;",
+      [sender, recipient]
+    );
+  }
+}
+
+async function isMuted(client, sender, recipient) {
+  const res = await client.query(
+    "SELECT * FROM MuteList WHERE sender = $1 AND recipient = $2;",
+    [sender, recipient]
+  );
+  return res.rowCount != 0;
+}
+
+async function getLeaderboardChips(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, chips) FROM Users\n" +
+    "ORDER BY chips DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
+async function getLeaderboardWins(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, wins) FROM Users\n" +
+    "ORDER BY num_wins DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
+
+async function setAdmin(client, user, value) {
+  await client.query(
+    "UPDATE Users SET is_admin = $1 WHERE user_id = $2",
+    [value, user]
+  );
+}
+
+async function isAdmin(client, user) {
+  const res = await client.query(
+    "SELECT is_admin FROM Users WHERE user_id = $1",
+    [user]
+  );
+  if (res.rowCount == 0) throw new Error("Nonexistent user");
+  return res.rows[0]["is_admin"];
+}
+
+/*
+  bans or silences a user
+  client - PG client
+  sender - user id of who issues the ban
+  recipient - user id of who is banned
+  reason - reason given to user,
+  expiry - when it expires (null for permanent)
+  type - 'ban' for ban; 'silence' for silence
+*/
+async function banUser(client, sender, recipient, reason, expiry, type) {
+  await client.query("BEGIN;");
+  try {
+    if (!await isAdmin(client, sender)) {
+      throw new Error("Only admins can ban or silence");
+    }
+    await client.query(
+      "INSERT INTO BanList (user_id, reason, expiry, issuer_id, type)\n" +
+      "VALUES ($1, $2, $3, $4, $5)",
+      [recipient, reason, expiry, sender, type]
+    );
+    await client.query("COMMIT;");
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  }
+}
+
+/*
+  return a list of objects:
+  - id: id of ban
+  - sender: user id of the user who banned the recipient
+  - reason: reason provided
+  - expiry: timestamp or null if permanent
+  - type: 'ban' or 'silence'
+*/
+async function getBans(client, recipient, onlyBans) {
+  const res = await client.query(
+    "SELECT ban_id AS id, issuer_id AS sender, reason, expiry, type FROM BanList\n" +
+    "WHERE user_id = $1 AND (expiry IS NULL OR expiry > NOW())\n" +
+    (onlyBans ? "AND type = 'ban';" : ";"),
+    [recipient]
+  );
+  return res.rows;
+}
+
+async function removeBan(client, banId) {
+  await client.query(
+    "DELETE FROM BanList WHERE ban_id = $1",
+    [banId]
+  );
+}
+
 module.exports = {
   createUser: createUser,
   validateUser: validateUser,
@@ -452,6 +544,16 @@ module.exports = {
   getAllFriends: getAllFriends,
   requestFriend: requestFriend,
   getIncomingFriendRequests: getIncomingFriendRequests,
+  acceptFriendRequest: acceptFriendRequest,
+  deleteUser: deleteUser,
+  setMute: setMute,
+  isMuted: isMuted,
   getLeaderboardChips: getLeaderboardChips,
-  getLeaderboardWins: getLeaderboardWins
+  getLeaderboardWins: getLeaderboardWins,
+  updateWin: updateWin,
+  banUser: banUser,
+  getBans: getBans,
+  setAdmin: setAdmin,
+  removeBan: removeBan,
+  isAdmin: isAdmin,
 };

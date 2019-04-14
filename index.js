@@ -41,6 +41,7 @@ const defaultProfilePic = fs.readFileSync("test/boxes.png");
 
 
 var rooms = [];
+var loggedUsers = [];
 
 //let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
 //let initDb = fs.readFileSync("sql/init_db.sql", 'utf8');
@@ -70,6 +71,10 @@ const server = express()
     need to be redirected to the game lobby. This also needs to call
     the function that creates a room and inserts it into the rooms array
     */
+
+    req.session.user.status = "INGAME"
+    loggedUsers.push(req.session.user);
+
     console.log(req.body);
     let roomName = req.body.roomName;
     let maxPlayers = req.body.numPlayers;
@@ -119,7 +124,9 @@ const server = express()
     let roomIndex = findRoom(req.body.radio);
     let currRoom = rooms[roomIndex];
     if (currRoom.password == "") {
-      return res.redirect('/game.html');
+        req.session.user.status = "INGAME"
+        loggedUsers.push(req.session.user);
+        return res.redirect('/game.html');
     }
     else {
       //Do password verification
@@ -203,6 +210,9 @@ const server = express()
             return res.redirect('/');
           } else {
             console.log(user);
+            user.status = "Online";
+            user.index = loggedUsers.length;
+            loggedUsers.push(user);
             req.session.user = user;
             return res.redirect('/main.html');
           }
@@ -244,6 +254,7 @@ const server = express()
 
   .post('/logout_get', function(req, res) {
     //Make sure current room is equal to null
+
     delete req.session.user;
     console.log(req.session.user);
     res.redirect('/index.html');
@@ -379,6 +390,8 @@ const server = express()
               return res.redirect('/');
             } else {
               console.log(user);
+              user.status = "Online"
+              loggedUsers.push(user);
               req.session.user = user;
               return res.redirect('/main.html');
             }
@@ -540,10 +553,23 @@ io.sockets.on('connection', function (socket) {
     })
 
     socket.on('sendchat', function (data) {
-      
-
-
-
+      let parsed = data.split(" ");
+      if (parsed[0] == "/mute") {
+        //do mute things
+        return;
+      }
+      else if (parsed[0] == "/ban") {
+        //do ban things
+        return;
+      }
+      else if (parsed[0] == "backlog") {
+        //view a backlog
+        return;
+      }
+      else if (parsed[0] == "admin") {
+        //grant admin permissions
+        return;
+      }
       //console.log(data);
       //make sure not empty
       if (data != "") {
@@ -706,17 +732,28 @@ io.sockets.on('connection', function (socket) {
 
     // When a player leaves the game and disconnects from the socket
     socket.on('disconnect', function() {
+      console.log(socket.username);
+      let userSaveIndex;
+      for (let i = 0; i < loggedUsers.length; i++) {
+        if (loggedUsers[i].username == socket.username) {
+          userSaveIndex = i;
+          break;
+        }
+      }
       if (socket.room == "main") {
-        socket.leave(socket.room);
+        loggedUsers.splice(userSaveIndex, 1);
         return;
       }
+      loggedUsers[userSaveIndex].status = "Online";
+      delete loggedUsers[userSaveIndex].room;
+      console.log(loggedUsers);
       let roomIndex = findRoom(socket.room);
       let currRoom = rooms[roomIndex];
       let winFlag = 0;
       let chipAmount = 0;
       let leaver;
       let leaverIndex;
-      for (leaverIndex = 0; i < currRoom.players.length; i++) {
+      for (leaverIndex = 0; leaverIndex < currRoom.players.length; i++) {
         if (currRoom.players[i].playerID == socket.id) {
           leaver = currRoom.players[i];
           currRoom.players.splice(i, 1);

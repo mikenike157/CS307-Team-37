@@ -15,6 +15,7 @@ CREATE TABLE Users (
   profile_picture BYTEA,
   chips INT NOT NULL,
   is_admin BOOL,
+  num_wins INT DEFAULT 0,
   PRIMARY KEY (user_id)
 );
 
@@ -51,7 +52,8 @@ CREATE TABLE FriendList (
   FOREIGN KEY (sender) REFERENCES Users(user_id)
     ON DELETE CASCADE,
   FOREIGN KEY (recipient) REFERENCES Users(user_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  UNIQUE (sender, recipient)
 );
 
 CREATE TABLE MuteList (
@@ -60,7 +62,8 @@ CREATE TABLE MuteList (
   FOREIGN KEY (sender) REFERENCES Users(user_id)
     ON DELETE CASCADE,
   FOREIGN KEY (recipient) REFERENCES Users(user_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  UNIQUE (sender, recipient)
 );
 
 CREATE TABLE BanList (

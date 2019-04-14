@@ -24,6 +24,10 @@ async function shouldThrowException(f) {
   if (!ok) throw new Error("didn't throw");
 }
 
+function idsOnly(objs) {
+  return objs.map((e) => +e.id).sort((a, b) => a - b);
+}
+
 before(async function() {
   // Reset database
   let dropAllTables = fs.readFileSync("sql/drop_all_tables.sql", 'utf8');
@@ -175,8 +179,117 @@ describe("transactions", function() {
       await transactions.requestFriend(client, kozet, aaaaa);
       await transactions.requestFriend(client, rain, taco);
       const requestsToKozet = await transactions.getIncomingFriendRequests(client, kozet);
-      const ids = requestsToKozet.map((e) => +e.id).sort((a, b) => a - b);
-      assert.deepStrictEqual(ids, [3, 4]);
+      const ids = idsOnly(requestsToKozet);
+      assert.deepStrictEqual(ids, [rain, taco]);
+    });
+    it("reject friending yourself", async function() {
+      shouldThrowException(async function() {
+        const aaaaa = await transactions.getUserIdByUsername(client, "aaaaa");
+        await transactions.requestFriend(client, aaaaa, aaaaa);
+      });
+    });
+  });
+  describe("#acceptFriendRequest", function() {
+    it("registers friends", async function() {
+      // Test that there are no accepted friends yet
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const friendsBeforeAccepting = await transactions.getAllFriends(client, kozet);
+      assert.deepStrictEqual(friendsBeforeAccepting, []);
+      // Accept friend request from rain
+      await transactions.acceptFriendRequest(client, rain, kozet);
+      const friendsAfterAccepting = idsOnly(await transactions.getAllFriends(client, kozet));
+      assert.deepStrictEqual(friendsAfterAccepting, [rain]);
+      const rainFriends = idsOnly(await transactions.getAllFriends(client, rain));
+      assert.deepStrictEqual(rainFriends, [kozet]);
+    });
+    it("rejects accepts from nonexistent requests", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      await shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, taco, aaaaa);
+      });
+      await shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, taco, rain);
+      });
+    });
+    it("rejects accepts for requests that are already accepted", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      await shouldThrowException(async function() {
+        await transactions.acceptFriendRequest(client, rain, kozet);
+      });
+    });
+  });
+  describe("#deleteUser", function() {
+    it("deletes users", async function() {
+      const aaaaa = await transactions.getUserIdByUsername(client, "aaaaa");
+      // Goodbye, cruel world
+      await transactions.deleteUser(client, aaaaa);
+      await shouldThrowException(async function() {
+        await transactions.getUserIdByUsername(client, "aaaaa");
+      });
+      await transactions.getUserIdByUsername(client, "kozet");
+    });
+  });
+  describe("#setMute", function() {
+    it("mutes users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      // Shut up! JUST SHUT UP!!!
+      await transactions.setMute(client, kozet, rain, true);
+      assert(await transactions.isMuted(client, kozet, rain));
+      // Mutes are not commutative
+      assert(!await transactions.isMuted(client, rain, kozet));
+      assert(!await transactions.isMuted(client, kozet, taco));
+    });
+    it("is idempotent", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      await transactions.setMute(client, kozet, rain, true);
+      assert(await transactions.isMuted(client, kozet, rain));
+    });
+    it("unmutes users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      await transactions.setMute(client, kozet, rain, false);
+      assert(!await transactions.isMuted(client, kozet, rain));
+    });
+  });
+  describe("#banUser", function() {
+    it("bans and silences users", async function() {
+      const kozet = await transactions.getUserIdByUsername(client, "kozet");
+      const rain = await transactions.getUserIdByUsername(client, "rain");
+      const taco = await transactions.getUserIdByUsername(client, "38tacocat83");
+      await transactions.setAdmin(client, kozet, true);
+      await transactions.banUser(client, kozet, taco, "being too tasty", null, 'ban');
+      await transactions.banUser(client, kozet, rain, "I am the sun!", null, 'silence');
+      const tb = await transactions.getBans(client, taco, true);
+      assert.deepStrictEqual(tb, [{
+        id: "1",
+        sender: kozet,
+        reason: "being too tasty",
+        expiry: null,
+        type: 'ban',
+      }]);
+      const rb = await transactions.getBans(client, rain, true);
+      assert.deepStrictEqual(rb, []);
+      const rs = await transactions.getBans(client, rain, false);
+      assert.deepStrictEqual(rs, [{
+        id: "2",
+        sender: kozet,
+        reason: "I am the sun!",
+        expiry: null,
+        type: 'silence',
+      }]);
+      // 38tacocat83 should be unable to log in
+      const login = await transactions.validateUser(client, "38tacocat83", "burrito");
+      assert.deepStrictEqual(login, {
+        userId: undefined,
+        reason: "Banned: being too tasty",
+      });
     });
   });
 });
