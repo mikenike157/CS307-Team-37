@@ -89,16 +89,28 @@ const server = express()
 
   })
 
+  .get('/checkPassword', function(req, res) {
+
+  })
+
   .get('/getRooms', function(req, res) {
     console.log("in rooms");
     let innerHTMLForm = "";
     for (let i = 0; i < rooms.length; i++) {
       if (rooms[i].name != undefined) {
-        innerHTMLForm += '<input type="radio" id="' + rooms[i].name + '" name="radio" value="' + rooms[i].name + '"/>' + rooms[i].name + '</br>';
+        innerHTMLForm += '<input type="radio" id="' + rooms[i].name +
+        '" name="radio" value="' + rooms[i].name + '"/>' +
+        rooms[i].name;
+        if (rooms[i].password == "") {
+          innerHTMLForm +=' OPEN</br>'
+        }
+        else {
+          innerHTMLForm += ' LOCKED</br>'
+        }
       }
     }
     if (rooms.length != 1) {
-      innerHTMLForm += '<input type="submit" name="submit" value="Join Room"/>';
+      innerHTMLForm += '<button type="button" name="submit" onclick="validatePassword()" value="Join Room">Join Room</button>';
     }
     console.log(innerHTMLForm);
     return res.send(innerHTMLForm);
@@ -119,18 +131,8 @@ const server = express()
   })
   .post('/room_post', function(req, res) {
     //console.log("IN ROOM POST: " + req.session.user.username);
-    req.session.user.room = req.body.radio;
-    console.log(req.body.radio)
-    let roomIndex = findRoom(req.body.radio);
-    let currRoom = rooms[roomIndex];
-    if (currRoom.password == "") {
-        req.session.user.status = "INGAME"
-        loggedUsers.push(req.session.user);
-        return res.redirect('/game.html');
-    }
-    else {
-      //Do password verification
-    }
+    req.session.user.room = req.body.roomName;
+    return res.redirect('/game.html');
     //console.log(req.session.user.room + " " + req.session.user.username);
   })
 
@@ -504,6 +506,18 @@ socket.room gets the current room that the player is in. */
 
 //On any request
 io.sockets.on('connection', function (socket) {
+
+    socket.on('checkRoomPass', function(roomName) {
+      let roomIndex = findRoom(roomName);
+      let currRoom = rooms[roomIndex];
+      if (currRoom.password == "") {
+        io.to(socket.id).emit('joinGame');
+      }
+      else {
+        io.to(socket.id).emit('givePass', currRoom.password);
+        //Do password verification
+      }
+    })
 
     socket.on('joinMain', function(username) {
       socket.username = username;

@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-
-
+<script src="/socket.io/socket.io.js"></script>
 <script>
 
 window.onload = function() {
@@ -22,6 +21,39 @@ window.onload = function() {
 	})
 }
 
+var socket = io();
+
+function validatePassword() {
+	var x = $('input[name=radio]:checked').val()
+	console.log(x);
+	socket.emit('checkRoomPass', x);
+}
+
+socket.on('joinGame', function() {
+	$.ajax({
+		async: false,
+		type: 'POST',
+		url: 'http://localhost/room_post',
+	})
+})
+
+socket.on('givePass', function(password) {
+	console.log(password);
+	var x = $('input[name=radio]:checked').val()
+	var pass = prompt("Password", "password");
+	if (pass != password) {
+		socket.emit('checkRoomPass');
+	}
+	$.ajax({
+		async: false,
+		type: 'POST',
+		data: {
+			roomName: x
+		},
+		url: 'http://localhost/room_post',
+	})
+})
+
 </script>
 
 
@@ -31,7 +63,7 @@ window.onload = function() {
 	<title>Host Game</title>
 </head>
 <body>
-	  <form id="roomForm" action="room_post" method="POST">
+	<form id="roomForm" name="roomForm">
   </form>
 </body>
 </html>
