@@ -417,31 +417,18 @@ const server = express()
   })
   .post('/')
   .listen(port, () => console.log(`Listening on ${ port }`));
+
 const io = sio(server);
-/*
-var players = [];
-var smallBlindPlacement = 0;
-var bigBlindPlacement = 1;
-var currentPot = 0;
-var currentBet = 0;
 
-var gameStatus = 0;
-var smallBlind = 1;
-var bigBlind = 2;
-var gameState = 0;
-//var roomArray = new Array(101)
-var winner = [];
+// Constants referring to game states
 
-var currentPlayer = 2;
+const Phase = {
+  PREFLOP: 0,
+  FLOP: 1,
+  TURN: 2,
+  RIVER: 3,
+};
 
-var ignoreList = [];
-
-var playerCards = [];
-
-var tableCards = [];
-
-var usernames = {};
-*/
 // For all-in logic
 var sidePot = 0;
 var mainPot = 0; // parallel currentPot
@@ -644,8 +631,9 @@ io.sockets.on('connection', function(socket) {
     console.dir(currRoom.players[currRoom.currentPlayer]);
     checkReadyState(socket)
     io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-  })
-  //On player fold
+  });
+
+  // On player fold
   socket.on('playerFold', function() {
     io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
     console.log("Registered fold click");
@@ -661,7 +649,7 @@ io.sockets.on('connection', function(socket) {
       return;
     }
     currRoom.players[currRoom.currentPlayer].state = "FOLDED";
-    //Checking if there is only one other player that is not folded in the hand because they win if they are.
+    // Checking if there is only one other player that is not folded in the hand because they win if they are.
     var counter = 0;
     for (var i = 0; i < currRoom.players.length; i++) {
       if (currRoom.players[i].state == "FOLDED") {
@@ -669,19 +657,19 @@ io.sockets.on('connection', function(socket) {
       }
     }
     if (counter == currRoom.players.length - 1) {
-      currRoom.gameState = 3;
+      currRoom.gameState = Phase.RIVER;
       progressGame(socket);
     }
     io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
     io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
     checkReadyState(socket);
-  })
-  //Hint button
+  });
+  // Hint button
   socket.on('playerHint', function() {
     let roomIndex = findRoom(socket.room);
     let currRoom = rooms[roomIndex];
     createHint(currRoom, socket);
-  })
+  });
   // When a player leaves the game and disconnects from the socket
   socket.on('disconnect', function() {
     console.log(socket.username);
@@ -747,7 +735,7 @@ io.sockets.on('connection', function(socket) {
             }
           }
           if (counter == currRoom.players.length - 1) {
-            currRoom.gameState = 3;
+            currRoom.gameState = Phase.RIVER;
             progressGame(socket);
           }
           checkReadyState(socket);
@@ -901,7 +889,7 @@ function addPlayerQueue(currRoom, socket) {
 //Starts the logic of the game
 function startGame(socket, currRoom) {
   currRoom.gameStatus = 1;
-  currRoom.gameState = 0;
+  currRoom.gameState = Phase.PREFLOP;
   currRoom.smallBlindPlacement = 0;
   currRoom.bigBlindPlacement = 1;
   currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
@@ -998,7 +986,7 @@ function progressGame(socket) {
   //get the room the request was sent from
   let currRoom = rooms[findRoom(socket.room)];
   //check if the game is preflop
-  if (currRoom.gameState == 0) { // Pre-flop
+  if (currRoom.gameState == Phase.PREFLOP) {
     var flop = [currRoom.fixedTCards[0], currRoom.fixedTCards[1], currRoom.fixedTCards[2]]
     updateSidePots(currRoom);
     resetStates(currRoom);
@@ -1012,10 +1000,10 @@ function progressGame(socket) {
     */
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    currRoom.gameState++;
+    currRoom.gameState = Phase.FLOP;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('flop', flop);
-  } else if (currRoom.gameState == 1) { // Flop
+  } else if (currRoom.gameState == Phase.FLOP) {
     updateSidePots(currRoom);
     resetStates(currRoom);
     /*
@@ -1028,10 +1016,10 @@ function progressGame(socket) {
     */
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    currRoom.gameState++;
+    currRoom.gameState = Phase.TURN;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('turn', currRoom.fixedTCards[3])
-  } else if (currRoom.gameState == 2) { // Turn
+  } else if (currRoom.gameState == Phase.TURN) {
     updateSidePots(currRoom);
     resetStates(currRoom);
     /*
@@ -1044,10 +1032,10 @@ function progressGame(socket) {
     */
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
-    currRoom.gameState++;
+    currRoom.gameState = Phase.RIVER;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('river', currRoom.fixedTCards[4])
-  } else if (currRoom.gameState == 3) { // River
+  } else if (currRoom.gameState == Phase.RIVER) { // River
     updateSidePots(currRoom);
     // At the end of this loop, you are given player list of hand winners
     var playerHandRanks = [];
@@ -1151,7 +1139,7 @@ function progressGame(socket) {
       return;
     }
     // Reset round
-    currRoom.gameState = 0;
+    currRoom.gameState = Phase.PREFLOP;
     currRoom.currentPot = 0;
     currRoom.currentBet = 0;
     currRoom.smallBlindPlacement = currRoom.bigBlindPlacement;
@@ -1175,15 +1163,15 @@ function printInfo(socket) {
   for (let i = 0; i < players.length; i++) {
     io.to(players[i].playerID).emit('updatechat', 'Your Cards: ', fixedPCards[i]);
   }
-  if (gameState >= 1) {
+  if (gameState >= Phase.FLOP) {
     let flop = [fixedTCards[0], fixedTCards[1], fixedTCards[2]];
     io.sockets.in(socket.room).emit('updatechat', "Server", "Flop: " + flop);
   }
-  if (gameState >= 2) {
+  if (gameState >= Phase.TURN) {
     let turn = fixedTCards[3];
     io.sockets.in(socket.room).emit('updatechat', "Server", "Turn: " + turn);
   }
-  if (gameState >= 3) {
+  if (gameState >= Phase.RIVER) {
     let river = fixedTCards[4];
     io.sockets.in(socket.room).emit('updatechat', "Server", "River: " + river);
   }
@@ -1242,27 +1230,27 @@ function createHint(currRoom, socket) {
   let tableArray;
   let match;
   let hintOutcome;
-  if (currRoom.gameState == 0) {
+  if (currRoom.gameState == Phase.PREFLOP) {
     tableArray = hf.finalhand(currPlayer.cards, []);
     console.log(tableArray);
     match = hf.match(tableArray);
     hintOutcome = hg.handgoodness(tableArray, match);
     //console.log(hintOutcome);
     io.sockets.to(socket.id).emit('handHint', hintOutcome);
-  } else if (currRoom.gameState == 1) {
+  } else if (currRoom.gameState == Phase.FLOP) {
     tableArray = hf.finalhand(currPlayer.cards, flop);
     console.log(tableArray);
     match = hf.match(tableArray);
     console.log(match);
     hintOutcome = pos.possibility(tableArray, match, 5)
     io.sockets.to(socket.id).emit('boardHint', hintOutcome);
-  } else if (currRoom.gameState == 2) {
+  } else if (currRoom.gameState == Phase.TURN) {
     flop.push(turn);
     tableArray = hf.finalhand(currPlayer.cards, flop);
     match = hf.match(tableArray);
     hintOutcome = pos.possibility(tableArray, match, 6)
     io.sockets.to(socket.id).emit('boardHint', hintOutcome);
-  } else if (currRoom.gameState == 3) {
+  } else if (currRoom.gameState == Phase.RIVER) {
     flop.push(turn);
     flop.push(river);
     tableArray = hf.finalhand(currPlayer.cards, flop);
