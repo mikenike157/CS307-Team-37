@@ -6,8 +6,8 @@ this.bot_decision(isAI, gameObject)
 		retArray = bot_decision_simple(gameObject)
 	} else if (isAI == 2) {
 		retArray = bot_decision_medium(gameObject)
-	} else if (isAI == 3) {
-		retArray = bot_decision_hard(gameObject)
+	//} else if (isAI == 3) {
+		//retArray = bot_decision_hard(gameObject)
 	} else {
 		console.log("ERROR: No AI associated with this flag");
 	}
