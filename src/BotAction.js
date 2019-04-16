@@ -1,23 +1,19 @@
-this.bot_decision = function(isAI, gameObject)  
-{
-	// Call specific AI to build return array
-  retArray = [-2, -2]
-  if (isAI == 1) 
-    retArray = bot_decision_simple(gameObject) 
-  else if (isAI == 2) 
-    retArray = bot_decision_medium(gameObject)
-  else if (isAI == 3) 
-    retArray = bot_decision_hard(gameObject) 
-  else 
-    console.log("Error, isAI flag is invalid"); 
 
-  // Check that return array is in valid form
-  if (retArray.length != 2)
-    console.log("Error: Return array is too long or too short");
-  if retArray[0] == -2 || returnArray[1] == -2:
-			console.log("Error: Return array not updated or not updated correctly");
-      
-  return retArray
+this.bot_decision(isAI, gameObject)
+{
+	var retArray = [-2, -2];
+	if (isAI == 1) {
+		retArray = bot_decision_simple(gameObject)
+	} else if (isAI == 2) {
+		retArray = bot_decision_medium(gameObject)
+	} else if (isAI == 3) {
+		retArray = bot_decision_hard(gameObject)
+	} else {
+		console.log("ERROR: No AI associated with this flag");
+	}
+	console.log("bot_decision retArray:", retArray);
+	printMove(retArray[0], retArray[1]);
+	return retArray;
 }
 
 function bot_decision_simple(gameObject)
@@ -50,8 +46,43 @@ function bot_decision_simple(gameObject)
 
 function bot_decision_medium(gameObject)
 {
+	var commandID = -2;
+	var retVal = -2;
+
+	return [commandID, retVal];
 }
 
 function bot_decision_hard(gameObject)
 {
+	var commandID = -2;
+	var retVal = -2;
+
+	return [commandID, retVal];
+}
+
+/* Prints move corresponding to retArray, for checking/debugging */
+var COMMANDS = ["Fold", "Check", "Call", "Raise", "All-in"]
+function printMove(commandID, retVal)
+{
+	var str = COMMANDS[commandID]
+	if (commandID == 2)
+	{
+		str += " current bet of "
+		str += retVal
+	}
+	else if (commandID == 3)
+	{
+		str += " to "
+		str += retVal
+	}
+	else if (commandID == 4)
+	{
+		str += " with "
+		str += retVal
+	}
+	else if (commandID < 0 || commandID > 4)
+	{
+		console.log("Invalid commandID")
+	}
+	console.log("Move: " + str)
 }
