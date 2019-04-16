@@ -19,9 +19,6 @@ function possibility(tableArray,matchArray,numTableCards) {
 	var fullHouse = false;
 	var twoPair = false; 
 	
-	if(numTableCards == 5){
-		return -1;
-	}
 	
 	//highCards and 2kind
 	rArray[0] = 1;
@@ -118,7 +115,6 @@ function possibility(tableArray,matchArray,numTableCards) {
 	  }
 
 	  //fullhouse
-	  
 	  if((cardsleft >= 3) || (secondhighmatch == 2 && currentHighMatch == 3) || (currentHighMatch >= 3 && cardsleft >= 1) || (currentHighMatch >= 2 && cardsleft >= 2) || (secondhighmatch>=2 && cardsleft >= 1)){
 			 rArray[6] = 1;		 
 	  }else{
