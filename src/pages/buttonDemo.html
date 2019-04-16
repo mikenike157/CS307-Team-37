@@ -29,29 +29,67 @@ function validatePassword() {
 	socket.emit('checkRoomPass', x);
 }
 
+socket.on('connect', function() {
+	$(function() {
+		let name = "guest";
+		$.ajax({
+			async: false,
+			type: 'GET',
+			//url: 'http://pokeruniversity.herokuapp.com/update_username',
+			url: 'http://localhost/update_username',
+			success: function(data) {
+				name = data;
+				console.log(name);
+			}
+		})
+		socket.emit('gameSelection', name);
+	})
+})
+
 socket.on('joinGame', function() {
+	var x = $('input[name=radio]:checked').val()
 	$.ajax({
 		async: false,
 		type: 'POST',
 		url: 'http://localhost/room_post',
+		data: {
+			roomName: x
+		},
+		success: function(data) {
+			window.location.replace('/game.html');
+		}
 	})
 })
 
 socket.on('givePass', function(password) {
 	console.log(password);
 	var x = $('input[name=radio]:checked').val()
-	var pass = prompt("Password", "password");
-	if (pass != password) {
-		socket.emit('checkRoomPass');
+	var pass = prompt("Password", "");
+	console.log(pass);
+	if (pass == "" || pass == null) {
+			return;
 	}
-	$.ajax({
-		async: false,
-		type: 'POST',
-		data: {
-			roomName: x
-		},
-		url: 'http://localhost/room_post',
-	})
+	else if (pass != password) {
+		socket.emit('checkRoomPass', x);
+		return;
+	}
+	/*else if (pass == "") {
+		return;
+	}*/
+	else {
+		$.ajax({
+			async: false,
+			type: 'POST',
+			data: {
+				roomName: x
+			},
+			url: 'http://localhost/room_post',
+			success: function(data) {
+				window.location.replace('/game.html')
+			}
+		})
+		return;
+	}
 })
 
 </script>

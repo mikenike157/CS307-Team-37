@@ -40,6 +40,7 @@ class gameRoom {
 }
 
 this.createRoom = function(name, maxPlayers, password, numAI, anteOption, startChips) {
+  console.log(password);
   console.log("Start Chips: " + startChips)
   let room;
   if (anteOption == 'on') {

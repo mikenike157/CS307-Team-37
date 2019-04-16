@@ -130,6 +130,7 @@ const server = express()
     return res.redirect('/buttonDemo.html');
   })
   .post('/room_post', function(req, res) {
+    console.log("MADE IT TO ROOM POST")
     //console.log("IN ROOM POST: " + req.session.user.username);
     req.session.user.room = req.body.roomName;
     return res.redirect('/game.html');
@@ -142,11 +143,34 @@ const server = express()
     //Display all results to the user with a view profile and send button
   })
 
-  .get('/get_leaderboard', function(req, res) {
+  .get('/get_leaderboard_chips', function(req, res) {
     var boardArray = [];
     pool.connect()
       .then(client => {
         return lg.getLeaderboardChips(client)
+        .then(leaderBoard => {
+          client.release();
+          console.log(leaderBoard.length);
+          for (let i = 0; i < leaderBoard.length; i++){
+            let temp = leaderBoard[i].row;
+            boardArray.push(temp);
+            //console.log(boardArray);
+          }
+          console.log(boardArray);
+          return res.send(boardArray);
+        })
+        .catch(err => {
+          client.release();
+          console.log(err.stack);
+        })
+      })
+  })
+
+  .get('/get_leaderboard_wins', function(req, res) {
+    var boardArray = [];
+    pool.connect()
+      .then(client => {
+        return lg.getLeaderboardWins(client)
         .then(leaderBoard => {
           client.release();
           console.log(leaderBoard.length);
@@ -376,16 +400,13 @@ const server = express()
   //validates login credentials of user
   .post('/login_post',  function(req, res){
 
-    console.log("begin login");
       //create promise that returns a user from the database
       //const result = lg.validateUser(client, req.body.username, req.body.password);
-
       pool.connect()
         .then(client => {
           return lg.validateUser(client, req.body.username, req.body.password)
           .then(user => {
           client.release()
-
             console.log(user);
             if( user.userId === undefined ){
               console.log(user.reason);
@@ -403,9 +424,7 @@ const server = express()
             console.log(err.stack);
             return res.redirect('/')
           })
-
         })
-
   })
 
 
@@ -508,8 +527,10 @@ socket.room gets the current room that the player is in. */
 io.sockets.on('connection', function (socket) {
 
     socket.on('checkRoomPass', function(roomName) {
+      console.log("ROOM NAME: " + roomName);
       let roomIndex = findRoom(roomName);
       let currRoom = rooms[roomIndex];
+      console.log("PASSWORD: " + currRoom.password);
       if (currRoom.password == "") {
         io.to(socket.id).emit('joinGame');
       }
@@ -526,6 +547,12 @@ io.sockets.on('connection', function (socket) {
       return;
     })
 
+    socket.on('gameSelection', function(username) {
+      console.log(socket.username);
+      socket.room = "gameSearch";
+      return;
+    })
+
     //addUser is emitted
     socket.on('adduser', function(username, room) {
 
@@ -537,7 +564,7 @@ io.sockets.on('connection', function (socket) {
       console.log(currRoomIndex);
       let currRoom = rooms[currRoomIndex];
       if (currRoom.gameStatus != 0) {
-        game.addPlayerQueue(currRoom, socket);
+        currRoom = addPlayerQueue(currRoom, socket);
         rooms[currRoomIndex] = currRoom;
         return;
       }
@@ -568,20 +595,28 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('sendchat', function (data) {
       let parsed = data.split(" ");
-      if (parsed[0] == "/mute") {
-        //do mute things
+      //parsed[0] is command, parsed[1] is recipient, parsed[2] is reason, parsed[3] is expiry, parsed[4] is type
+      if (parsed[0] == "/ban") {
+        findUserId(socket.id, function(id) {
+          executeBan(parsed[1], parsed[2], parsed[3], parsed[4]);
+        })
         return;
       }
-      else if (parsed[0] == "/ban") {
-        //do ban things
+      else if (parsed[0] == "/backlog") {
+
+
         return;
       }
-      else if (parsed[0] == "backlog") {
-        //view a backlog
+      else if (parsed[0] == "/chips") {
+        grantChips(socket.username, parsed[1], parsed[2]);
         return;
       }
-      else if (parsed[0] == "admin") {
-        //grant admin permissions
+      else if (parsed[0] == "/admin") {
+        if (parsed.length != 2) {
+          io.to(socket.id).emit('updatechat', "SERVER", "Invalid command");
+          return;
+        }
+        let temp = adminWrapper(socket.username);
         return;
       }
       //console.log(data);
@@ -748,52 +783,178 @@ io.sockets.on('connection', function (socket) {
     socket.on('disconnect', function() {
       console.log(socket.username);
       let userSaveIndex;
-      for (let i = 0; i < loggedUsers.length; i++) {
+
+      /*for (let i = 0; i < loggedUsers.length; i++) {
         if (loggedUsers[i].username == socket.username) {
           userSaveIndex = i;
           break;
         }
-      }
+      }*/
       if (socket.room == "main") {
-        loggedUsers.splice(userSaveIndex, 1);
+        socket.leave('main');
+        //loggedUsers.splice(userSaveIndex, 1);
         return;
       }
-      loggedUsers[userSaveIndex].status = "Online";
-      delete loggedUsers[userSaveIndex].room;
-      console.log(loggedUsers);
+      else if (socket.room == "gameSearch") {
+        socket.leave('gameSearch');
+        return;
+      }
+      //loggedUsers[userSaveIndex].status = "Online";
+      //delete loggedUsers[userSaveIndex].room;
+      //console.log(loggedUsers);
+
       let roomIndex = findRoom(socket.room);
       let currRoom = rooms[roomIndex];
+
+      for (let i = 0; i < currRoom.playerQueue.length; i++) {
+        if (socket.id == currRoom.playerQueue[i].playerID) {
+          currRoom.playerQueue.splice(i, 1);
+          socket.leave(currRoom.roomName);
+          delete socket.room
+          return;
+        }
+      }
+
       let winFlag = 0;
       let chipAmount = 0;
       let leaver;
       let leaverIndex;
-      for (leaverIndex = 0; leaverIndex < currRoom.players.length; i++) {
-        if (currRoom.players[i].playerID == socket.id) {
-          leaver = currRoom.players[i];
-          currRoom.players.splice(i, 1);
+      for (leaverIndex = 0; leaverIndex < currRoom.players.length; leaverIndex++) {
+        if (currRoom.players[leaverIndex].playerID == socket.id) {
+          leaver = currRoom.players[leaverIndex];
+          currRoom.players.splice(leaverIndex, 1);
           break;
         }
       }
       if (currRoom.players.length == 0) {
-        if (gameStatus == 1) {
+        if (currRoom.gameStatus == 1) {
           winFlag = 1;
           chipAmount = leaver.chips;
         }
+        let userId = findUserId(socket.username);
+        //updateHistory(userId, chipAmount, winFlag);
         rooms.splice(roomIndex, 1);
       }
       else {
-        if (gameStatus == 1) {
+        if (currRoom.gameStatus == 1) {
           currRoom.playerCards.splice(leaverIndex, 1);
-          if (currRoom.currPlayer == leaverIndex) {
+          if (currRoom.currentPlayer == leaverIndex) {
             //Move the turn idleCounter
             //Move the turn indicator on client
+            io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
+            io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
+            var counter = 0;
+            for (var i = 0; i < currRoom.players.length; i++) {
+              if (currRoom.players[i].state == "FOLDED") {
+                counter++;
+              }
+            }
+            if (counter == currRoom.players.length-1) {
+              currRoom.gameState = 3;
+              progressGame(socket);
+            }
+            checkReadyState(socket);
+          }
+          else {
+//            currRoom.players.splice(leaverIndex, 1);
+            if (currRoom.currentPlayer > leaverIndex) {
+              currRoom.currentPlayer--;
+            }
+            io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
+            io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
           }
         }
       }
+      socket.leave(socket.room);
   })
 
 });
 
+async function adminWrapper(sender, recipient) {
+  pool.connect()
+  .then(userId => {
+    let id;
+    pool.connect()
+    .then(client => {
+      return lg.getUserIdByUsername(client, username)
+      .then(userId => {
+        console.log(userId);
+        client.release()
+        id = userId;
+      })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+        return;
+      })
+    })
+  })
+}
+
+function executeBan(sender, recipient, reason, expiry, type) {
+  pool.connect()
+  .then(client => {
+    lg.banUser(client, sender, recipient, reason, expiry, type)
+  })
+  .catch(err => {
+    console.log(err.stack);
+  })
+}
+
+function checkAdminStatus(userId) {
+  console.log("CHECK ADMIN: " + userId);
+  pool.connect()
+  .then(client => {
+    return lg.isAdmin(client, userId)
+    .then(adminCheck => {
+      console.log(adminCheck);
+      client.release()
+      return adminCheck;
+    })
+    .catch(err => {
+      client.release()
+      console.log(err.stack);
+      return false;
+    })
+  })
+}
+
+function grantChips(sender, recipient, amount) {
+  findUserId(sender, function(sid) {
+    findUserId(recipient, function(rid) {
+      pool.connect()
+      .then(client => {
+        return lg.updateChips(client, id, amount)
+        .then(newChips => {
+          console.log(newChips);
+          client.release();
+          return 1;
+        })
+        .catch(err => {
+          client.release();
+          console.log(err.stack);
+          return -1;
+        })
+      })
+    })
+  })
+}
+
+function grantAdmin(id, val) {
+    pool.connect()
+    .then(client => {
+      return lg.setAdmin(client, id, val)
+      .then(userId => {
+        client.release()
+        return 1;
+      })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+        return -1;
+      })
+  })
+}
 
 //Called on leave, updates the chips and winning status of the leaver
 function updateHistory(userID, chips, winFlag) {
@@ -825,6 +986,10 @@ function updateHistory(userID, chips, winFlag) {
   }
 }
 
+function findUserId(username) {
+
+}
+
 //Gets the array index of the room given the string of the room name
 function findRoom(roomName) {
   for (let i = 0; i < rooms.length; i++) {
@@ -837,10 +1002,17 @@ function findRoom(roomName) {
 }
 
 //Adds a player to the current game
+
 function addPlayer(currRoom, socket) {
   currRoom = room.addPlayer(currRoom, socket);
   return currRoom;
 }
+
+function addPlayerQueue(currRoom, socket) {
+  currRoom = room.addPlayerQueue(currRoom, socket);
+  return currRoom;
+}
+
 //Starts the logic of the game
 function startGame(socket, currRoom) {
   currRoom.gameStatus = 1;

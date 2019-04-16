@@ -118,12 +118,13 @@ async function updateWin(client, userid) {
 async function updateChips(client, userid, chips) {
   // console.log(userid);
   const res = await client.query(
-    "UPDATE Users SET chips = $1 WHERE user_id = $2;",
+    "UPDATE Users SET chips = chips + $1 WHERE user_id = $2;",
     [chips, userid]
   );
   if (res.rowCount == 0) {
     throw "user not found";
   }
+  console.log(res.rows[0]["chips"])
   return {
     newChips: res.rows[0]["chips"]
   };
@@ -137,6 +138,7 @@ async function updateChips(client, userid, chips) {
   * reason: string
 */
 async function validateUser(client, username, password) {
+  console.log("validateUser");
   // Check if username and password are valid
   if (username === "" || password === ""){
     return {
@@ -323,7 +325,7 @@ async function getLeaderboardChips(client) {
 
 async function getLeaderboardWins(client) {
   const res = await client.query(
-    "SELECT (user_id, username, wins) FROM Users\n" +
+    "SELECT (user_id, username, num_wins) FROM Users\n" +
     "ORDER BY num_wins DESC\n" +
     "LIMIT 100;"
   );
@@ -452,7 +454,7 @@ async function getLeaderboardChips(client) {
 
 async function getLeaderboardWins(client) {
   const res = await client.query(
-    "SELECT (user_id, username, wins) FROM Users\n" +
+    "SELECT (user_id, username, num_wins) FROM Users\n" +
     "ORDER BY num_wins DESC\n" +
     "LIMIT 100;"
   );
@@ -460,10 +462,15 @@ async function getLeaderboardWins(client) {
 }
 
 async function setAdmin(client, user, value) {
-  await client.query(
+  console.log("FROM SET ADMIN: " + user + " " + value)
+  const res = await client.query(
     "UPDATE Users SET is_admin = $1 WHERE user_id = $2",
     [value, user]
   );
+  if (res.rowCount == 0) {
+    throw "user not found";
+  }
+  return res.rows[0]["is_admin"]
 }
 
 async function isAdmin(client, user) {
