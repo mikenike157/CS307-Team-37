@@ -13,7 +13,7 @@ class gameRoom {
     this.bigBlindPlacement = 1;
     this.currentPot = 0;
     this.currentBet = 0;
-    this.gameStatus = 0;
+    this.isGameStarted = false;
     this.smallBlind = 5;
     this.bigBlind = 10;
     this.gameState = 0;

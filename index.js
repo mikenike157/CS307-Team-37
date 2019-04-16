@@ -479,7 +479,7 @@ io.sockets.on('connection', function(socket) {
     let currRoomIndex = findRoom(room);
     console.log(currRoomIndex);
     let currRoom = rooms[currRoomIndex];
-    if (currRoom.gameStatus != 0) {
+    if (currRoom.isGameStarted) {
       socket.join(room);
       currRoom = addPlayerQueue(currRoom, socket);
       rooms[currRoomIndex] = currRoom;
@@ -493,7 +493,7 @@ io.sockets.on('connection', function(socket) {
       }
       socket.join(room);
       console.log(currRoom);
-      // if max numebr of players have joined
+      // if max number of players have joined
       if (currRoom.players.length == currRoom.maxPlayers) {
         currRoom = startGame(socket, currRoom);
         for (let i = 0; i < currRoom.players.length; i++) {
@@ -501,7 +501,6 @@ io.sockets.on('connection', function(socket) {
         }
       }
       rooms[currRoomIndex] = currRoom;
-      //updateLog
       io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
       console.log("JOINED ROOM");
       return;
@@ -544,7 +543,7 @@ io.sockets.on('connection', function(socket) {
     //if (amount == 0) {
     //}
     //checks if there is a game running, if not dont do anything
-    if (currRoom.gameStatus == 0) {
+    if (!currRoom.isGameStarted) {
       return;
     }
     //checks if it is the current players turn
@@ -589,7 +588,7 @@ io.sockets.on('connection', function(socket) {
     let roomIndex = findRoom(socket.room);
     let currRoom = rooms[roomIndex];
     //If there is not a game in progress
-    if (currRoom.gameStatus == 0) {
+    if (!currRoom.isGameStarted) {
       io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
       return;
     }
@@ -640,7 +639,7 @@ io.sockets.on('connection', function(socket) {
     console.log(socket.username);
     let roomIndex = findRoom(socket.room);
     let currRoom = rooms[roomIndex];
-    if (currRoom.gameStatus == 0) {
+    if (!currRoom.isGameStarted) {
       //io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
       return;
     }
@@ -713,7 +712,7 @@ io.sockets.on('connection', function(socket) {
       }
     }
     if (currRoom.players.length == 0) {
-      if (currRoom.gameStatus == 1) {
+      if (currRoom.isGameStarted) {
         winFlag = 1;
         chipAmount = leaver.chips;
       }
@@ -721,7 +720,7 @@ io.sockets.on('connection', function(socket) {
       //updateHistory(userId, chipAmount, winFlag);
       rooms.splice(roomIndex, 1);
     } else {
-      if (currRoom.gameStatus == 1) {
+      if (currRoom.isGameStarted) {
         currRoom.playerCards.splice(leaverIndex, 1);
         if (currRoom.currentPlayer == leaverIndex) {
           //Move the turn idleCounter
@@ -888,7 +887,7 @@ function addPlayerQueue(currRoom, socket) {
 }
 //Starts the logic of the game
 function startGame(socket, currRoom) {
-  currRoom.gameStatus = 1;
+  currRoom.isGameStarted = true;
   currRoom.gameState = Phase.PREFLOP;
   currRoom.smallBlindPlacement = 0;
   currRoom.bigBlindPlacement = 1;
@@ -1135,7 +1134,7 @@ function progressGame(socket) {
     }
     if (currRoom.players.length == 1) {
       io.sockets.in(socket.room).emit('finalWinner', currRoom.players[0].playerID);
-      currRoom.gameStatus = 0;
+      currRoom.isGameStarted = false;
       return;
     }
     // Reset round
