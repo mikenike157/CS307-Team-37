@@ -467,9 +467,11 @@ async function setAdmin(client, user, value) {
     "UPDATE Users SET is_admin = $1 WHERE user_id = $2",
     [value, user]
   );
+  console.log(res.rows[0]);
   if (res.rowCount == 0) {
     throw "user not found";
   }
+  console.log(res.rows[0][is_admin]);
   return res.rows[0]["is_admin"]
 }
 
@@ -492,18 +494,23 @@ async function isAdmin(client, user) {
   type - 'ban' for ban; 'silence' for silence
 */
 async function banUser(client, sender, recipient, reason, expiry, type) {
+  console.log("IN BAN USER");
   await client.query("BEGIN;");
   try {
     if (!await isAdmin(client, sender)) {
+      console.log("HERE")
       throw new Error("Only admins can ban or silence");
     }
-    await client.query(
+    console.log("executing query");
+    const res = await client.query(
       "INSERT INTO BanList (user_id, reason, expiry, issuer_id, type)\n" +
       "VALUES ($1, $2, $3, $4, $5)",
       [recipient, reason, expiry, sender, type]
     );
+    console.log(res)
     await client.query("COMMIT;");
   } catch (e) {
+    console.log(e)
     await client.query("ROLLBACK");
     throw e;
   }

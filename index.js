@@ -1,5 +1,6 @@
 "use strict";
 
+const botMedium = require('./src/BotAction.js')
 const express = require("express");
 const game = require("./src/GameActions.js");
 const hg = require("./src/handgoodness.js")
@@ -71,7 +72,6 @@ const server = express()
     need to be redirected to the game lobby. This also needs to call
     the function that creates a room and inserts it into the rooms array
     */
-
     req.session.user.status = "INGAME"
     loggedUsers.push(req.session.user);
 
@@ -555,7 +555,6 @@ io.sockets.on('connection', function (socket) {
 
     //addUser is emitted
     socket.on('adduser', function(username, room) {
-
       // get room index and set up socket information
       console.log(room);
       socket.username = username;
@@ -572,8 +571,43 @@ io.sockets.on('connection', function (socket) {
       else {
         currRoom = addPlayer(currRoom, socket);
 
+        socket.join(room);
+        if(currRoom.numAI == 0) {
+          if (currRoom.players.length == currRoom.maxPlayers) {
+            currRoom = startGame(socket, currRoom);
+            for (let i = 0; i < currRoom.players.length; i++) {
+              if (currRoom.players[i].isAI == 0) {
+                io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+              }
+            }
+
+          }
+          rooms[currRoomIndex] = currRoom;
+          //updateLog
+          io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
+          console.log("JOINED ROOM");
+          return;
+        }
+        else {
+          if (currRoom.players.length + currRoom.numAI == currRoom.maxPlayers) {
+            for (let i = 0; i < currRoom.numAI; i++) {
+              currRoom = addAI(currRoom, 1);
+            }
+            currRoom = startGame(socket, currRoom);
+            for (let i = 0; i < currRoom.players.length; i++) {
+              if (currRoom.players[i].numAI == 0) {
+                io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+              }
+            }
+            let aiCheck = currplayer_ai_check(currRoom);
+            if (aiCheck) {
+              currRoom = executeAiDecision(currRoom, currRoom.currentPlayer, socket);
+            }
+          }
+        }
       //add a player to the room, set the returned room to currRoom
       //if room was full
+      /*
         if (currRoom == null) {
           return;
         }
@@ -591,6 +625,7 @@ io.sockets.on('connection', function (socket) {
         io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
         console.log("JOINED ROOM");
         return;
+        */
       }
     })
 
@@ -598,9 +633,7 @@ io.sockets.on('connection', function (socket) {
       let parsed = data.split(" ");
       //parsed[0] is command, parsed[1] is recipient, parsed[2] is reason, parsed[3] is expiry, parsed[4] is type
       if (parsed[0] == "/ban") {
-        findUserId(socket.id, function(id) {
-          executeBan(parsed[1], parsed[2], parsed[3], parsed[4]);
-        })
+        executeBan(socket.username, parsed[1], parsed[2], parsed[3], parsed[4]);
         return;
       }
       else if (parsed[0] == "/backlog") {
@@ -617,7 +650,8 @@ io.sockets.on('connection', function (socket) {
           io.to(socket.id).emit('updatechat', "SERVER", "Invalid command");
           return;
         }
-        let temp = adminWrapper(socket.username);
+        let retString = adminWrapper(socket.username, parsed[1], parsed[2]);
+        io.to(socket.id).emit('upatechat', "SERVER", retString)
         return;
       }
       //console.log(data);
@@ -728,7 +762,7 @@ io.sockets.on('connection', function (socket) {
 
           currRoom.currentPot += retArray[2];
           currRoom.players[currRoom.currentPlayer] = retArray[1];
-          rooms[currRoom] = currRoom;
+          rooms[roomIndex] = currRoom;
           //LOGS
           //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
@@ -871,35 +905,101 @@ io.sockets.on('connection', function (socket) {
 
 });
 
-async function adminWrapper(sender, recipient) {
+async function adminWrapper(sender, recipient, newStatus) {
+  console.log("inWrapper");
   pool.connect()
-  .then(userId => {
-    let id;
-    pool.connect()
-    .then(client => {
-      return lg.getUserIdByUsername(client, username)
-      .then(userId => {
-        console.log(userId);
-        client.release()
-        id = userId;
+  .then(client => {
+    return lg.getUserIdByUsername(client, sender)
+    .then(userId => {
+      console.log(userId);
+        return lg.isAdmin(client, userId)
+        .then(adminStatus => {
+          console.log(adminStatus);
+          if (adminStatus) {
+            return lg.getUserIdByUsername(client, recipient)
+            .then(recipientId => {
+              return lg.setAdmin(client, recipientId, newStatus)
+              .then(status => {
+                if (status == true) {
+                  client.release();
+                  return "Admin status updated successfully";
+                }
+              })
+              .catch(err => {
+                client.release();
+                return "Error in updating admin status";
+              })
+            })
+            .catch(err => {
+              client.release();
+              return "User not found";
+            })
+          }
+          else {
+            console.log("not admin");
+            client.release();
+            return "You do not have admin permissions";
+          }
+        })
+        .catch(err => {
+          client.release();
+          return "Error in admin check";
+        })
       })
       .catch(err => {
         client.release()
         console.log(err.stack);
-        return;
+        return "Error in user id check";
       })
     })
-  })
-}
+  }
 
 function executeBan(sender, recipient, reason, expiry, type) {
   pool.connect()
   .then(client => {
-    lg.banUser(client, sender, recipient, reason, expiry, type)
-  })
-  .catch(err => {
-    console.log(err.stack);
-  })
+    return lg.getUserIdByUsername(client, sender)
+    .then(userId => {
+      console.log(userId);
+        return lg.isAdmin(client, userId)
+        .then(adminStatus => {
+          console.log(adminStatus);
+          if (adminStatus) {
+            return lg.getUserIdByUsername(client, recipient)
+            .then(recipientId => {
+              return lg.banUser(client, userId, recipientId, reason, expiry, type)
+              .then(status => {
+                if (status == true) {
+                  client.release();
+                  return "Admin status updated successfully";
+                }
+              })
+              .catch(err => {
+                client.release();
+                return "Error in updating admin status";
+              })
+            })
+            .catch(err => {
+              client.release();
+              return "User not found";
+            })
+          }
+          else {
+            console.log("not admin");
+            client.release();
+            return "You do not have admin permissions";
+          }
+        })
+        .catch(err => {
+          client.release();
+          return "Error in admin check";
+        })
+      })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+        return "Error in user id check";
+      })
+    })
 }
 
 function checkAdminStatus(userId) {
@@ -921,24 +1021,52 @@ function checkAdminStatus(userId) {
 }
 
 function grantChips(sender, recipient, amount) {
-  findUserId(sender, function(sid) {
-    findUserId(recipient, function(rid) {
-      pool.connect()
-      .then(client => {
-        return lg.updateChips(client, id, amount)
-        .then(newChips => {
-          console.log(newChips);
-          client.release();
-          return 1;
+  console.log("inWrapper");
+  pool.connect()
+  .then(client => {
+    return lg.getUserIdByUsername(client, sender)
+    .then(userId => {
+      console.log(userId);
+        return lg.isAdmin(client, userId)
+        .then(adminStatus => {
+          console.log(adminStatus);
+          if (adminStatus) {
+            return lg.getUserIdByUsername(client, recipient)
+            .then(recipientId => {
+              return lg.updateChips(client, recipientId, amount)
+              .then(status => {
+                if (status == true) {
+                  client.release();
+                  return "Admin status updated successfully";
+                }
+              })
+              .catch(err => {
+                client.release();
+                return "Error in updating admin status";
+              })
+            })
+            .catch(err => {
+              client.release();
+              return "User not found";
+            })
+          }
+          else {
+            console.log("not admin");
+            client.release();
+            return "You do not have admin permissions";
+          }
         })
         .catch(err => {
           client.release();
-          console.log(err.stack);
-          return -1;
+          return "Error in admin check";
         })
       })
+      .catch(err => {
+        client.release()
+        console.log(err.stack);
+        return "Error in user id check";
+      })
     })
-  })
 }
 
 function grantAdmin(id, val) {
@@ -987,10 +1115,6 @@ function updateHistory(userID, chips, winFlag) {
   }
 }
 
-function findUserId(username) {
-
-}
-
 //Gets the array index of the room given the string of the room name
 function findRoom(roomName) {
   for (let i = 0; i < rooms.length; i++) {
@@ -1009,10 +1133,104 @@ function addPlayer(currRoom, socket) {
   return currRoom;
 }
 
+function addAI(currRoom, aiNumber) {
+  currRoom = room.addAi(currRoom, aiNumber);
+  return currRoom;
+}
+
 function addPlayerQueue(currRoom, socket) {
   currRoom = room.addPlayerQueue(currRoom, socket);
   return currRoom;
 }
+
+function currplayer_ai_check(currRoom) {
+  let player = currRoom.players[currRoom.currentPlayer];
+  console.log(player);
+  if (player.isAI != 0) {
+    setTimeout
+    return true;
+  }
+  return false;
+}
+
+function executeAiDecision(currRoom, playerIndex, socket) {
+  console.div(currRoom);
+  let player = currRoom.players[playerIndex];
+  console.log(player);
+  let aiDecision = botMedium.bot_decision(player.isAI, currRoom);
+  if (aiDecision[0] == 0) {
+    console.log("FOLD");
+    player.state = "FOLDED";
+    var counter = 0;
+    for (var i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "FOLDED") {
+        counter++;
+      }
+    }
+    if (counter == currRoom.players.length-1) {
+      currRoom.gameState = 3;
+      progressGame(socket);
+    }
+    io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
+    io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+    checkReadyState(socket);
+  }
+  if (aiDecision[0] == 1) {
+    console.log("CHECK");
+    player.state = "READY";
+  }
+  if (aiDecision[0] == 2) {
+    console.log("CALL");
+    player.state = "READY";
+    currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
+  }
+  if (aiDecision[0] == 3) {
+    console.log("RAISE");
+    player.state = "READY";
+  }
+  if (aiDecision[0] == 4) {
+    console.log("ALLIN");
+    player.state = "ALLIN";
+  }
+}
+
+function aiPlayerCall(currRoom, socket, margin) {
+  //If it is a check
+  if (currRoom.currentBet == 0) {
+    currRoom.players[currRoom.currentPlayer].state = "READY";
+    //LOGS
+    //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
+    //FIX EMITS
+  }
+  //If money is being put in
+  else {
+    let currPlayer = currRoom.players[currRoom.currentPlayer];
+    currPlayer.chips -= margin;
+    currPlayer.state = "READY";
+    currPlayer.lastBet = currRoom.currentBet;
+
+    for (var i = 0; i < currRoom.players.length; i++)
+    {
+      if (currRoom.players[i].state == "ALLIN") {
+        currRoom.sidePot += (retArray[2]-currRoom.mainPot);
+        currRoom.mainPot += currRoom.mainPot;
+        break;
+     }
+    }
+    currRoom.currentPot += margin;
+    currRoom.players[currRoom.currentPlayer] = currPlayer;
+  }
+
+      //LOGS
+  io.sockets.in(socket.room).emit('updatechat', "Server", "AI called " + ". The Pot is now " + currRoom.currentPot + ".");
+  console.dir(currRoom.players[currRoom.currentPlayer]);
+
+  io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
+  let roomIndex = findRoom(socket.room);
+  rooms[roomIndex] = currRoom;
+  checkReadyState(socket)
+}
+
 
 //Starts the logic of the game
 function startGame(socket, currRoom) {
@@ -1030,8 +1248,11 @@ function startGame(socket, currRoom) {
 
 
 function checkReadyState(socket) {
+  let prevLastPlayer;
   let currRoomIndex = findRoom(socket.room);
   let currRoom = rooms[currRoomIndex];
+  prevLastPlayer = currRoom.currentPlayer;
+  //console.log("FROM READYSTATE: " + currRoom.currentPot)
   let k = 0;
   for (let i = currRoom.currentPlayer; k < currRoom.players.length; i++) {
     if (i >= currRoom.players.length) {
@@ -1047,13 +1268,24 @@ function checkReadyState(socket) {
     currRoom = progressGame(socket)
   }
   for (let i = 0; i < currRoom.players.length; i++) {
-    io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-
+    if (currRoom.players[i].isAI == 0) {
+      if (currRoom.players[prevLastPlayer].isAI != 0) {
+        console.log("HELLO");
+        io.to(currRoom.players[i].playerID).emit('updateScreenAI', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+      }
+      else {
+        io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+      }
+    }
   }
   //LOGS
-  io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "SERVER", "It is your turn");
+  if (currplayer_ai_check(currRoom)) {
+    executeAiDecision(currRoom, currRoom.currentPlayer, socket);
+  }
+  else {
+    io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "SERVER", "It is your turn");
+  }
   //io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updateTurn");
-
   rooms[currRoomIndex] = currRoom;
 }
 
@@ -1083,12 +1315,14 @@ function beginRound(socket, currGame) {
   }
 
   // Small blind
-  newGame = game.blind(newGame, newGame.players[newGame.smallBlindPlacement].playerID, newGame.smallBlind);
+  //newGame = game.blind(newGame, newGame.players[newGame.smallBlindPlacement].playerID, newGame.smallBlind);
+  newGame = game.blind(newGame, newGame.smallBlindPlacement, newGame.smallBlind);
   newGame.currentPot += newGame.smallBlind;
   //game.players[smallBlindPlacement] = temp;
 
   // Big blind
-  newGame = game.blind(newGame, newGame.players[newGame.bigBlindPlacement].playerID, newGame.bigBlind);
+  //newGame = game.blind(newGame, newGame.players[newGame.bigBlindPlacement].playerID, newGame.bigBlind);
+  newGame = game.blind(newGame, newGame.bigBlindPlacement, newGame.bigBlind);
   newGame.currentPot += newGame.bigBlind;
   newGame.currentBet = newGame.bigBlind;
   //players[bigBlindPlacement] = temp;
@@ -1096,10 +1330,12 @@ function beginRound(socket, currGame) {
   //printInfo(socket);
   let sanatizedPlayers = [];
   for (var i = 0; i < newGame.players.length; i++) {
-    sanatizedPlayers.push({
-        username: io.sockets.connected[newGame.players[i].playerID].username,
-        chips: newGame.players[i].chips
-    });
+    if (newGame.players[i].isAI == 0) {
+      sanatizedPlayers.push({
+          username: io.sockets.connected[newGame.players[i].playerID].username,
+          chips: newGame.players[i].chips
+      });
+    }
   }
 
   console.dir(sanatizedPlayers);
@@ -1107,9 +1343,11 @@ function beginRound(socket, currGame) {
   io.sockets.in(socket.room).emit('renderBoardState',newGame.bigBlindPlacement, newGame.smallBlindPlacement, sanatizedPlayers);
 
   for (let i = 0; i < newGame.players.length; i++) {
-    io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
+    if (newGame.players[i].isAI == 0) {
+      io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
 
-    io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
+      io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
+    }
   }
   io.to(newGame.players[newGame.currentPlayer].playerID).emit("updatechat", "It is your turn");
   //console.log(newGame.players)

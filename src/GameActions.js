@@ -32,13 +32,22 @@ function randomDeck() {
 class Player {
     constructor(playerID, chips)
     {
-        this.playerID = playerID;
+        if (playerID == 1 || playerID == 2 || playerID == 3) {
+          this.playerID = playerID;
+          this.isAI = playerID;
+        }
+        else {
+          this.playerID = playerID;
+          this.isAI = 0;
+        }
         this.lastBet = 0;
         this.state = "NOTREADY";
         this.chips = chips;
         this.cards = [-1, -1];
         this.fixedCards = [-1, -1];
         this.initialChips = chips; // Add
+        this.sidePot = 0; // Add
+        this.totalBets = 0; // total bets this round
     }
 }
 
@@ -48,6 +57,12 @@ this.addPlayer = function(socketid, startingChips) {
   return player;
 }
 
+this.addAi = function(aiNum, startingChips) {
+  let ai = new Player(aiNum, startingChips);
+  console.log("NEW AI: " + ai);
+
+  return ai;
+}
 ///////////////////////////////////////
  /* Called by server at game start */
 ///////////////////////////////////////
@@ -133,6 +148,18 @@ this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   return -1;
 }
 
+this.aiCall = function(game, playerIndex, currentBet) {
+  let player = game.players[playerIndex];
+  if (player.chips >= currentBet) {
+    let margin = currentBet-player.lastBet;
+    player.chips -= margin;
+    player.state = "READY";
+    player.lastBet = currentBet;
+    return [game, player, margin];
+  }
+  return -1;
+}
+
 this.playerCall = function(game, playerID, currentBet) {
   let playerIndex = getPlayer(game.players, playerID);
   player = game.players[playerIndex];
@@ -153,6 +180,14 @@ this. Fold = function(game, playerID) {
   return [game, player];
 }
 
+this.blind = function(game, playerIndex, amount) {
+  console.log(playerIndex);
+  game.players[playerIndex].chips -= amount;
+  game.players[playerIndex].lastBet = amount;
+  return game;
+}
+
+/*
 this.blind = function(game, playerID, amount) {
   //console.log("FULL GAME: " + game);
   let playerIndex = getPlayer(game.players, playerID);
@@ -162,7 +197,7 @@ this.blind = function(game, playerID, amount) {
   game.players[playerIndex].lastBet = amount;
   return game;
 }
-
+*/
 this.allIn = function(game, playerID) {
   player = getPlayer(game.players, playerID);
   let amount = player.chips;

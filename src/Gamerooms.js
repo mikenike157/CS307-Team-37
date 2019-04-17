@@ -66,3 +66,10 @@ this.addPlayerQueue = function(room, socket) {
   room.playerQueue.push(player);
   return room;
 }
+
+this.addAi = function(room, num) {
+  var player = game.addAi(num, room.startChips)
+  room.players.push(player);
+  
+  return room;
+}

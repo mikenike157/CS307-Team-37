@@ -48,6 +48,16 @@
 	var pot = "Pot";
 	var amountToCall = "Call Amount";
 	var chips = "Total Chips";
+
+	function updateScreenAI(newPot, newAmountToCall, newChips) {
+		pot = newPot;
+		amountToCall = newAmountToCall;
+		chips = newChips;
+		setTimeout(function() {
+			updateScreen(newPot, newAmountToCall, newChips);
+		}, 5000);
+	}
+
 	function updateScreen(newPot, newAmountToCall, newChips) {
 		pot = newPot;
 		amountToCall = newAmountToCall;
@@ -135,6 +145,9 @@
 			updateScreen(pot, amountToCall, chips);
 	});
 	//on fold button press call the fold method on server side
+	socket.on('updateScreenAI', function(pot, amountToCall, chips) {
+		updateScreenAI(pot, amountToCall, chips);
+	})
 
 	socket.on('updateTurn', function() {
 
