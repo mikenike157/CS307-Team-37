@@ -119,7 +119,7 @@ const server = express()
       if (rooms[i].name != undefined) {
         innerHTMLForm += '<input type="radio" id="' + rooms[i].name +
         '" name="radio" value="' + rooms[i].name + '"/>' +
-        rooms[i].name;
+        rooms[i].name + " " + rooms[i].players.length + "/" + rooms[i].maxPlayers;
         if (rooms[i].password == "") {
           innerHTMLForm +=' OPEN</br>'
         }
@@ -560,6 +560,7 @@ io.sockets.on('connection', function (socket) {
     })
 
     socket.on('joinMain', function(username) {
+      updateStatus(socket.username);
       socket.username = username;
       socket.room = "main";
       socket.join("main");
@@ -924,6 +925,10 @@ io.sockets.on('connection', function (socket) {
 
 });
 
+async function updateStatus(userId, status) {
+  pool.c
+}
+
 async function adminWrapper(sender, recipient, newStatus) {
   console.log("inWrapper");
   pool.connect()
@@ -1145,7 +1150,7 @@ function findRoom(roomName) {
   return "ERR";
 }
 
-//Adds a player to the current game
+
 
 function addPlayer(currRoom, socket) {
   currRoom = room.addPlayer(currRoom, socket);

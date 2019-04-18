@@ -516,6 +516,17 @@ async function banUser(client, sender, recipient, reason, expiry, type) {
   }
 }
 
+async function updateStatus(client, id, status) {
+  const res = await client.query(
+    "UPDATE Users SET status = $1 where user_id = $2",
+    [status, id]
+  )
+  if (res.countRows == 0) {
+    throw new Error("User nonexistent");
+  }
+  return res.rows[0]["status"];
+}
+
 /*
   return a list of objects:
   - id: id of ban
@@ -540,6 +551,8 @@ async function removeBan(client, banId) {
     [banId]
   );
 }
+
+
 
 module.exports = {
   createUser: createUser,
