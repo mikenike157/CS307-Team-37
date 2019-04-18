@@ -1,7 +1,25 @@
 /**
  * 
  */
-function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet,playersPlaying){
+function easyAI(gameObject){
+	
+	
+	var player = gameObject.players(gameObject.CurrentPlayer);
+	var handCards = player.cards
+	var currentChips = player.chips;
+	var tableCards = gameObject.tableCards;
+	var pot = gameObject.pot;
+	var currentBet = gameObject.currentbet
+	
+	
+	var playersPlaying = 0;
+	for(var i = 0; i < gameObject.players.length; i++){
+		var state = gameObject.Player(i).state
+		if(state!= "FOLDED"){
+			playersPlaying ++;
+		}
+	}	
+	
 	
 	var reArray = [0,0]
 	var shandgoodness = -1;
@@ -43,7 +61,12 @@ function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 		if(shandgoodness == 4){
 			//Call bet unless current bet is too 55% ore more of currentChips--- Call if currentChips is < 5*bigBlind
 			if(currentBet<= currentChips*.75){
-				reArray = [1,currentBet]
+				if(currentBet >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [1,currentBet];
+				}
 			}else{
 				reArray = [0,0]
 			}
@@ -51,7 +74,12 @@ function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 		}
 		if(shandgoodness == 5){
 			//Call bet 
-			reArray = [1,currentBet]
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 			return reArray;
 		}
 	}
@@ -71,11 +99,21 @@ function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 			return reArray
 		}
 		if(randNum>=35){
-			reArray = [1,currentBet]
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 			return reArray
 		}
 		if(randNum>=0){
-			reArray = [1,currentBet*1.5]
+			if(currentBet*1.5 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,currentBet*1.5];
+			}
 			return reArray
 		}
 		return [0,0]
@@ -95,11 +133,21 @@ function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 			return reArray
 		}
 		if(randNum>=35){
-			reArray = [1,currentBet]
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 			return reArray
 		}
 		if(randNum>=0){
-			reArray = [1,currentBet*1.5]
+			if(currentBet*1.5 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,currentBet*1.5];
+			}
 			return reArray
 		}
 		return [0,0]		
@@ -120,11 +168,21 @@ function easyAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 			return reArray
 		}
 		if(randNum>=35){
-			reArray = [1,currentBet]
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 			return reArray
 		}
 		if(randNum>=0){
-			reArray = [1,currentBet*1.5]
+			if(currentBet*1.5 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,currentBet*1.5];
+			}
 			return reArray
 		}
 		return [0,0]

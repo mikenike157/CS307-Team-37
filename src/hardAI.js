@@ -1,4 +1,22 @@
-function hardAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet,playersPlaying){
+function hardAI(gameObject){
+	
+	
+	var player = gameObject.players(gameObject.CurrentPlayer);
+	var handCards = player.cards
+	var currentChips = player.chips;
+	var tableCards = gameObject.tableCards;
+	var pot = gameObject.pot;
+	var currentBet = gameObject.currentbet
+	
+	
+	var playersPlaying = 0;
+	for(var i = 0; i < gameObject.players.length; i++){
+		var state = gameObject.Player(i).state
+		if(state!= "FOLDED"){
+			playersPlaying ++;
+		}
+	}
+	
 	
 	var possibilityArray;
 	var shandgoodness = -1;
@@ -76,7 +94,12 @@ function hardAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 		}
 		if(shandgoodness == 5){
 			//Call bet 
-			reArray = [1,currentBet]
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 			return reArray;
 		}
 	}
@@ -165,19 +188,39 @@ function hardAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 		if(totalPoints<0){
 			reArray = [0,0]
 			return reArray;
-		}else if(totalPoints>= 0 && totalPoints<= 500){
-			reArray = [1,currentBet]
-			return reArray;
+		}else if(totalPoints>= 0 && totalPoints<= 500){	
+			if(currentBet >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [1,currentBet];
+			}
 		}else if(totalPoints>= 500 && totalPoints<= 1000){
-			reArray = [2,(currentBet+currentChips*.1)]
+			if(currentBet+currentChips*.1 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,(currentBet+currentChips*.1)]
+			}
 			return reArray;
 		}else if(totalPoints>= 1000 && totalPoints<= 2000){
-			reArray = [2,(currentBet+currentChips*.2)]
-			return reArray;
+			if(currentBet+currentChips*.2 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,(currentBet+currentChips*.2)]
+			}
+			return reArray;		
 		}else{
-			reArray = [2,(currentBet+currentChips*.3)]
+			if(currentBet+currentChips*.3 >= currentChips){
+				reArray = [4,currentChips];
+			}
+			else{
+				reArray = [2,(currentBet+currentChips*.3)]
+			}
 			return reArray;
 		}
+		return [1,currentBet];
 	}	
 			
 		
@@ -306,18 +349,38 @@ function hardAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 				reArray = [0,0]
 				return reArray;
 			}else if(totalPoints>= 0 && totalPoints<= 500){
-				reArray = [1,currentBet]
-				return reArray;
+				if(currentBet >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [1,currentBet];
+				}
 			}else if(totalPoints>= 500 && totalPoints<= 1000){
-				reArray = [2,(currentBet+currentChips*.1)]
+				if(currentBet+currentChips*.1 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.1)]
+				}
 				return reArray;
 			}else if(totalPoints>= 1000 && totalPoints<= 2000){
-				reArray = [2,(currentBet+currentChips*.2)]
+				if(currentBet+currentChips*.2 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.2)]
+				}
 				return reArray;
 			}else{
-				reArray = [2,(currentBet+currentChips*.3)]
+				if(currentBet+currentChips*.3 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.3)]
+				}
 				return reArray;
 			}
+			return [1,currentBet];
 		}
 		
 		
@@ -415,19 +478,36 @@ function hardAI(handCards,tableCards,pot,currentChips,numberOfPlayers,currentBet
 				reArray = [0,0]
 				return reArray;
 			}else if(totalPoints>= 0 && totalPoints<= 500){
-				reArray = [1,currentBet]
+				if(currentBet >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [1,currentBet];
+				}
 				return reArray;
 			}else if(totalPoints>= 500 && totalPoints<= 1000){
-				reArray = [2,(currentBet+currentChips*.1)]
-				return reArray;
+				if(currentBet+currentChips*.1 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.1)]
+				}
 			}else if(totalPoints>= 1000 && totalPoints<= 2000){
-				reArray = [2,(currentBet+currentChips*.2)]
-				return reArray;
+				if(currentBet+currentChips*.2 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.2)]
+				}
 			}else{
-				reArray = [2,(currentChips)]
-				return reArray;
+				if(currentBet+currentChips*.3 >= currentChips){
+					reArray = [4,currentChips];
+				}
+				else{
+					reArray = [2,(currentBet+currentChips*.3)]
+				}
 			}
-		
+			return [1,currentBet];
 		}
 		
 	return -1;
