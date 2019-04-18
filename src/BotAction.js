@@ -397,4 +397,12 @@ function findCard(card)
 	return [num, SUIT_INDICES[suit]]
 } 
 
+/* Get random integer on range [0, 100) */
+function randomNum()
+{
+  var tempSeed = new Date().getTime() / 1000;
+  tempSeed = tempSeed * tempSeed;
+  var x = Math.sin(tempSeed) * 100;
+  return Math.floor((x - Math.floor(x)) * 100);
+}
 
