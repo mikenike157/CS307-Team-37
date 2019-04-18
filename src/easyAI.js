@@ -4,8 +4,7 @@ const flushr = require("./howManyNumberforFlush.js")
 const straightr = require("./howManyNumforStraight.js");
 const lf = require("./lookingFor.js");
 const pos = require("./possibility.js");
-const hg = require("./handGoodness")
-
+const hg = require("./handgoodness")
 
 /**
  *
