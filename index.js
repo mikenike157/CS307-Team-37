@@ -1210,7 +1210,6 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     console.log("CHECK");
     player.state = "READY";
     console.log(aiDecision[1]);
-    aiDecision[1] = 0;
     currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 2) {
