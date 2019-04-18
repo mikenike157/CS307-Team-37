@@ -39,6 +39,7 @@ class Player {
         this.cards = [-1, -1];
         this.fixedCards = [-1, -1];
         this.initialChips = chips; // Add
+        this.idleTurns = 0;
     }
 }
 

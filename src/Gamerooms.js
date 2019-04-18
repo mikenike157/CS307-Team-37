@@ -36,6 +36,7 @@ class gameRoom {
     this.usernames = {};
     this.sidePot = 0;
     this.mainPot = 0;
+    this.idleTimeout = null;
   }
 }
 

@@ -574,12 +574,13 @@ io.sockets.on('connection', function(socket) {
       }
     }
     currRoom.players[currRoom.currentPlayer].state = "READY";
+    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
     /*Update the socket emits and checking the ready state
     io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
     checkReadyState(socket)
     */
     rooms[roomIndex] = currRoom;
-    checkReadyState(socket)
+    checkReadyState(socket);
     io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
   })
   //Call button is clicked
@@ -627,6 +628,7 @@ io.sockets.on('connection', function(socket) {
         //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
       }
     }
+    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
     console.dir(currRoom.players[currRoom.currentPlayer]);
     checkReadyState(socket)
     io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
@@ -634,34 +636,8 @@ io.sockets.on('connection', function(socket) {
 
   // On player fold
   socket.on('playerFold', function() {
-    io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
-    console.log("Registered fold click");
-    console.log(socket.username);
-    let roomIndex = findRoom(socket.room);
-    let currRoom = rooms[roomIndex];
-    if (!currRoom.isGameStarted) {
-      //io.to(socket.id).emit('updatechat', "Server", "A game has not started yet");
-      return;
-    }
-    if (!validatePlayer(socket)) {
-      console.log("not this players turn");
-      return;
-    }
-    currRoom.players[currRoom.currentPlayer].state = "FOLDED";
-    // Checking if there is only one other player that is not folded in the hand because they win if they are.
-    var counter = 0;
-    for (var i = 0; i < currRoom.players.length; i++) {
-      if (currRoom.players[i].state == "FOLDED") {
-        counter++;
-      }
-    }
-    if (counter == currRoom.players.length - 1) {
-      currRoom.gameState = Phase.RIVER;
-      progressGame(socket);
-    }
-    io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
-    io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
-    checkReadyState(socket);
+    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
+    fold(socket);
   });
   // Hint button
   socket.on('playerHint', function() {
@@ -671,85 +647,8 @@ io.sockets.on('connection', function(socket) {
   });
   // When a player leaves the game and disconnects from the socket
   socket.on('disconnect', function() {
-    console.log(socket.username);
-    let userSaveIndex;
-    /*for (let i = 0; i < loggedUsers.length; i++) {
-      if (loggedUsers[i].username == socket.username) {
-        userSaveIndex = i;
-        break;
-      }
-    }*/
-    if (socket.room == "main") {
-      socket.leave('main');
-      //loggedUsers.splice(userSaveIndex, 1);
-      return;
-    } else if (socket.room == "gameSearch") {
-      socket.leave('gameSearch');
-      return;
-    }
-    //loggedUsers[userSaveIndex].status = "Online";
-    //delete loggedUsers[userSaveIndex].room;
-    //console.log(loggedUsers);
-    let roomIndex = findRoom(socket.room);
-    let currRoom = rooms[roomIndex];
-    for (let i = 0; i < currRoom.playerQueue.length; i++) {
-      if (socket.id == currRoom.playerQueue[i].playerID) {
-        currRoom.playerQueue.splice(i, 1);
-        socket.leave(currRoom.roomName);
-        delete socket.room
-        return;
-      }
-    }
-    let winFlag = 0;
-    let chipAmount = 0;
-    let leaver;
-    let leaverIndex;
-    for (leaverIndex = 0; leaverIndex < currRoom.players.length; leaverIndex++) {
-      if (currRoom.players[leaverIndex].playerID == socket.id) {
-        leaver = currRoom.players[leaverIndex];
-        currRoom.players.splice(leaverIndex, 1);
-        break;
-      }
-    }
-    if (currRoom.players.length == 0) {
-      if (currRoom.isGameStarted) {
-        winFlag = 1;
-        chipAmount = leaver.chips;
-      }
-      let userId = findUserId(socket.username);
-      //updateHistory(userId, chipAmount, winFlag);
-      rooms.splice(roomIndex, 1);
-    } else {
-      if (currRoom.isGameStarted) {
-        currRoom.playerCards.splice(leaverIndex, 1);
-        if (currRoom.currentPlayer == leaverIndex) {
-          //Move the turn idleCounter
-          //Move the turn indicator on client
-          io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
-          io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
-          var counter = 0;
-          for (var i = 0; i < currRoom.players.length; i++) {
-            if (currRoom.players[i].state == "FOLDED") {
-              counter++;
-            }
-          }
-          if (counter == currRoom.players.length - 1) {
-            currRoom.gameState = Phase.RIVER;
-            progressGame(socket);
-          }
-          checkReadyState(socket);
-        } else {
-          //            currRoom.players.splice(leaverIndex, 1);
-          if (currRoom.currentPlayer > leaverIndex) {
-            currRoom.currentPlayer--;
-          }
-          io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
-          io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
-        }
-      }
-    }
-    socket.leave(socket.room);
-  })
+    disconnect(socket);
+  });
 });
 async function adminWrapper(sender, recipient) {
   pool.connect()
@@ -907,12 +806,22 @@ function checkReadyState(socket) {
     }
     if (currRoom.players[i].state == "NOTREADY") {
       currRoom.currentPlayer = i;
+      if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
+      currRoom.idleTimeout = setTimeout(function () {
+        let player = currRoom.players[currRoom.currentPlayer];
+        ++player.idleTurns;
+        if (player.idleTurns >= 5) {
+          disconnect(socket);
+        } else {
+          fold(socket);
+        }
+      }, 60000);
       break;
     }
     k++;
   }
   if (k == currRoom.players.length) {
-    currRoom = progressGame(socket)
+    currRoom = progressGame(socket);
   }
   for (let i = 0; i < currRoom.players.length; i++) {
     io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
@@ -1034,7 +943,7 @@ function progressGame(socket) {
     currRoom.gameState = Phase.RIVER;
     currRoom.currentBet = 0;
     io.sockets.in(socket.room).emit('river', currRoom.fixedTCards[4])
-  } else if (currRoom.gameState == Phase.RIVER) { // River
+  } else if (currRoom.gameState == Phase.RIVER) {
     updateSidePots(currRoom);
     // At the end of this loop, you are given player list of hand winners
     var playerHandRanks = [];
@@ -1149,6 +1058,119 @@ function progressGame(socket) {
   } // end of last else chunk
   return currRoom;
 } // end of progressGame()
+
+function fold(socket) {
+  io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
+  console.log("Registered fold click");
+  console.log(socket.username);
+  let roomIndex = findRoom(socket.room);
+  let currRoom = rooms[roomIndex];
+  if (!currRoom.isGameStarted) {
+    return;
+  }
+  if (!validatePlayer(socket)) {
+    console.log("not this players turn");
+    return;
+  }
+  currRoom.players[currRoom.currentPlayer].state = "FOLDED";
+  // Checking if there is only one other player that is not folded in the hand because they win if they are.
+  var counter = 0;
+  for (var i = 0; i < currRoom.players.length; i++) {
+    if (currRoom.players[i].state == "FOLDED") {
+      counter++;
+    }
+  }
+  if (counter == currRoom.players.length - 1) {
+    currRoom.gameState = Phase.RIVER;
+    progressGame(socket);
+  }
+  io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, currRoom.currentPlayer);
+  io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], currRoom.currentPlayer);
+  checkReadyState(socket);
+}
+
+
+function disconnect(socket) {
+  console.log(socket.username);
+  let userSaveIndex;
+  /*for (let i = 0; i < loggedUsers.length; i++) {
+    if (loggedUsers[i].username == socket.username) {
+      userSaveIndex = i;
+      break;
+    }
+  }*/
+  if (socket.room == "main") {
+    socket.leave('main');
+    //loggedUsers.splice(userSaveIndex, 1);
+    return;
+  } else if (socket.room == "gameSearch") {
+    socket.leave('gameSearch');
+    return;
+  }
+  //loggedUsers[userSaveIndex].status = "Online";
+  //delete loggedUsers[userSaveIndex].room;
+  //console.log(loggedUsers);
+  let roomIndex = findRoom(socket.room);
+  let currRoom = rooms[roomIndex];
+  for (let i = 0; i < currRoom.playerQueue.length; i++) {
+    if (socket.id == currRoom.playerQueue[i].playerID) {
+      currRoom.playerQueue.splice(i, 1);
+      socket.leave(currRoom.roomName);
+      delete socket.room
+      return;
+    }
+  }
+  let winFlag = 0;
+  let chipAmount = 0;
+  let leaver;
+  let leaverIndex;
+  for (leaverIndex = 0; leaverIndex < currRoom.players.length; leaverIndex++) {
+    if (currRoom.players[leaverIndex].playerID == socket.id) {
+      leaver = currRoom.players[leaverIndex];
+      currRoom.players.splice(leaverIndex, 1);
+      break;
+    }
+  }
+  if (currRoom.players.length == 0) {
+    if (currRoom.isGameStarted) {
+      winFlag = 1;
+      chipAmount = leaver.chips;
+    }
+    let userId = findUserId(socket.username);
+    //updateHistory(userId, chipAmount, winFlag);
+    rooms.splice(roomIndex, 1);
+  } else {
+    if (currRoom.isGameStarted) {
+      currRoom.playerCards.splice(leaverIndex, 1);
+      if (currRoom.currentPlayer == leaverIndex) {
+        //Move the turn idleCounter
+        //Move the turn indicator on client
+        io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
+        io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
+        var counter = 0;
+        for (var i = 0; i < currRoom.players.length; i++) {
+          if (currRoom.players[i].state == "FOLDED") {
+            counter++;
+          }
+        }
+        if (counter == currRoom.players.length - 1) {
+          currRoom.gameState = Phase.RIVER;
+          progressGame(socket);
+        }
+        checkReadyState(socket);
+      } else {
+        //            currRoom.players.splice(leaverIndex, 1);
+        if (currRoom.currentPlayer > leaverIndex) {
+          currRoom.currentPlayer--;
+        }
+        io.sockets.in(socket.room).emit('updatePlayer', null, null, null, true, true, leaverIndex);
+        io.sockets.in(socket.room).emit('updatePlayerCards', false, true, [], leaverIndex);
+      }
+    }
+  }
+  socket.leave(socket.room);
+}
+
 function printInfo(socket) {
   let fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);
   let fixedPCards = fixedCards[0];
