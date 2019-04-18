@@ -32,7 +32,7 @@ function randomDeck() {
 class Player {
     constructor(playerID, chips)
     {
-        if (playerID == 1 || playerID == 2 || playerID == 3) {
+        if (playerID == 1 || playerID == 2 || playerID == 3 || playerID == 4) {
           this.playerID = playerID;
           this.isAI = playerID;
         }
@@ -59,7 +59,8 @@ this.addPlayer = function(socketid, startingChips) {
 
 this.addAi = function(aiNum, startingChips) {
   let ai = new Player(aiNum, startingChips);
-  console.log("NEW AI: " + ai);
+  console.log("NEW AI: ");
+  console.dir(ai);
 
   return ai;
 }
@@ -131,10 +132,8 @@ function getPlayer(playerArray, playerID) {
 
 this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   raiseTo = parseInt(raiseTo);
-  console.log(raiseTo + " " + currentBet);
   let playerIndex = getPlayer(game.players, playerID);
   player = game.players[playerIndex];
-  console.log(player.chips);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
     let margin = raiseTo-player.lastBet;
     player.chips -= margin;

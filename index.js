@@ -1,6 +1,8 @@
 "use strict";
 
-const botMedium = require('./src/BotAction.js')
+const botSimpleMedium = require('./src/BotAction.js')
+const botEasy = require('./src/easyAI.js')
+const botHard = require('./src/hardAI.js')
 const express = require("express");
 const game = require("./src/GameActions.js");
 const hg = require("./src/handgoodness.js")
@@ -79,10 +81,27 @@ const server = express()
     let roomName = req.body.roomName;
     let maxPlayers = req.body.numPlayers;
     let roomPass = req.body.roomPass;
+    let difficulty = req.body.difficulty;
+    if (difficulty == "simple") {
+      difficulty = 1;
+    }
+    else if (difficulty == "easy") {
+      difficulty = 2;
+    }
+    else if (difficulty == "medium") {
+      difficulty = 3;
+    }
+    else if (difficulty == "hard") {
+      difficulty = 4;
+    }
+    console.log(difficulty);
+
+
     let numAI = req.body.numAI;
     let anteOption = req.body.anteOption
     let startChips = req.body.startChips;
-    createRoom(roomName, maxPlayers, roomPass, numAI, anteOption, startChips);
+    console.log(startChips);
+    createRoom(roomName, maxPlayers, roomPass, numAI, difficulty, anteOption, startChips);
     req.session.user.room = roomName;
 
     return res.redirect('/game.html');
@@ -591,7 +610,7 @@ io.sockets.on('connection', function (socket) {
         else {
           if (currRoom.players.length + currRoom.numAI == currRoom.maxPlayers) {
             for (let i = 0; i < currRoom.numAI; i++) {
-              currRoom = addAI(currRoom, 1);
+              currRoom = addAI(currRoom);
             }
             currRoom = startGame(socket, currRoom);
             for (let i = 0; i < currRoom.players.length; i++) {
@@ -1133,8 +1152,8 @@ function addPlayer(currRoom, socket) {
   return currRoom;
 }
 
-function addAI(currRoom, aiNumber) {
-  currRoom = room.addAi(currRoom, aiNumber);
+function addAI(currRoom) {
+  currRoom = room.addAi(currRoom);
   return currRoom;
 }
 
@@ -1154,10 +1173,22 @@ function currplayer_ai_check(currRoom) {
 }
 
 function executeAiDecision(currRoom, playerIndex, socket) {
-  console.div(currRoom);
+  console.dir(currRoom);
   let player = currRoom.players[playerIndex];
+  let aiDecision;
+  if (player.isAI == 1 || player.isAI == 3) {
+    aiDecision = botSimpleMedium.bot_decision(player.isAI, currRoom);
+    console.log(aiDecision);
+  }
+  else if (player.isAI == 2 || player.isAI == 4) {
+    if (player.isAI == 2) {
+      aiDecision = botEasy.easyAI(currRoom);
+    }
+    else if (player.isAI == 4) {
+      aiDecision = botHard.hardAI(currRoom);
+    }
+  }
   console.log(player);
-  let aiDecision = botMedium.bot_decision(player.isAI, currRoom);
   if (aiDecision[0] == 0) {
     console.log("FOLD");
     player.state = "FOLDED";
@@ -1178,20 +1209,76 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 1) {
     console.log("CHECK");
     player.state = "READY";
+    console.log(aiDecision[1]);
+    aiDecision[1] = 0;
+    currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 2) {
     console.log("CALL");
     player.state = "READY";
+    console.log(aiDecision);
+    Math.floor(aiDecision[1]);
     currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 3) {
     console.log("RAISE");
     player.state = "READY";
+    Math.floor(aiDecision[1]);
+
+    currRoom = aiPlayerRaise(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 4) {
     console.log("ALLIN");
     player.state = "ALLIN";
   }
+}
+
+function aiPlayerRaise(currRoom, socket, raiseTo) {
+
+
+  console.log(raiseTo);
+  //checks if it is the current players turn
+  //start raise logic
+  var currPlayer = currRoom.players[currRoom.currentPlayer];
+  //var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
+  //if the raise failed / they do not have enough chips
+
+  //make the current room equal to the output of the raise logic
+  // Added: If some prior player was all-in, divert amount to main pot and side pot
+
+  let margin = raiseTo - currPlayer.lastBet;
+  currPlayer.chips -= margin;
+  currPlayer.state = "READY";
+  currPlayer.lastBet = raiseTo;
+
+  for (var i = 0; i < currRoom.players.length; i++)
+  {
+    if (currRoom.players[i].state == "ALLIN") {
+      currRoom.sidePot += (retArray[1]-mainPot);
+      mainPot += mainPot;
+      break;
+    }
+  }
+
+  for (var i = 0; i < currRoom.players.length; i++) {
+    if (currRoom.players[i].state == "READY") {
+      currRoom.players[i].state = "NOTREADY";
+    }
+  }
+  currRoom.currentPot += margin;
+  currRoom.currentBet = raiseTo;
+  currRoom.players[currRoom.currentPlayer].state = "READY";
+  /*Update the socket emits and checking the ready state
+  io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
+  checkReadyState(socket)
+  */
+  io.sockets.in(socket.room).emit('updatechat', "Server", "AI raised" + ". The Pot is now " + currRoom.currentPot + ".");
+  let roomIndex = findRoom(socket.room);
+
+  io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
+
+  rooms[roomIndex] = currRoom;
+  checkReadyState(socket)
 }
 
 function aiPlayerCall(currRoom, socket, margin) {
@@ -1205,7 +1292,10 @@ function aiPlayerCall(currRoom, socket, margin) {
   //If money is being put in
   else {
     let currPlayer = currRoom.players[currRoom.currentPlayer];
+    console.log("CHIPS DURING CALL: " + currPlayer.chips);
     currPlayer.chips -= margin;
+    console.log("CHIPS DURING CALL: " + currPlayer.chips);
+
     currPlayer.state = "READY";
     currPlayer.lastBet = currRoom.currentBet;
 
@@ -1223,7 +1313,7 @@ function aiPlayerCall(currRoom, socket, margin) {
 
       //LOGS
   io.sockets.in(socket.room).emit('updatechat', "Server", "AI called " + ". The Pot is now " + currRoom.currentPot + ".");
-  console.dir(currRoom.players[currRoom.currentPlayer]);
+  //console.dir(currRoom.players[currRoom.currentPlayer]);
 
   io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
   let roomIndex = findRoom(socket.room);
@@ -1248,9 +1338,11 @@ function startGame(socket, currRoom) {
 
 
 function checkReadyState(socket) {
+  console.log("FROM CHECK READY STATE: ")
   let prevLastPlayer;
   let currRoomIndex = findRoom(socket.room);
   let currRoom = rooms[currRoomIndex];
+  console.dir(currRoom);
   prevLastPlayer = currRoom.currentPlayer;
   //console.log("FROM READYSTATE: " + currRoom.currentPot)
   let k = 0;
@@ -1331,6 +1423,7 @@ function beginRound(socket, currGame) {
   let sanatizedPlayers = [];
   for (var i = 0; i < newGame.players.length; i++) {
     if (newGame.players[i].isAI == 0) {
+      console.log("HERE: " + io.sockets.connected[newGame.players[i].playerID].username)
       sanatizedPlayers.push({
           username: io.sockets.connected[newGame.players[i].playerID].username,
           chips: newGame.players[i].chips
@@ -1386,11 +1479,12 @@ function progressGame(socket) {
       }
     }
     */
+    currRoom.gameState++;
+    currRoom.currentBet = 0;
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
     checkReadyState(socket);
 
-    currRoom.gameState++;
-    currRoom.currentBet = 0;
+
     io.sockets.in(socket.room).emit('flop', flop);
   }
   else if (currRoom.gameState == 1) { // Flop
@@ -1451,6 +1545,7 @@ function progressGame(socket) {
       }
     }
 
+    console.log(playerHandRanks);
     //console.log("WINNER HAS BEEN CALCULATED")
     let winnerArray = hf.findWinner(playerHandRanks);
     console.log("WINNERS ARRAY HERE");
@@ -1622,9 +1717,9 @@ function joinRoom(socket, newRoom) {
 }
 
 //Will take the game options as arguments
-function createRoom(name, maxPlayers, password, numAI, anteOption, startChips) {
+function createRoom(name, maxPlayers, password, numAI, difficulty, anteOption, startChips) {
   //Do stuff with the database here. Insert into the games table
-  var newRoom = room.createRoom(name, maxPlayers, password, numAI, anteOption, startChips);
+  var newRoom = room.createRoom(name, maxPlayers, password, numAI, difficulty, anteOption, startChips);
   console.log(newRoom);
   rooms.push(newRoom);
 }
@@ -1734,6 +1829,8 @@ function distributeWinnings(winnersArray, pot, finalArray) {
 
   // Remove current winner and recur with remaining pot
   finalArray.push(winnersArray.shift());
+  console.log("DISTRIBUTE WINNINGS");
+  console.log(finalArray);
   distributeWinnings(winnersArray, pot, finalArray);
   return finalArray;
 }

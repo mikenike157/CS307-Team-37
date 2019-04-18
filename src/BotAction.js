@@ -5,7 +5,7 @@ this.bot_decision = function(isAI, gameObject)
 	var retArray = [-2, -2];
 	if (isAI == 1) {
 		retArray = bot_decision_simple(gameObject)
-	} else if (isAI == 2) {
+	} else if (isAI == 3) {
 		retArray = bot_decision_medium(gameObject)
 	//} else if (isAI == 3) {
 		//retArray = bot_decision_hard(gameObject)
@@ -342,4 +342,65 @@ function findStraight(valCounts, hasFlush)
 	// 	console.log("No straight found");
 
 	return [hasStraight, startRank]
+}
+
+function getHandStrengths(gameObject)
+{
+	var ranks = []
+	var currentRank = 0
+	// Compute hand rank of all players
+	for (var i = 0; i < gameObject.players.length; i++)
+	{
+		var player = gameObject.players[i]
+		var cards = gameObject.tableCards.concat(player.cards)
+		var bestHand = getBestHand(cards)
+		ranks.push([player, bestHand])
+		// store your best rank
+		if (i == gameObject.currentPlayer)
+			currentRank = bestHand
+	}
+	// Count how many people have a better or same hand
+	var numerator = gameObject.players.length
+	for (var i = 0; i < ranks.length; i++)
+	{
+		// compare your best rank with others
+		if (i != gameObject.currentPlayer)
+		{
+			if (ranks[i][1] > currentRank)
+				numerator -= 1
+			if (ranks[i][1] == currentRank)
+				numerator -= 0.5
+		}
+	}
+	// Compute your hand strength, assert on range [0, 1]
+	var HAND_STRENGTH = numerator / gameObject.players.length
+
+	return [currentRank, HAND_STRENGTH]
+}
+
+function findCard(card)
+{
+	const RANKS = [11, 12, 13, 1]; // ["J", "Q", "K", "A"]
+	const SUIT_INDICES = [0, 1, 2, 3]; // ["S", "H", "C", "D"]
+
+	var suit = Math.floor(card/13);
+	var num = card-(13*suit);
+	var val = 0;
+
+	// get rank
+	if (num < 9) num = num + 2;
+	else num = RANKS[num-9];
+	// get suit
+	suit = (suit + (2*(suit%2))) % 4;
+	// return info
+	val = SUIT_INDICES[suit]*13+num;
+	return [num, SUIT_INDICES[suit]]
+}
+
+function randomNum()
+{
+  var tempSeed = new Date().getTime() / 1000;
+  tempSeed = tempSeed * tempSeed;
+  var x = Math.sin(tempSeed) * 100;
+  return Math.floor((x - Math.floor(x)) * 100);
 }
