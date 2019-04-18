@@ -332,6 +332,14 @@ async function getLeaderboardWins(client) {
   return res.rows;
 }
 
+async function getLeaderboardPercentage(client) {
+  const res = await client.query(
+    "SELECT (user_id, username, numWins, gamesPlayed) FROM Users\n" +
+    "ORDER BY chips DESC\n" +
+    "LIMIT 100;"
+  );
+  return res.rows;
+}
 
 
 

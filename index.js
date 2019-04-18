@@ -185,6 +185,29 @@ const server = express()
       })
   })
 
+  .get('/get_leaderboard_percentage', function(req, res) {
+    var boardArray = [];
+    pool.connect()
+      .then(client => {
+        return lg.getLeaderboardPercentage(client)
+        .then(leaderBoard => {
+          client.release();
+          console.log(leaderBoard)
+          for (let i = 0; i < leaderBoard.length; i++){
+            let temp = leaderBoard[i].row;
+            boardArray.push(temp);
+            //console.log(boardArray);
+          }
+          console.log(boardArray);
+          return res.send(boardArray);
+        })
+        .catch(err => {
+          client.release();
+          console.log(err.stack);
+        })
+      })
+  })
+
   .get('/get_leaderboard_wins', function(req, res) {
     var boardArray = [];
     pool.connect()
@@ -671,6 +694,8 @@ io.sockets.on('connection', function (socket) {
           return;
         }
         let retString = adminWrapper(socket.username, parsed[1], parsed[2]);
+        console.log(retString);
+
         io.to(socket.id).emit('upatechat', "SERVER", retString)
         return;
       }

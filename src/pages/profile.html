@@ -23,7 +23,7 @@
       $.ajax({
         async: false,
         type: 'GET',
-        url: 'http://localhost/get_leaderboard_wins',
+        url: 'http://localhost/get_leaderboard_percentage',
         success: function(data) {
           document.getElementById('board').innerHTML = "";
           for (let i = 0; i < data.length; i++) {
@@ -55,7 +55,9 @@
     <p id='board'>
     </p>
     <input type="button" id="leader_chips" name="leader" value="Leaderboard Chips">
-    <input type="button" id="leader_wins" name="leader" value="Leaderboard Wins"
+    <input type="button" id="leader_wins" name="leader" value="Leaderboard Wins">
+    <input type="button" id="leader_percent" name="leader" value="Leaderboard Percentage">
+    <input type="button" id="delete" name="delete" value="Delete Profile">
   </div>
 </body>
 </html>
