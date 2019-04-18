@@ -803,6 +803,7 @@ function addPlayerQueue(currRoom, socket) {
 }
 
 function setCurrentPlayer(socket, room, i) {
+  console.log(`setting the current player to ${i}`);
   room.currentPlayer = i;
   if (room.idleTimeout !== null) clearTimeout(room.idleTimeout);
   room.idleTimeout = setTimeout(function () {
@@ -810,6 +811,8 @@ function setCurrentPlayer(socket, room, i) {
     ++player.idleTurns;
     console.log("waited too long: " + player.idleTurns);
     if (player.idleTurns >= 5) {
+      io.sockets.in(socket.room).emit('updatechat', "Server",
+        "A player has been kicked for being idle for too long");
       disconnect(socket);
     } else {
       fold(socket, room);
@@ -1083,6 +1086,7 @@ function progressGame(socket) {
 } // end of progressGame()
 
 function fold(socket, currRoom) {
+  console.log(`fold: player ${currRoom.currentPlayer}`);
   io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
   currRoom.players[currRoom.currentPlayer].state = "FOLDED";
   // Checking if there is only one other player that is not folded in the hand because they win if they are.
