@@ -636,14 +636,25 @@ io.sockets.on('connection', function(socket) {
     }
     currRoom.players[currRoom.currentPlayer].idleTurns = 0;
     console.dir(currRoom.players[currRoom.currentPlayer]);
-    checkReadyState(socket)
+    checkReadyState(socket);
     io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
   });
 
   // On player fold
   socket.on('playerFold', function() {
+    console.log("Registered fold click");
+    console.log(socket.username);
+    let roomIndex = findRoom(socket.room);
+    let currRoom = rooms[roomIndex];
+    if (!currRoom.isGameStarted) {
+      return;
+    }
+    if (!validatePlayer(socket)) {
+      console.log("not this players turn");
+      return;
+    }
     currRoom.players[currRoom.currentPlayer].idleTurns = 0;
-    fold(socket);
+    fold(socket, currRoom);
   });
   // Hint button
   socket.on('playerHint', function() {
@@ -790,13 +801,29 @@ function addPlayerQueue(currRoom, socket) {
   currRoom = room.addPlayerQueue(currRoom, socket);
   return currRoom;
 }
+
+function setCurrentPlayer(socket, room, i) {
+  room.currentPlayer = i;
+  if (room.idleTimeout !== null) clearTimeout(room.idleTimeout);
+  room.idleTimeout = setTimeout(function () {
+    let player = room.players[room.currentPlayer];
+    ++player.idleTurns;
+    console.log("waited too long: " + player.idleTurns);
+    if (player.idleTurns >= 5) {
+      disconnect(socket);
+    } else {
+      fold(socket, room);
+    }
+  }, 30000);
+  console.log("set callback");
+}
 //Starts the logic of the game
 function startGame(socket, currRoom) {
   currRoom.isGameStarted = true;
   currRoom.gameState = Phase.PREFLOP;
   currRoom.smallBlindPlacement = 0;
   currRoom.bigBlindPlacement = 1;
-  currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+  setCurrentPlayer(socket, currRoom, (currRoom.bigBlindPlacement + 1) % currRoom.players.length);
   currRoom = beginRound(socket, currRoom);
   io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
   return currRoom;
@@ -811,19 +838,7 @@ function checkReadyState(socket) {
       i = 0;
     }
     if (currRoom.players[i].state == "NOTREADY") {
-      currRoom.currentPlayer = i;
-      if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
-      currRoom.idleTimeout = setTimeout(function () {
-        console.log("waited too long");
-        let player = currRoom.players[currRoom.currentPlayer];
-        ++player.idleTurns;
-        if (player.idleTurns >= 5) {
-          disconnect(socket);
-        } else {
-          fold(socket);
-        }
-      }, 60000);
-      console.log("set callback");
+      setCurrentPlayer(socket, currRoom, i);
       break;
     }
     k++;
@@ -914,7 +929,7 @@ function progressGame(socket) {
       }
     }
     */
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     checkReadyState(socket);
     currRoom.gameState = Phase.FLOP;
     currRoom.currentBet = 0;
@@ -930,7 +945,7 @@ function progressGame(socket) {
       }
     }
     */
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     checkReadyState(socket);
     currRoom.gameState = Phase.TURN;
     currRoom.currentBet = 0;
@@ -946,7 +961,7 @@ function progressGame(socket) {
       }
     }
     */
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     checkReadyState(socket);
     currRoom.gameState = Phase.RIVER;
     currRoom.currentBet = 0;
@@ -1060,26 +1075,15 @@ function progressGame(socket) {
     currRoom.currentBet = 0;
     currRoom.smallBlindPlacement = currRoom.bigBlindPlacement;
     currRoom.bigBlindPlacement = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
-    currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.bigBlindPlacement + 1) % currRoom.players.length);
     // Begin new round
     currRoom = beginRound(socket, currRoom);
   } // end of last else chunk
   return currRoom;
 } // end of progressGame()
 
-function fold(socket) {
+function fold(socket, currRoom) {
   io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
-  console.log("Registered fold click");
-  console.log(socket.username);
-  let roomIndex = findRoom(socket.room);
-  let currRoom = rooms[roomIndex];
-  if (!currRoom.isGameStarted) {
-    return;
-  }
-  if (!validatePlayer(socket)) {
-    console.log("not this players turn");
-    return;
-  }
   currRoom.players[currRoom.currentPlayer].state = "FOLDED";
   // Checking if there is only one other player that is not folded in the hand because they win if they are.
   var counter = 0;
@@ -1128,7 +1132,7 @@ function disconnect(socket) {
     if (socket.id == currRoom.playerQueue[i].playerID) {
       currRoom.playerQueue.splice(i, 1);
       socket.leave(currRoom.roomName);
-      delete socket.room
+      delete socket.room;
       return;
     }
   }
@@ -1144,6 +1148,7 @@ function disconnect(socket) {
     }
   }
   if (currRoom.players.length == 0) {
+    if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
     if (currRoom.isGameStarted) {
       winFlag = 1;
       chipAmount = leaver.chips;
