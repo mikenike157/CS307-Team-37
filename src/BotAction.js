@@ -376,3 +376,25 @@ function getHandStrengths(gameObject)
 
 	return [currentRank, HAND_STRENGTH]
 }
+
+// Return: [<actual card rank>, <index into suits>] 
+function findCard(card)
+{
+	const RANKS = [11, 12, 13, 1]; // ["J", "Q", "K", "A"]
+	const SUIT_INDICES = [0, 1, 2, 3]; // ["S", "H", "C", "D"]
+
+	var suit = Math.floor(card/13);
+	var num = card-(13*suit);
+	var val = 0; 
+
+	// get rank 
+	if (num < 9) num = num + 2; 
+	else num = RANKS[num-9]; 
+	// get suit
+	suit = (suit + (2*(suit%2))) % 4;
+	// return info
+	val = SUIT_INDICES[suit]*13+num; 
+	return [num, SUIT_INDICES[suit]]
+} 
+
+
