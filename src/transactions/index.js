@@ -435,6 +435,14 @@ async function setMute(client, sender, recipient, value) {
   }
 }
 
+async function setMuteName(client, sender, recipient, value) {
+  await setMute(
+    client,
+    await getUserIdByUsername(sender),
+    await getUserIdByUsername(recipient),
+    value);
+}
+
 async function isMuted(client, sender, recipient) {
   const res = await client.query(
     "SELECT * FROM MuteList WHERE sender = $1 AND recipient = $2;",
@@ -563,4 +571,5 @@ module.exports = {
   setAdmin: setAdmin,
   removeBan: removeBan,
   isAdmin: isAdmin,
+  setMuteName: setMuteName,
 };

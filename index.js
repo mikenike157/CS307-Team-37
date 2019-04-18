@@ -532,13 +532,30 @@ io.sockets.on('connection', function(socket) {
       }
       let temp = adminWrapper(socket.username);
       return;
+    } else if (parsed[0] == "/mute" || parsed[0] == "/unmute") {
+      setMute(socket.username, parsed[1], parsed[0] == "/mute");
     }
     //console.log(data);
     //make sure not empty
     if (data != "") {
-      var newdata = validator.escape(data);
-      //
-      io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+      let newdata = validator.escape(data);
+      let senderName = socket.username;
+      let allSockets = io.sockets.in(socket.room).sockets;
+      for (let key in allSockets) {
+        let socket = allSockets[key];
+        if (socket.room === null) continue;
+        let recipientName = socket.username;
+        (async function() {
+          let sid = await lg.getUserIdByUsername(senderName);
+          let rid = await lg.getUserIdByUsername(recipientName);
+          let client = await pool.connect();
+          let ignored = await lg.isMuted(client, rid, sid);
+          if (!ignored) {
+            socket.emit('updatechat', socket.username, newdata);
+          }
+        })();
+      }
+      // io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
       return;
     }
   });
@@ -733,6 +750,14 @@ function grantChips(sender, recipient, amount) {
         })
     })
   })
+}
+
+function setMute(sender, recipient, value) {
+  pool.connect().then(client => {
+    lg.setMuteName(client, sender, recipient, value)
+  }).catch(err => {
+    console.log(err.stack);
+  });
 }
 
 function grantAdmin(id, val) {
