@@ -460,8 +460,6 @@ const server = express()
       }
     })();
   })
-  .post('/')
-  .listen(port, () => console.log(`Listening on ${ port }`));
 
   .post('/')
 
@@ -516,6 +514,7 @@ is currRoom.players.length. For every player object, player.playerID is the sock
 socket.room gets the current room that the player is in. */
 
 //On any request
+/*
 io.sockets.on('connection', function (socket) {
 
     socket.on('checkRoomPass', function(roomName) {
@@ -618,7 +617,7 @@ io.sockets.on('connection', function (socket) {
         io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
         console.log("JOINED ROOM");
         return;
-        */
+
       }
     })
 
@@ -703,7 +702,7 @@ io.sockets.on('connection', function (socket) {
       /*Update the socket emits and checking the ready state
       io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
       checkReadyState(socket)
-      */
+
 
 
       rooms[roomIndex] = currRoom;
@@ -780,6 +779,7 @@ var mainPot = 0; // parallel currentPot
 var rooms = ['room1'];
 /* Beginning of client-server communication for socket.io
 
+
 Important things to note: whenever a request is sent from the client, it is sent in the
 form of a socket. This socket holds the socket id and the room name they are currently in.
 This allows us to send to only the sockets in one specific room. To send a request/response
@@ -789,6 +789,7 @@ Look at the format in game.html to see how the socket commands are set up.
 For every game, the number of players currently in the game
 is currRoom.players.length. For every player object, player.playerID is the socket id.
 socket.room gets the current room that the player is in. */
+
 //On any request
 io.sockets.on('connection', function(socket) {
   socket.on('checkRoomPass', function(roomName) {
@@ -996,8 +997,8 @@ io.sockets.on('connection', function(socket) {
 });
 
 async function updateStatus(userId, status) {
-  pool.c
-}
+
+  }
 
 async function adminWrapper(sender, recipient, newStatus) {
   console.log("inWrapper");
