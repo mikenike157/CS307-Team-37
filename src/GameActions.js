@@ -46,8 +46,9 @@ class Player {
         this.cards = [-1, -1];
         this.fixedCards = [-1, -1];
         this.initialChips = chips; // Add
-        this.sidePot = 0; // Add
-        this.totalBets = 0; // total bets this round
+        this.idleTurns = 0;
+        this.sidePot = 0;
+        this.totalPot = 0;
     }
 }
 
