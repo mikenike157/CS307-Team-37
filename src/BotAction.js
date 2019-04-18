@@ -342,4 +342,37 @@ function findStraight(valCounts, hasFlush)
 	return [hasStraight, startRank]
 }
 
+/* Returns: [best rank, hand strength] */
+function getHandStrengths(gameObject)
+{
+	var ranks = []
+	var currentRank = 0
+	// Compute hand rank of all players
+	for (var i = 0; i < gameObject.players.length; i++)
+	{
+		var player = gameObject.players[i]
+		var cards = gameObject.tableCards.concat(player.cards)
+		var bestHand = getBestHand(cards)
+		ranks.push([player, bestHand])
+		// store your best rank
+		if (i == gameObject.currentPlayer) 
+			currentRank = bestHand
+	}
+	// Count how many people have a better or same hand
+	var numerator = gameObject.players.length
+	for (var i = 0; i < ranks.length; i++)
+	{
+		// compare your best rank with others
+		if (i != gameObject.currentPlayer)
+		{
+			if (ranks[i][1] > currentRank)
+				numerator -= 1
+			if (ranks[i][1] == currentRank)
+				numerator -= 0.5
+		}
+	}
+	// Compute your hand strength, assert on range [0, 1]
+	var HAND_STRENGTH = numerator / gameObject.players.length
 
+	return [currentRank, HAND_STRENGTH]
+}
