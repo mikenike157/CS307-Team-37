@@ -451,6 +451,10 @@ io.sockets.on('connection', function(socket) {
     console.log("ROOM NAME: " + roomName);
     let roomIndex = findRoom(roomName);
     let currRoom = rooms[roomIndex];
+    if (currRoom === undefined) {
+      console.error("Current room named " + room + " is undefined!");
+      return;
+    }
     console.log("PASSWORD: " + currRoom.password);
     if (currRoom.password == "") {
       io.to(socket.id).emit('joinGame');
@@ -473,12 +477,14 @@ io.sockets.on('connection', function(socket) {
   //addUser is emitted
   socket.on('adduser', function(username, room) {
     // get room index and set up socket information
-    console.log(room);
     socket.username = username;
     socket.room = room;
     let currRoomIndex = findRoom(room);
-    console.log(currRoomIndex);
     let currRoom = rooms[currRoomIndex];
+    if (currRoom === undefined) {
+      console.error("Current room named " + room + " is undefined!");
+      return;
+    }
     if (currRoom.isGameStarted) {
       socket.join(room);
       currRoom = addPlayerQueue(currRoom, socket);
@@ -808,6 +814,7 @@ function checkReadyState(socket) {
       currRoom.currentPlayer = i;
       if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
       currRoom.idleTimeout = setTimeout(function () {
+        console.log("waited too long");
         let player = currRoom.players[currRoom.currentPlayer];
         ++player.idleTurns;
         if (player.idleTurns >= 5) {
@@ -816,6 +823,7 @@ function checkReadyState(socket) {
           fold(socket);
         }
       }, 60000);
+      console.log("set callback");
       break;
     }
     k++;
@@ -1112,6 +1120,10 @@ function disconnect(socket) {
   //console.log(loggedUsers);
   let roomIndex = findRoom(socket.room);
   let currRoom = rooms[roomIndex];
+  if (currRoom === undefined) {
+    console.error("Current room named " + room + " is undefined!");
+    return;
+  }
   for (let i = 0; i < currRoom.playerQueue.length; i++) {
     if (socket.id == currRoom.playerQueue[i].playerID) {
       currRoom.playerQueue.splice(i, 1);

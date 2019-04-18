@@ -9,7 +9,7 @@
 		// call the server-side function 'adduser' and send one parameter (value of prompt)
 		let name = "guest";
 		$(function () {
-			$.get('http://localhost/update_username', function(data, textStatus) {
+			$.get('/update_username', function(data, textStatus) {
 				console.log(data);
 				name = data;
 				console.log(name);
