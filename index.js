@@ -84,13 +84,13 @@ const server = express()
       difficulty = 4;
     }
     console.log(difficulty);
-
-
+    
     let numAI = req.body.numAI;
     let anteOption = req.body.anteOption
     let startChips = req.body.startChips;
     console.log(startChips);
     createRoom(roomName, maxPlayers, roomPass, numAI, difficulty, anteOption, startChips);
+    // createRoom will initialize the gamelog filename 
     req.session.user.room = roomName;
     return res.redirect('/game.html');
   })
@@ -558,7 +558,12 @@ io.sockets.on('connection', function(socket) {
       io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
       console.log("JOINED ROOM");
       // TODO: FSWRITE (2) 
-      // var str = username + " has joined room " + room.name
+      var log = username + " has joined room " + room.name;
+      fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+      });
+      
       return;
     }
   })
@@ -635,6 +640,13 @@ io.sockets.on('connection', function(socket) {
     io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
     checkReadyState(socket)
     */
+    // FSWRITE (3.0)
+    var log = currRoom.players[currRoom.currentPlayer].state.name + " has raised to " + retArray[1];
+    fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+    });
+    
     rooms[roomIndex] = currRoom;
     checkReadyState(socket);
     io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
@@ -656,6 +668,13 @@ io.sockets.on('connection', function(socket) {
     //If it is a check
     if (currRoom.currentBet == 0) {
       currRoom.players[currRoom.currentPlayer].state = "READY";
+      // FSWRITE (3.1)
+      var log = currRoom.players[currRoom.currentPlayer].name + " has checked";
+      fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+      });
+
       //LOGS
       //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
       //FIX EMITS
@@ -668,6 +687,13 @@ io.sockets.on('connection', function(socket) {
         currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
         currRoom.players[currRoom.currentPlayer].chips = 0;
         currRoom.players[currRoom.currentPlayer].state = "ALLIN";
+        // FSWRITE (3.2)
+        var log = currRoom.players[currRoom.currentPlayer].name + " has gone all-in";
+        fs.writeFile(currRoom.filePath, log, (err) => {
+          if (err) throw err;
+          console.log('The file has been saved!');
+         });
+        
       } else {
         // Added: If some prior player was all-in, divert amount to main pot and side pot
         for (var i = 0; i < currRoom.players.length; i++) {
@@ -680,6 +706,14 @@ io.sockets.on('connection', function(socket) {
         currRoom.currentPot += retArray[2];
         currRoom.players[currRoom.currentPlayer] = retArray[1];
         rooms[currRoom] = currRoom;
+        
+        // FSWRITE (3.2)
+        var log = currRoom.players[currRoom.currentPlayer].name + " called the current bet " + currRoom.currentBet;
+        fs.writeFile(currRoom.filePath, log, (err) => {
+          if (err) throw err;
+          console.log('The file has been saved!');
+         });
+
         //LOGS
         //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
       }
@@ -692,6 +726,13 @@ io.sockets.on('connection', function(socket) {
 
   // On player fold
   socket.on('playerFold', function() {
+  // FSWRITE (3.3)
+  var log = currRoom.players[currRoom.currentPlayer].name + " has folded";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+    if (err) throw err;
+  console.log('The file has been saved!');
+  });
+
     currRoom.players[currRoom.currentPlayer].idleTurns = 0;
     fold(socket);
   });
@@ -974,6 +1015,13 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   }
   console.log(player);
   if (aiDecision[0] == 0) {
+    // FSWRITE (4.0)
+    var log = currRoom.players[currRoom.currentPlayer].name + " has folded";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+     });
+    
     console.log("FOLD");
     player.state = "FOLDED";
     var counter = 0;
@@ -991,12 +1039,26 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     checkReadyState(socket);
   }
   if (aiDecision[0] == 1) {
+    // FSWRITE (4.1)
+    var log = currRoom.players[currRoom.currentPlayer].name + " has checked";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+     });
+    
     console.log("CHECK");
     player.state = "READY";
     console.log(aiDecision[1]);
     currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 2) {
+    // FSWRITE (4.2)
+    var log = currRoom.players[currRoom.currentPlayer].name + " has called the currentBet " + currRoom.currentBet;
+    fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+     });
+
     console.log("CALL");
     player.state = "READY";
     console.log(aiDecision);
@@ -1004,6 +1066,13 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 3) {
+    // FSWRITE (4.3)
+    var log = currRoom.players[currRoom.currentPlayer].name + " has raised to " + aiDecision[1];
+    fs.writeFile(currRoom.filePath, log, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+     });
+
     console.log("RAISE");
     player.state = "READY";
     Math.floor(aiDecision[1]);
@@ -1011,6 +1080,13 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     currRoom = aiPlayerRaise(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 4) {
+    // FSWRITE (4.4)
+    var log = currRoom.players[currRoom.currentPlayer].name + " has gone all-in";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+       if (err) throw err;
+       console.log('The file has been saved!');
+     });
+
     console.log("ALLIN");
     player.state = "ALLIN";
   }
@@ -1056,7 +1132,6 @@ function aiPlayerRaise(currRoom, socket, raiseTo) {
   checkReadyState(socket)
   */
   io.sockets.in(socket.room).emit('updatechat', "Server", "AI raised" + ". The Pot is now " + currRoom.currentPot + ".");
-  // TODO FSWRITE (3) AI player raise
   let roomIndex = findRoom(socket.room);
 
   io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
@@ -1116,6 +1191,13 @@ function startGame(socket, currRoom) {
   currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
   currRoom = beginRound(socket, currRoom);
   io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
+    // FSWRITE (5.0)
+    var log = "Game " + currRoom.name + " has begun";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+       if (err) throw err;
+       console.log('The file has been saved!');
+     });
+
   return currRoom;
 }
 
@@ -1377,6 +1459,13 @@ function progressGame(socket) {
       io.sockets.in(socket.room).emit('winners', "Server", winnersArr[i] + " won. They win " + winnings + " chips.")
     }
     */
+    // FSWRITE (6.0)
+    var log = "Game " + currRoom.name + " has ended";
+    fs.writeFile(currRoom.filePath, log, (err) => {
+       if (err) throw err;
+       console.log('The file has been saved!');
+     });
+
     io.sockets.in(socket.room).emit('winner', "Hello");
     for (var i = 0; i < currRoom.players.length; i++) {
       //for (var j = 0; j < winnersArr.length; j++) {
@@ -1399,7 +1488,7 @@ function progressGame(socket) {
       currRoom.isGameStarted = false;
       return;
     }
-    // TODO FSWRITE (4) Game over, begin new game
+    
     // Reset round
     currRoom.gameState = Phase.PREFLOP;
     currRoom.currentPot = 0;
