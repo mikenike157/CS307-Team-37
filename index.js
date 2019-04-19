@@ -39,9 +39,13 @@ const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "src/pages/game.html")))
   //Testing login page
   .use(express.static(__dirname + '/src/pages/'))
+  .use('/change_avatar', bp.raw({
+    type: "image/*"
+  }))
   //Converts post data to JSON
   .use(bp.urlencoded({
-    extended: false
+    extended: false,
+    type: 'application/x-www-form-urlencoded'
   }))
   .use(
     session({
@@ -316,7 +320,7 @@ const server = express()
           })
       })
   })
-  .post('/profile_page', function(req, res) {
+  .all('/profile_page', function(req, res) {
     console.log(req.session.user);
     let content;
     pool.connect()
@@ -410,6 +414,33 @@ const server = express()
       } catch (e) {
         console.log(e);
         res.sendStatus(500);
+      } finally {
+        client.release();
+      }
+    })();
+  })
+  .post('/change_avatar', function(req, res) {
+    // Change the user's avatar
+    if (!req.session || !req.session.user) {
+      res.sendStatus(401);
+      return res.send("Log in you dum dum");
+    }
+    (async () => {
+      const client = await pool.connect();
+      try {
+        let userId = req.session.user.userId;
+        let pic = req.body;
+        console.log(pic);
+        let stat = await lg.setProfilePicture(client, userId, pic);
+        if (!stat) {
+          res.sendStatus(500);
+          res.send("Profile picture not changed?");
+        } else {
+          res.send("done");
+        }
+      } catch (e) {
+        res.sendStatus(500);
+        res.send(e);
       } finally {
         client.release();
       }

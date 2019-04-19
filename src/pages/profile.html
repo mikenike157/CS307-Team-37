@@ -33,6 +33,20 @@
       })
     })
   })
+  function uploadAvatar(file) {
+    const reader = new FileReader();
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/change_avatar");
+    xhr.overrideMimeType(file.type);
+    xhr.setRequestHeader('Content-Type', file.type);
+    console.log(file.type);
+    reader.onload = function(e) {
+      console.log(e.target.result);
+      xhr.send(e.target.result);
+    };
+    reader.readAsArrayBuffer(file);
+    console.log(xhr);
+  }
 </script>
 
 
@@ -46,6 +60,12 @@
   <h1> {USER}'s Profile</h1>
   <div class="user_avatar">
     <img src="/avatar/{ID}" width="128" height="128" />
+    <br />
+    <input type="file"
+       id="avatar" name="avatar"
+       accept="image/*"
+       value="Change"
+       onchange="uploadAvatar(this.files[0]);" />
   </div>
   <div class="user_profile">
     <p class="field-title">Total Chips: {CHIPS}</br></p>
