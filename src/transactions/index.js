@@ -438,8 +438,8 @@ async function setMute(client, sender, recipient, value) {
 async function setMuteName(client, sender, recipient, value) {
   await setMute(
     client,
-    await getUserIdByUsername(sender),
-    await getUserIdByUsername(recipient),
+    await getUserIdByUsername(client, sender),
+    await getUserIdByUsername(client, recipient),
     value);
 }
 

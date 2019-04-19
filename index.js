@@ -546,14 +546,15 @@ io.sockets.on('connection', function(socket) {
         if (socket.room === null) continue;
         let recipientName = socket.username;
         (async function() {
-          let sid = await lg.getUserIdByUsername(senderName);
-          let rid = await lg.getUserIdByUsername(recipientName);
           let client = await pool.connect();
+          let sid = await lg.getUserIdByUsername(client, senderName);
+          let rid = await lg.getUserIdByUsername(client, recipientName);
           let ignored = await lg.isMuted(client, rid, sid);
+          console.log(`aaa ${senderName} ${recipientName} ${sid} ${rid} ${ignored}`);
           if (!ignored) {
-            socket.emit('updatechat', socket.username, newdata);
+            socket.emit('updatechat', senderName, newdata);
           }
-        })();
+        })().catch(console.log);
       }
       // io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
       return;
@@ -566,7 +567,7 @@ io.sockets.on('connection', function(socket) {
     //if (amount == 0) {
     //}
     //checks if there is a game running, if not dont do anything
-    if (!currRoom.isGameStarted) {
+    if (currRoom === undefined || !currRoom.isGameStarted) {
       return;
     }
     //checks if it is the current players turn
@@ -753,11 +754,14 @@ function grantChips(sender, recipient, amount) {
 }
 
 function setMute(sender, recipient, value) {
-  pool.connect().then(client => {
-    lg.setMuteName(client, sender, recipient, value)
-  }).catch(err => {
-    console.log(err.stack);
-  });
+  (async function() {
+    let client = await pool.connect();
+    try {
+      lg.setMuteName(client, sender, recipient, value);
+    } finally {
+      client.release();
+    }
+  })().catch(console.log);
 }
 
 function grantAdmin(id, val) {
