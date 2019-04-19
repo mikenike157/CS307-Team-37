@@ -39,6 +39,8 @@ class gameRoom {
     this.sidePot = 0;
     this.mainPot = 0;
     this.idleTimeout = null;
+    
+    this.fileName = "";
   }
 }
 
