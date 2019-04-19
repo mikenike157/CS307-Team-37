@@ -77,9 +77,38 @@ window.onload = function() {
       }
     })
   })
+
+  $(function() {
+    $('addFriend').click( function() {
+      $.ajax({
+        async: false,
+        type: 'POST',
+        
+      })
+    })
+  })
+
   $(function() {
     $('#friends').click( function() {
-      window.location.replace('/friends.html');
+      $.ajax({
+        async: false,
+        type: 'GET',
+        url: '/get_requests_and_friends',
+        success: function(data) {
+          console.log(data);
+          let friends = data.friendsArray;
+          let requests = data.requestsArray;
+          document.getElementById('board').innerHTML = "";
+          document.getElementById('board').innerHTML += "FRIENDS</br>";
+          for (let i = 0; i < friends.length; i++) {
+            document.getElementById('board').innerHTML += (friends[i].username + "</br></br>")
+          }
+          document.getElementById('board').innerHTML += "REQUESTS</br>";
+          for (let i = 0; i < requests.length; i++) {
+            document.getElementById('board').innerHTML += (requests[i].username + ' <input type="button" id="addFriend" name="addFriend" value="Accept"></br></br>')
+          }
+        }
+      })
     })
   })
 </script>
@@ -96,6 +125,14 @@ window.onload = function() {
   <div class="user_avatar">
     <img src="/avatar/{ID}" width="128" height="128" />
   </div>
+  <div id="search1">
+    <object align= right>
+      <form method="POST" action='search_profiles'>
+        <input type="text" id="search" name="search" placeholder="Username">
+        <input type="submit" value="Search Profiles">
+      </form>
+    </object>
+  </div>
   <div class="user_profile">
     <p class="field-title">Total Chips: {CHIPS}</br></p>
     <p class="field-title">Total Wins: {WINS}</br></p>
@@ -109,5 +146,6 @@ window.onload = function() {
     <input type="button" id="delete" name="delete" value="Delete Profile">
     <input type="button" id="friends" name="friends" value="View Friends">
   </div>
+
 </body>
 </html>

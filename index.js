@@ -468,12 +468,133 @@ const server = express()
         res.attachment('avatar.png');
         res.send((pic === null) ? defaultProfilePic : pic);
       } catch (e) {
-        console.log(e);
+        //console.log(e);
         res.sendStatus(500);
       } finally {
         client.release();
       }
     })();
+  })
+  .post('/send_friend_request', function(req, res) {
+    pool.connect()
+    .then(client => {
+      return lg.requestFriend(client, req.session.user.userId, req.session.user.search_id)
+      .then(status => {
+        client.release();
+        if (status == true){
+          return res.send(true);
+        }
+      })
+      .catch(err => {
+        console.log("err");
+        client.release();
+        return res.send(false);
+      })
+    })
+  })
+  .get('/get_requests_and_friends', function(req, res) {
+    let friendsArray = [];
+    let requestsArray = [];
+    pool.connect()
+    .then(client => {
+      return lg.getAllFriends(client, req.session.user.userId)
+      .then(friends => {
+        console.log(friends);
+        for (let i = 0; i < friends.length; i++) {
+          let temp = friends[i].row;
+          friendsArray.push(temp);
+        }
+        return lg.getIncomingFriendRequests(client, req.session.user.userId)
+        .then(requests => {
+          console.log(requests);
+          for (let i = 0; i < requests.length; i++) {
+            let temp = requests[i]
+            console.log(temp);
+            requestsArray.push(temp);
+          }
+          client.release();
+          let data = {
+            friendsArray: friendsArray,
+            requestsArray: requestsArray
+          }
+          console.dir(data);
+          return res.send(data);
+        })
+      })
+    })
+  })
+
+  .get('/view_user_profile', function(req, res) {
+    let content;
+    let content;
+    pool.connect()
+      .then(client => {
+        return lg.profileQuery(client, req.session.user.search_id)
+          .then(profileResult => {
+            client.release()
+            let thisPath = path.join(__dirname, "/src/pages/profileSearch.html");
+            fs.readFile(thisPath, "utf-8", function(err, data) {
+              if (err) {
+                console.log(err, 'error');
+                return null;
+              };
+              content = data;
+              content = content.replace('{ID}', req.session.user.userId);
+              content = content.replace('{USER}', req.session.user.username);
+              content = content.replace('{CHIPS}', profileResult.numChips);
+              content = content.replace('{WINS}', profileResult.numWins);
+              res.send(content);
+            })
+          })
+          .catch(err => {
+            console.log("HERE");
+            client.release()
+            console.log(err.stack);
+            return res.redirect('/');
+          })
+      })
+  })
+
+  .post('/search_profiles', function(req, res) {
+    console.log(req.body.search)
+    req.session.user.search_param = req.body.search;
+    let content;
+    pool.connect()
+      .then(client => {
+        return lg.getUserIdByUsername(client, req.session.user.search_param)
+          .then(userId => {
+            req.session.user.search_id = userId;
+            return lg.profileQuery(client, req.session.user.search_id)
+              .then(profileResult => {
+                client.release()
+                let thisPath = path.join(__dirname, "/src/pages/profileSearch.html");
+                fs.readFile(thisPath, "utf-8", function(err, data) {
+                  if (err) {
+                    console.log(err, 'error');
+                    return null;
+                  };
+                  content = data;
+                  content = content.replace('{ID}', req.session.user.search_id);
+                  content = content.replace('{USER}', req.session.user.search_param);
+                  content = content.replace('{CHIPS}', profileResult.numChips);
+                  content = content.replace('{WINS}', profileResult.numWins);
+                  return res.send(content);
+
+                })
+              })
+              .catch(err => {
+                console.log("HERE");
+                client.release()
+                console.log(err.stack);
+                return res.abort();
+              })
+          })
+          .catch(err => {
+            console.log(err.stack);
+            client.release();
+            return res.abort();
+          })
+      })
   })
 
   .post('/')
@@ -703,18 +824,18 @@ io.sockets.on('connection', function (socket) {
       for (var i = 0; i < currRoom.players.length; i++)
       {
         if (currRoom.players[i].state == "ALLIN") {
-          currRoom.sidePot += (retArray[1]-mainPot);
-          mainPot += mainPot;
+          currRoom.sidePot += (retArray[1]-currRoom.mainPot);
+          currRoom.mainPot += currRoom.mainPot;
           break;
         }
       }
 
       for (var i = 0; i < currRoom.players.length; i++) {
-        if (currRoom.players[i].state == "READY") {
+        if (currRoom.players[i].state == "READY" && i != currRoom.currentPlayer) {
           currRoom.players[i].state = "NOTREADY";
         }
       }
-      currRoom.players[currRoom.currentPlayer].state = "READY";
+      //currRoom.players[currRoom.currentPlayer].state = "READY";
       //Update the socket emits and checking the ready state
 
 
@@ -752,19 +873,19 @@ io.sockets.on('connection', function (socket) {
         var amount = currRoom.currentBet;
         var retArray = game.playerCall(currRoom, currRoom.players[currRoom.currentPlayer].playerID, currRoom.currentBet);
         if (retArray == -1) {
+          currRoom.players[currRoom.currentPlayer].lastBet = currRoom.players[currRoom.currentPlayer].lastBet + currRoom.players[currRoom.currentPlayer].chips
           currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
           currRoom.players[currRoom.currentPlayer].chips = 0;
           currRoom.players[currRoom.currentPlayer].state = "ALLIN";
         }
         else {
-
           // Added: If some prior player was all-in, divert amount to main pot and side pot
           for (var i = 0; i < currRoom.players.length; i++)
           {
             if (currRoom.players[i].state == "ALLIN") {
               sidePot += (retArray[1]-mainPot);
-             mainPot += mainPot;
-             break;
+              mainPot += mainPot;
+              break;
            }
           }
 
@@ -1300,6 +1421,9 @@ function checkReadyState(socket) {
     rooms[currRoomIndex] = currRoom;
     currRoom = progressGame(socket);
     rooms[currRoomIndex] = currRoom;
+    if (!currRoom.isGameStarted) {
+      return;
+    }
   }
   for (let i = 0; i < currRoom.players.length; i++) {
     if (currRoom.players[i].isAI == 0) {
@@ -1385,8 +1509,8 @@ function beginRound(socket, currGame) {
 
 function resetStates(currRoom) {
   for (var i = 0; i < currRoom.players.length; i++) {
-    console.log(currRoom.players[i].state);
     if (!(currRoom.players[i].state != "FOLDED" || currRoom.players[i].state != "ALLIN_OK")) {
+      console.log("IN");
       currRoom.players[i].state = "NOTREADY";
       currRoom.players[i].lastBet = 0;
     }
@@ -1414,13 +1538,29 @@ function progressGame(socket) {
     currRoom.gameState++;
     currRoom.currentBet = 0;
     currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    for (let i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "NOTREADY") {
+        currRoom.players[i].lastBet = 0;
+      }
+    }
     rooms[roomIndex] = currRoom;
     console.log("THIS IS RIGHT BEFORE THE SECOND CHECK READY STATE");
     console.dir(rooms[roomIndex]);
+    let i;
+    let k = 0;
+    for (i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "ALLIN_OK" || currRoom.players[i].state == "FOLDED") {
+        k++;
+      }
+    }
+    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+      currRoom.gameState == Phase.RIVER;
+      progressGame(socket);
+      return currRoom;
+    }
     checkReadyState(socket);
-
-
     io.sockets.in(socket.room).emit('flop', flop);
+    return currRoom;
   } else if (currRoom.gameState == Phase.FLOP) {
     updateSidePots(currRoom);
     resetStates(currRoom);
@@ -1432,11 +1572,27 @@ function progressGame(socket) {
       }
     }
     */
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
-    checkReadyState(socket);
-    currRoom.gameState = Phase.TURN;
+    currRoom.gameState++;
     currRoom.currentBet = 0;
+    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    rooms[roomIndex] = currRoom;
+    console.log("THIS IS RIGHT BEFORE THE SECOND CHECK READY STATE");
+    console.dir(rooms[roomIndex]);
+    let i;
+    let k = 0;
+    for (i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "ALLIN_OK" || currRoom.players[i].state == "FOLDED") {
+        k++;
+      }
+    }
+    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+      currRoom.gameState == Phase.RIVER;
+      progressGame(socket);
+      return currRoom;
+    }
+    checkReadyState(socket);
     io.sockets.in(socket.room).emit('turn', currRoom.fixedTCards[3])
+    return currRoom;
   } else if (currRoom.gameState == Phase.TURN) {
     updateSidePots(currRoom);
     resetStates(currRoom);
@@ -1448,11 +1604,28 @@ function progressGame(socket) {
       }
     }
     */
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
-    checkReadyState(socket);
-    currRoom.gameState = Phase.RIVER;
+    currRoom.gameState++;
     currRoom.currentBet = 0;
+    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    rooms[roomIndex] = currRoom;
+    console.log("THIS IS RIGHT BEFORE THE SECOND CHECK READY STATE");
+    console.dir(rooms[roomIndex]);
+    let i;
+    let k = 0;
+    for (i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "ALLIN_OK" || currRoom.players[i].state == "FOLDED") {
+        k++;
+      }
+    }
+    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+      currRoom.gameState == Phase.RIVER;
+      progressGame(socket);
+      return currRoom;
+    }
+    checkReadyState(socket);
+
     io.sockets.in(socket.room).emit('river', currRoom.fixedTCards[4])
+    return currRoom;
   } else if (currRoom.gameState == Phase.RIVER) {
     updateSidePots(currRoom);
     // At the end of this loop, you are given player list of hand winners
@@ -1512,7 +1685,8 @@ function progressGame(socket) {
     if (currRoom.players.length == 1) {
       io.sockets.in(socket.room).emit('finalWinner', currRoom.players[0].playerID);
       currRoom.isGameStarted = false;
-      return;
+      console.log("HERE");
+      return currRoom;
     }
     // Reset round
     currRoom.gameState = Phase.PREFLOP;

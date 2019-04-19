@@ -378,6 +378,7 @@ async function getAllFriends(client, userId) {
     "FROM Users JOIN Friends ON Users.user_id = Friends.user_id;",
     [userId]
   );
+  console.log(res);
   return res.rows;
 }
 
@@ -392,6 +393,7 @@ async function requestFriend(client, from, to) {
     "VALUES ($1, $2, FALSE);",
     [from, to]
   );
+  return true;
 }
 
 /*

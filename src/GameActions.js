@@ -138,7 +138,14 @@ this.playerRaise = function(game, playerID, currentBet, raiseTo) {
   if (player.chips >= raiseTo && raiseTo > currentBet) {
     let margin = raiseTo-player.lastBet;
     player.chips -= margin;
-    player.state = "READY";
+    if (player.chips == 0) {
+      console.log("hello");
+
+      player.state="ALLIN";
+    }
+    else {
+      player.state = "READY";
+    }
     player.lastBet = raiseTo;
     game.players[playerIndex] = player;
     game.currentPot += margin;
@@ -171,6 +178,7 @@ this.playerCall = function(game, playerID, currentBet) {
     player.lastBet = currentBet;
     return [game, player, margin];
   }
+  console.log("returning -1");
   return -1;
 }
 
@@ -185,11 +193,14 @@ this.blind = function(game, playerIndex, amount) {
   let newChips = game.players[playerIndex].chips - amount;
   if (newChips <= 0) {
     newChips = 0;
-    game.players[playerIndex].state="ALLIN";
+    game.players[playerIndex].lastBet = game.players[playerIndex].chips;
+    game.players[playerIndex].state = "ALLIN_OK";
+    game.players[playerIndex].chips = 0;
   }
-  if (game.players[playerIndex].chips )
-  game.players[playerIndex].chips -= amount;
-  game.players[playerIndex].lastBet = amount;
+  else {
+    game.players[playerIndex].chips -= amount;
+    game.players[playerIndex].lastBet = amount;
+  }
   return game;
 }
 

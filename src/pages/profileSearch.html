@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+
+
+<script>
+$(function() {
+  $('#addFriend').click( function() {
+    $.ajax({
+      async: false,
+      type: 'POST',
+      //url: 'http://pokeruniversity.herokuapp.com/getRooms',
+      url: '/send_friend_request',
+      success: function(data) {
+          name=data;
+      }
+    })
+
+
+  })
+})
+
+
+</script>
+
+
+
+
+<<html>
+<head>
+	<title>Profile</title>
+</head>
+<body>
+  <h1> {USER}'s Profile</h1>
+  <div class="user_avatar">
+    <img src="/avatar/{ID}" width="128" height="128" />
+  </div>
+  <div id="search1">
+    <object align= right>
+      <form method="POST" action='search_profiles'>
+        <input type="text" id="search" name="search" placeholder="Username">
+        <input type="submit" value="Search Profiles">
+      </form>
+    </object>
+  </div>
+  <div class="user_profile">
+    <p class="field-title">Total Chips: {CHIPS}</br></p>
+    <p class="field-title">Total Wins: {WINS}</br></p>
+    </p>
+    <input type="button" id="addFriend" name="addFriend" value="Add Friend">
+  </div>
+
+</body>
+</html>
