@@ -599,5 +599,6 @@ module.exports = {
   removeBan: removeBan,
   isAdmin: isAdmin,
   updateGameNum: updateGameNum,
-  getLeaderboardPercentage: getLeaderboardPercentage
+  getLeaderboardPercentage: getLeaderboardPercentage,
+  updateStatus: updateStatus
 };

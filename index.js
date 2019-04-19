@@ -668,7 +668,7 @@ io.sockets.on('connection', function (socket) {
     })
 
     socket.on('joinMain', function(username) {
-      updateStatus(socket.username);
+      //updateStatus(socket, "ONLINE");
       socket.username = username;
       socket.room = "main";
       socket.join("main");
@@ -689,6 +689,7 @@ io.sockets.on('connection', function (socket) {
       socket.room = room;
       findUserId(socket, username);
       console.log(socket.userId);
+      updateStatus(socket.userId, "INGAME");
       let currRoomIndex = findRoom(room);
       console.log(currRoomIndex);
       let currRoom = rooms[currRoomIndex];
@@ -948,8 +949,19 @@ const Phase = {
 
 
 async function updateStatus(userId, status) {
-
-  }
+    pool.connect()
+    .then(client => {
+      return lg.updateStatus(userId, status)
+      .then(status => {
+        console.log(status);
+        return true;
+      })
+      .catch(err => {
+        console.log("Err");
+        return false;
+      })
+    })
+}
 
 async function adminWrapper(socket, sender, recipient, newStatus) {
   console.log("inWrapper");
@@ -1271,13 +1283,13 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     console.log("CALL");
     player.state = "READY";
     console.log(aiDecision);
-    Math.floor(aiDecision[1]);
+    aiDecision[1] = Math.floor(aiDecision[1]);
     currRoom = aiPlayerCall(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 3) {
     console.log("RAISE");
     player.state = "READY";
-    Math.floor(aiDecision[1]);
+    aiDecision[1] = Math.floor(aiDecision[1]);
 
     currRoom = aiPlayerRaise(currRoom, socket, aiDecision[1]);
   }
@@ -1676,12 +1688,19 @@ function progressGame(socket) {
       currRoom.players[i].state = "NOTREADY";
       currRoom.players[i].lastBet = 0;
     }
+    let removeArray = [];
     for (var i = 0; i < currRoom.players.length; i++) {
       if (currRoom.players[i].chips <= 0) {
+        console.log("PUSHING");
         io.sockets.in(socket.room).emit('lost', currRoom.players[i].playerID);
-        currRoom.players.splice(i, 1);
+        removeArray.push(i);
       }
     }
+    for (let i = removeArray.length-1; i <= 0; i--) {
+      currRoom.players.splice(removeArray[i], 1);
+    }
+    console.log("LENGTH: " + currRoom.players.length);
+    console.dir(currRoom);
     if (currRoom.players.length == 1) {
       io.sockets.in(socket.room).emit('finalWinner', currRoom.players[0].playerID);
       currRoom.isGameStarted = false;
