@@ -538,24 +538,36 @@ io.sockets.on('connection', function(socket) {
     //console.log(data);
     //make sure not empty
     if (data != "") {
-      let newdata = validator.escape(data);
-      let senderName = socket.username;
-      let allSockets = io.sockets.in(socket.room).sockets;
-      for (let key in allSockets) {
-        let socket = allSockets[key];
-        if (socket.room === null) continue;
-        let recipientName = socket.username;
-        (async function() {
+      (async function() {
+        try {
           let client = await pool.connect();
           let sid = await lg.getUserIdByUsername(client, senderName);
-          let rid = await lg.getUserIdByUsername(client, recipientName);
-          let ignored = await lg.isMuted(client, rid, sid);
-          console.log(`aaa ${senderName} ${recipientName} ${sid} ${rid} ${ignored}`);
-          if (!ignored) {
-            socket.emit('updatechat', senderName, newdata);
+          let silenced = await lg.getBans(client, sid, false);
+          if (silenced) {
+            socket.emit('updatechat', "Server",
+              `You are silenced: ${silenced[0].reason}`);
+            return;
           }
-        })().catch(console.log);
-      }
+          let newdata = validator.escape(data);
+          let senderName = socket.username;
+          let allSockets = io.sockets.in(socket.room).sockets;
+          for (let key in allSockets) {
+            let socket = allSockets[key];
+            if (socket.room === null) continue;
+            let recipientName = socket.username;
+            (async function() {
+              let rid = await lg.getUserIdByUsername(client, recipientName);
+              let ignored = await lg.isMuted(client, rid, sid);
+              console.log(`aaa ${senderName} ${recipientName} ${sid} ${rid} ${ignored}`);
+              if (!ignored) {
+                socket.emit('updatechat', senderName, newdata);
+              }
+            })().catch(console.log);
+          }
+        } finally {
+          client.release();
+        }
+      })().catch(console.log);
       // io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
       return;
     }
