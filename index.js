@@ -1,5 +1,4 @@
 "use strict";
-
 const botSimpleMedium = require('./src/BotAction.js')
 const botEasy = require('./src/easyAI.js')
 const botHard = require('./src/hardAI.js')
@@ -43,9 +42,13 @@ const server = express()
   //.use((req, res) => res.sendFile(path.join(__dirname, "src/pages/game.html")))
   //Testing login page
   .use(express.static(__dirname + '/src/pages/'))
+  .use('/change_avatar', bp.raw({
+    type: "image/*"
+  }))
   //Converts post data to JSON
   .use(bp.urlencoded({
-    extended: false
+    extended: false,
+    type: 'application/x-www-form-urlencoded'
   }))
   .use(
     session({
@@ -73,19 +76,14 @@ const server = express()
     let difficulty = req.body.difficulty;
     if (difficulty == "simple") {
       difficulty = 1;
-    }
-    else if (difficulty == "easy") {
+    } else if (difficulty == "easy") {
       difficulty = 2;
-    }
-    else if (difficulty == "medium") {
+    } else if (difficulty == "medium") {
       difficulty = 3;
-    }
-    else if (difficulty == "hard") {
+    } else if (difficulty == "hard") {
       difficulty = 4;
     }
     console.log(difficulty);
-
-
     let numAI = req.body.numAI;
     let anteOption = req.body.anteOption
     let startChips = req.body.startChips;
@@ -101,8 +99,8 @@ const server = express()
     for (let i = 0; i < rooms.length; i++) {
       if (rooms[i].name != undefined) {
         innerHTMLForm += '<input type="radio" id="' + rooms[i].name +
-        '" name="radio" value="' + rooms[i].name + '"/>' +
-        rooms[i].name + " " + rooms[i].players.length + "/" + rooms[i].maxPlayers;
+          '" name="radio" value="' + rooms[i].name + '"/>' +
+          rooms[i].name + " " + rooms[i].players.length + "/" + rooms[i].maxPlayers;
         if (rooms[i].password == "") {
           innerHTMLForm += ' OPEN</br>'
         } else {
@@ -163,31 +161,29 @@ const server = express()
           })
       })
   })
-
   .get('/get_leaderboard_percentage', function(req, res) {
     var boardArray = [];
     pool.connect()
       .then(client => {
         return lg.getLeaderboardPercentage(client)
-        .then(leaderBoard => {
-          client.release();
-          console.log(leaderBoard)
-          for (let i = 0; i < leaderBoard.length; i++){
-            let temp = leaderBoard[i].row;
-            console.log(temp);
-            boardArray.push(temp);
-            //console.log(boardArray);
-          }
-          console.log(boardArray);
-          return res.send(boardArray);
-        })
-        .catch(err => {
-          client.release();
-          console.log(err.stack);
-        })
+          .then(leaderBoard => {
+            client.release();
+            console.log(leaderBoard)
+            for (let i = 0; i < leaderBoard.length; i++) {
+              let temp = leaderBoard[i].row;
+              console.log(temp);
+              boardArray.push(temp);
+              //console.log(boardArray);
+            }
+            console.log(boardArray);
+            return res.send(boardArray);
+          })
+          .catch(err => {
+            client.release();
+            console.log(err.stack);
+          })
       })
   })
-
   .get('/get_leaderboard_wins', function(req, res) {
     var boardArray = [];
     pool.connect()
@@ -347,17 +343,17 @@ const server = express()
   })
   .get('/delete_user', function(req, res) {
     pool.connect()
-    .then(client => {
-      return lg.deleteUser(client, req.session.user.userId)
-      .then(success => {
-        client.release();
-        return res.send('success');
+      .then(client => {
+        return lg.deleteUser(client, req.session.user.userId)
+          .then(success => {
+            client.release();
+            return res.send('success');
+          })
+          .catch(err => {
+            client.release();
+            return res.send('failure');
+          });
       })
-      .catch(err => {
-        client.release();
-        return res.send('failure');
-      });
-    })
   })
   .post('/username_post', function(req, res) {
     let content;
@@ -376,7 +372,7 @@ const server = express()
           })
       })
   })
-  .post('/profile_page', function(req, res) {
+  .all('/profile_page', function(req, res) {
     console.log(req.session.user);
     let content;
     pool.connect()
@@ -477,53 +473,52 @@ const server = express()
   })
   .post('/send_friend_request', function(req, res) {
     pool.connect()
-    .then(client => {
-      return lg.requestFriend(client, req.session.user.userId, req.session.user.search_id)
-      .then(status => {
-        client.release();
-        if (status == true){
-          return res.send(true);
-        }
+      .then(client => {
+        return lg.requestFriend(client, req.session.user.userId, req.session.user.search_id)
+          .then(status => {
+            client.release();
+            if (status == true) {
+              return res.send(true);
+            }
+          })
+          .catch(err => {
+            console.log("err");
+            client.release();
+            return res.send(false);
+          })
       })
-      .catch(err => {
-        console.log("err");
-        client.release();
-        return res.send(false);
-      })
-    })
   })
   .get('/get_requests_and_friends', function(req, res) {
     let friendsArray = [];
     let requestsArray = [];
     pool.connect()
-    .then(client => {
-      return lg.getAllFriends(client, req.session.user.userId)
-      .then(friends => {
-        console.log(friends);
-        for (let i = 0; i < friends.length; i++) {
-          let temp = friends[i].row;
-          friendsArray.push(temp);
-        }
-        return lg.getIncomingFriendRequests(client, req.session.user.userId)
-        .then(requests => {
-          console.log(requests);
-          for (let i = 0; i < requests.length; i++) {
-            let temp = requests[i]
-            console.log(temp);
-            requestsArray.push(temp);
-          }
-          client.release();
-          let data = {
-            friendsArray: friendsArray,
-            requestsArray: requestsArray
-          }
-          console.dir(data);
-          return res.send(data);
-        })
+      .then(client => {
+        return lg.getAllFriends(client, req.session.user.userId)
+          .then(friends => {
+            console.log(friends);
+            for (let i = 0; i < friends.length; i++) {
+              let temp = friends[i].row;
+              friendsArray.push(temp);
+            }
+            return lg.getIncomingFriendRequests(client, req.session.user.userId)
+              .then(requests => {
+                console.log(requests);
+                for (let i = 0; i < requests.length; i++) {
+                  let temp = requests[i]
+                  console.log(temp);
+                  requestsArray.push(temp);
+                }
+                client.release();
+                let data = {
+                  friendsArray: friendsArray,
+                  requestsArray: requestsArray
+                }
+                console.dir(data);
+                return res.send(data);
+              })
+          })
       })
-    })
   })
-
   .get('/view_user_profile', function(req, res) {
     let content;
     let content;
@@ -554,7 +549,6 @@ const server = express()
           })
       })
   })
-
   .post('/search_profiles', function(req, res) {
     console.log(req.body.search)
     req.session.user.search_param = req.body.search;
@@ -579,7 +573,6 @@ const server = express()
                   content = content.replace('{CHIPS}', profileResult.numChips);
                   content = content.replace('{WINS}', profileResult.numWins);
                   return res.send(content);
-
                 })
               })
               .catch(err => {
@@ -596,13 +589,36 @@ const server = express()
           })
       })
   })
-
+  .post('/change_avatar', function(req, res) {
+    // Change the user's avatar
+    if (!req.session || !req.session.user) {
+      res.sendStatus(401);
+      return res.send("Log in you dum dum");
+    }
+    (async () => {
+      const client = await pool.connect();
+      try {
+        let userId = req.session.user.userId;
+        let pic = req.body;
+        console.log(pic);
+        let stat = await lg.setProfilePicture(client, userId, pic);
+        if (!stat) {
+          res.sendStatus(500);
+          res.send("Profile picture not changed?");
+        } else {
+          res.send("done");
+        }
+      } catch (e) {
+        res.sendStatus(500);
+        res.send(e);
+      } finally {
+        client.release();
+      }
+    })();
+  })
   .post('/')
-
   .listen(port, () => console.log(`Listening on ${ port }`));
-
 const io = sio(server);
-
 /*
 var players = [];
 var smallBlindPlacement = 0;
@@ -627,16 +643,11 @@ var tableCards = [];
 
 var usernames = {};
 */
-
-
 // For all-in logic
 var sidePot = 0;
 var mainPot = 0; // parallel currentPot
-
 // rooms which are currently available in chat
 var rooms = ['room1'];
-
-
 /* Beginning of client-server communication for socket.io
 
 Important things to note: whenever a request is sent from the client it is send in the
@@ -648,106 +659,63 @@ Look at the format in game.html to see how the socket commands are set up.
 For every game, the number of players currently in the game
 is currRoom.players.length. For every player object, player.playerID is the socket id.
 socket.room gets the current room that the player is in. */
-
 //On any request
-
-io.sockets.on('connection', function (socket) {
-
-    socket.on('checkRoomPass', function(roomName) {
-      console.log("ROOM NAME: " + roomName);
-      let roomIndex = findRoom(roomName);
-      let currRoom = rooms[roomIndex];
-      console.log("PASSWORD: " + currRoom.password);
-      if (currRoom.password == "") {
-        io.to(socket.id).emit('joinGame');
-      }
-      else {
-        io.to(socket.id).emit('givePass', currRoom.password);
-        //Do password verification
-      }
-    })
-
-    socket.on('joinMain', function(username) {
-      //updateStatus(socket, "ONLINE");
-      socket.username = username;
-      socket.room = "main";
-      socket.join("main");
+io.sockets.on('connection', function(socket) {
+  socket.on('checkRoomPass', function(roomName) {
+    console.log("ROOM NAME: " + roomName);
+    let roomIndex = findRoom(roomName);
+    let currRoom = rooms[roomIndex];
+    if (currRoom === undefined) {
+      console.error("Current room named " + room + " is undefined!");
       return;
-    })
-
-    socket.on('gameSelection', function(username) {
-      console.log(socket.username);
-      socket.room = "gameSearch";
+    }
+    console.log("PASSWORD: " + currRoom.password);
+    if (currRoom.password == "") {
+      io.to(socket.id).emit('joinGame');
+    } else {
+      io.to(socket.id).emit('givePass', currRoom.password);
+      //Do password verification
+    }
+  })
+  socket.on('joinMain', function(username) {
+    //updateStatus(socket, "ONLINE");
+    socket.username = username;
+    socket.room = "main";
+    socket.join("main");
+    return;
+  })
+  socket.on('gameSelection', function(username) {
+    console.log(socket.username);
+    socket.room = "gameSearch";
+    return;
+  })
+  //addUser is emitted
+  socket.on('adduser', function(username, room) {
+    // get room index and set up socket information
+    console.log(room);
+    socket.username = username;
+    socket.room = room;
+    findUserId(socket, username);
+    console.log(socket.userId);
+    updateStatus(socket.userId, "INGAME");
+    let currRoomIndex = findRoom(room);
+    console.log(currRoomIndex);
+    let currRoom = rooms[currRoomIndex];
+    if (currRoom.isGameStarted != 0 || currRoom.players.length == currRoom.maxPlayers) {
+      socket.join(room);
+      currRoom = addPlayerQueue(currRoom, socket);
+      rooms[currRoomIndex] = currRoom;
       return;
-    })
-
-    //addUser is emitted
-    socket.on('adduser', function(username, room) {
-      // get room index and set up socket information
-      console.log(room);
-      socket.username = username;
-      socket.room = room;
-      findUserId(socket, username);
-      console.log(socket.userId);
-      updateStatus(socket.userId, "INGAME");
-      let currRoomIndex = findRoom(room);
-      console.log(currRoomIndex);
-      let currRoom = rooms[currRoomIndex];
-      if (currRoom.isGameStarted != 0 || currRoom.players.length == currRoom.maxPlayers) {
-        socket.join(room);
-        currRoom = addPlayerQueue(currRoom, socket);
-        rooms[currRoomIndex] = currRoom;
-        return;
-      }
-      else {
-        currRoom = addPlayer(currRoom, socket);
-        socket.join(room);
-        if(currRoom.numAI == 0) {
-          if (currRoom.players.length == currRoom.maxPlayers) {
-            currRoom = startGame(socket, currRoom);
-            for (let i = 0; i < currRoom.players.length; i++) {
-              if (currRoom.players[i].isAI == 0) {
-                io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-              }
-            }
-
-          }
-          rooms[currRoomIndex] = currRoom;
-          //updateLog
-          io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
-          console.log("JOINED ROOM");
-          return;
-        }
-        else {
-          if (currRoom.players.length + currRoom.numAI == currRoom.maxPlayers) {
-            for (let i = 0; i < currRoom.numAI; i++) {
-              currRoom = addAI(currRoom);
-            }
-            currRoom = startGame(socket, currRoom);
-            for (let i = 0; i < currRoom.players.length; i++) {
-              if (currRoom.players[i].numAI == 0) {
-                io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-              }
-            }
-            let aiCheck = currplayer_ai_check(currRoom);
-            if (aiCheck) {
-              currRoom = executeAiDecision(currRoom, currRoom.currentPlayer, socket);
-            }
-          }
-        }
-      //add a player to the room, set the returned room to currRoom
-      //if room was full
-
-        if (currRoom == null) {
-          return;
-        }
-        socket.join(room);
-        console.log(currRoom);
-        // if max numebr of players have joined
+    } else {
+      currRoom = addPlayer(currRoom, socket);
+      socket.join(room);
+      if (currRoom.numAI == 0) {
         if (currRoom.players.length == currRoom.maxPlayers) {
           currRoom = startGame(socket, currRoom);
           for (let i = 0; i < currRoom.players.length; i++) {
-            io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+            if (currRoom.players[i].isAI == 0) {
+              io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+            }
           }
         }
         rooms[currRoomIndex] = currRoom;
@@ -755,57 +723,135 @@ io.sockets.on('connection', function (socket) {
         io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
         console.log("JOINED ROOM");
         return;
-
-      }
-    })
-
-    socket.on('sendchat', function (data) {
-      let parsed = data.split(" ");
-      //parsed[0] is command, parsed[1] is recipient, parsed[2] is reason, parsed[3] is expiry, parsed[4] is type
-      if (parsed[0] == "/ban") {
-        executeBan(socket.username, parsed[1], parsed[2], parsed[3], parsed[4]);
-        return;
-      }
-      else if (parsed[0] == "/backlog") {
-
-
-        return;
-      }
-      else if (parsed[0] == "/chips") {
-        grantChips(socket.username, parsed[1], parsed[2]);
-        return;
-      }
-      else if (parsed[0] == "/admin") {
-        if (parsed.length != 2) {
-          io.to(socket.id).emit('updatechat', "SERVER", "Invalid command");
-          return;
+      } else {
+        if (currRoom.players.length + currRoom.numAI == currRoom.maxPlayers) {
+          for (let i = 0; i < currRoom.numAI; i++) {
+            currRoom = addAI(currRoom);
+          }
+          currRoom = startGame(socket, currRoom);
+          for (let i = 0; i < currRoom.players.length; i++) {
+            if (currRoom.players[i].numAI == 0) {
+              io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+            }
+          }
+          let aiCheck = currplayer_ai_check(currRoom);
+          if (aiCheck) {
+            currRoom = executeAiDecision(currRoom, currRoom.currentPlayer, socket);
+          }
         }
-        let retString = adminWrapper(socket, socket.username, parsed[1], parsed[2]);
-        console.log("THE RET STRING: " + retString);
-
-        io.to(socket.id).emit('upatechat', "SERVER", retString)
+      }
+      //add a player to the room, set the returned room to currRoom
+      //if room was full
+      if (currRoom == null) {
         return;
       }
-      //console.log(data);
-      //make sure not empty
-      if (data != "") {
-        var newdata = validator.escape(data);
-        //
-        io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+      socket.join(room);
+      console.log(currRoom);
+      // if max numebr of players have joined
+      if (currRoom.players.length == currRoom.maxPlayers) {
+        currRoom = startGame(socket, currRoom);
+        for (let i = 0; i < currRoom.players.length; i++) {
+          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+        }
+      }
+      rooms[currRoomIndex] = currRoom;
+      //updateLog
+      io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
+      console.log("JOINED ROOM");
+      return;
+    }
+  })
+  socket.on('sendchat', function(data) {
+    let parsed = data.split(" ");
+    //parsed[0] is command, parsed[1] is recipient, parsed[2] is reason, parsed[3] is expiry, parsed[4] is type
+    if (parsed[0] == "/ban") {
+      executeBan(socket.username, parsed[1], parsed[2], parsed[3], parsed[4]);
+      return;
+    } else if (parsed[0] == "/backlog") {
+      return;
+    } else if (parsed[0] == "/chips") {
+      grantChips(socket.username, parsed[1], parsed[2]);
+      return;
+    } else if (parsed[0] == "/admin") {
+      if (parsed.length != 2) {
+        io.to(socket.id).emit('updatechat', "SERVER", "Invalid command");
         return;
       }
-    })
-
-    socket.on('playerRaise', function(amount) {
-      console.log(amount);
-      let roomIndex = findRoom(socket.room);
-      let currRoom = rooms[roomIndex];
-      //if (amount == 0) {
-
-      //}
-      //checks if there is a game running, if not dont do anything
-      if (currRoom.isGameStarted == 0) {
-        return;
+      let retString = adminWrapper(socket, socket.username, parsed[1], parsed[2]);
+      console.log("THE RET STRING: " + retString);
+      io.to(socket.id).emit('upatechat', "SERVER", retString)
+      return;
+    } else if (parsed[0] == "/mute" || parsed[0] == "/unmute") {
+      setMute(socket.username, parsed[1], parsed[0] == "/mute");
+    }
+    //console.log(data);
+    //make sure not empty
+    if (data != "") {
+      (async function() {
+        try {
+          let client = await pool.connect();
+          let sid = await lg.getUserIdByUsername(client, senderName);
+          let silenced = await lg.getBans(client, sid, false);
+          if (silenced) {
+            socket.emit('updatechat', "Server",
+              `You are silenced: ${silenced[0].reason}`);
+            return;
+          }
+          let newdata = validator.escape(data);
+          let senderName = socket.username;
+          let allSockets = io.sockets.in(socket.room).sockets;
+          for (let key in allSockets) {
+            let socket = allSockets[key];
+            if (socket.room === null) continue;
+            let recipientName = socket.username;
+            (async function() {
+              let rid = await lg.getUserIdByUsername(client, recipientName);
+              let ignored = await lg.isMuted(client, rid, sid);
+              if (!ignored) {
+                socket.emit('updatechat', senderName, newdata);
+              }
+            })().catch(console.log);
+          }
+        } finally {
+          client.release();
+        }
+      })().catch(console.log);
+      // io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
+      return;
+    }
+    let temp = adminWrapper(socket.username);
+    return;
+  });
+  socket.on('playerRaise', function(amount) {
+    console.log(amount);
+    let roomIndex = findRoom(socket.room);
+    let currRoom = rooms[roomIndex];
+    //if (amount == 0) {
+    //}
+    //checks if there is a game running, if not dont do anything
+    if (currRoom === undefined || !currRoom.isGameStarted) {
+      return;
+    }
+    //checks if it is the current players turn
+    if (!validatePlayer(socket)) {
+      return;
+    }
+    //start raise logic
+    var currPlayer = currRoom.players[currRoom.currentPlayer];
+    var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
+    //if the raise failed / they do not have enough chips
+    if (retArray == -1) {
+      io.sockets.in(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
+      return;
+    }
+    //make the current room equal to the output of the raise logic
+    currRoom = retArray[0];
+    // Added: If some prior player was all-in, divert amount to main pot and side pot
+    for (var i = 0; i < currRoom.players.length; i++) {
+      if (currRoom.players[i].state == "ALLIN") {
+        currRoom.sidePot += (retArray[1] - mainPot);
+        mainPot += mainPot;
+        break;
       }
       //checks if it is the current players turn
       if (!validatePlayer(socket)) {
@@ -822,15 +868,13 @@ io.sockets.on('connection', function (socket) {
       //make the current room equal to the output of the raise logic
       currRoom = retArray[0];
       // Added: If some prior player was all-in, divert amount to main pot and side pot
-      for (var i = 0; i < currRoom.players.length; i++)
-      {
+      for (var i = 0; i < currRoom.players.length; i++) {
         if (currRoom.players[i].state == "ALLIN") {
-          currRoom.sidePot += (retArray[1]-currRoom.mainPot);
+          currRoom.sidePot += (retArray[1] - currRoom.mainPot);
           currRoom.mainPot += currRoom.mainPot;
           break;
         }
       }
-
       for (var i = 0; i < currRoom.players.length; i++) {
         if (currRoom.players[i].state == "READY" && i != currRoom.currentPlayer) {
           currRoom.players[i].state = "NOTREADY";
@@ -838,95 +882,86 @@ io.sockets.on('connection', function (socket) {
       }
       //currRoom.players[currRoom.currentPlayer].state = "READY";
       //Update the socket emits and checking the ready state
-
-
-
       rooms[roomIndex] = currRoom;
       checkReadyState(socket)
       io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-
-    })
-
-    //Call button is clicked
-    socket.on('playerCall', function() {
-      //Get index and room object
-      let roomIndex = findRoom(socket.room);
-      let currRoom = rooms[roomIndex];
-
-      //If there is not a game in progress
-      if (currRoom.isGameStarted == 0) {
-        io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
-        return;
-      }
-      //If it is not the current player making the request (clicking a button)
-      if (!validatePlayer(socket)) {
-        return;
-      }
-      //If it is a check
-      if (currRoom.currentBet == 0) {
-        currRoom.players[currRoom.currentPlayer].state = "READY";
-        //LOGS
-        //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
-        //FIX EMITS
-      }
-      //If money is being put in
-      else {
-        var amount = currRoom.currentBet;
-        var retArray = game.playerCall(currRoom, currRoom.players[currRoom.currentPlayer].playerID, currRoom.currentBet);
-        if (retArray == -1) {
-          currRoom.players[currRoom.currentPlayer].lastBet = currRoom.players[currRoom.currentPlayer].lastBet + currRoom.players[currRoom.currentPlayer].chips
-          currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
-          currRoom.players[currRoom.currentPlayer].chips = 0;
-          currRoom.players[currRoom.currentPlayer].state = "ALLIN";
-        }
-        else {
-          // Added: If some prior player was all-in, divert amount to main pot and side pot
-          for (var i = 0; i < currRoom.players.length; i++)
-          {
-            if (currRoom.players[i].state == "ALLIN") {
-              sidePot += (retArray[1]-mainPot);
-              mainPot += mainPot;
-              break;
-           }
+    }
+  });
+  //Call button is clicked
+  socket.on('playerCall', function() {
+    //Get index and room object
+    let roomIndex = findRoom(socket.room);
+    let currRoom = rooms[roomIndex];
+    //If there is not a game in progress
+    if (currRoom.isGameStarted == 0) {
+      io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
+      return;
+    }
+    //If it is not the current player making the request (clicking a button)
+    if (!validatePlayer(socket)) {
+      return;
+    }
+    //If it is a check
+    if (currRoom.currentBet == 0) {
+      currRoom.players[currRoom.currentPlayer].state = "READY";
+      //LOGS
+      //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
+      //FIX EMITS
+    }
+    //If money is being put in
+    else {
+      var amount = currRoom.currentBet;
+      var retArray = game.playerCall(currRoom, currRoom.players[currRoom.currentPlayer].playerID, currRoom.currentBet);
+      if (retArray == -1) {
+        currRoom.players[currRoom.currentPlayer].lastBet = currRoom.players[currRoom.currentPlayer].lastBet + currRoom.players[currRoom.currentPlayer].chips
+        currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
+        currRoom.players[currRoom.currentPlayer].chips = 0;
+        currRoom.players[currRoom.currentPlayer].state = "ALLIN";
+      } else {
+        // Added: If some prior player was all-in, divert amount to main pot and side pot
+        for (var i = 0; i < currRoom.players.length; i++) {
+          if (currRoom.players[i].state == "ALLIN") {
+            sidePot += (retArray[1] - mainPot);
+            mainPot += mainPot;
+            break;
           }
-
-          currRoom.currentPot += retArray[2];
-          currRoom.players[currRoom.currentPlayer] = retArray[1];
-          rooms[roomIndex] = currRoom;
-          //LOGS
-          //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
+        currRoom.currentPot += retArray[2];
+        currRoom.players[currRoom.currentPlayer] = retArray[1];
+        rooms[roomIndex] = currRoom;
+        //LOGS
+        //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
       }
-      checkReadyState(socket)
-      console.dir(currRoom.players[currRoom.currentPlayer]);
-    })
-    socket.on('playerFold', function() {
-        console.log("Registered fold click");
-        console.log(socket.username);
-        let roomIndex = findRoom(socket.room);
-        let currRoom = rooms[roomIndex];
-        if (!currRoom.isGameStarted) {
-          return;
-        }
-        if (!validatePlayer(socket)) {
-          console.log("not this players turn");
-          return;
-        }
-        currRoom.players[currRoom.currentPlayer].idleTurns = 0;
-        fold(socket, currRoom);
-      });
-      // Hint button
-      socket.on('playerHint', function() {
-        let roomIndex = findRoom(socket.room);
-        let currRoom = rooms[roomIndex];
-        createHint(currRoom, socket);
-      });
-      // When a player leaves the game and disconnects from the socket
-      socket.on('disconnect', function() {
-        disconnect(socket);
-      });
-    });
-
+    }
+    checkReadyState(socket)
+    console.dir(currRoom.players[currRoom.currentPlayer]);
+  })
+  socket.on('playerFold', function() {
+    console.log("Registered fold click");
+    console.log(socket.username);
+    let roomIndex = findRoom(socket.room);
+    let currRoom = rooms[roomIndex];
+    if (!currRoom.isGameStarted) {
+      return;
+    }
+    if (!validatePlayer(socket)) {
+      console.log("not this players turn");
+      return;
+    }
+    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
+    fold(socket, currRoom);
+  });
+  // Hint button
+  socket.on('playerHint', function() {
+    let roomIndex = findRoom(socket.room);
+    let currRoom = rooms[roomIndex];
+    createHint(currRoom, socket);
+  });
+  // When a player leaves the game and disconnects from the socket
+  socket.on('disconnect', function() {
+    disconnect(socket);
+  });
+});
 // Constants referring to game states
 /*
 
@@ -939,143 +974,136 @@ Look at the format in game.html to see how the socket commands are set up.
 For every game, the number of players currently in the game
 is currRoom.players.length. For every player object, player.playerID is the socket id.
 socket.room gets the current room that the player is in. */
-
 const Phase = {
   PREFLOP: 0,
   FLOP: 1,
   TURN: 2,
   RIVER: 3,
 };
-
-
 async function updateStatus(userId, status) {
-    pool.connect()
+  pool.connect()
     .then(client => {
       return lg.updateStatus(userId, status)
-      .then(status => {
-        console.log(status);
-        return true;
-      })
-      .catch(err => {
-        console.log("Err");
-        return false;
-      })
+        .then(status => {
+          console.log(status);
+          return true;
+        })
+        .catch(err => {
+          console.log("Err");
+          return false;
+        })
     })
 }
-
 async function adminWrapper(socket, sender, recipient, newStatus) {
   console.log("inWrapper");
   pool.connect()
-  .then(client => {
-    return lg.getUserIdByUsername(client, sender)
-    .then(userId => {
-      console.log(userId);
-        return lg.isAdmin(client, userId)
-        .then(adminStatus => {
-          console.log(adminStatus);
-          if (adminStatus) {
-            return lg.getUserIdByUsername(client, recipient)
-            .then(recipientId => {
-              return lg.setAdmin(client, recipientId, newStatus)
-              .then(status => {
-                if (status == true) {
-                  client.release();
-                  return "Admin status updated successfully";
-                }
-              })
-              .catch(err => {
+    .then(client => {
+      return lg.getUserIdByUsername(client, sender)
+        .then(userId => {
+          console.log(userId);
+          return lg.isAdmin(client, userId)
+            .then(adminStatus => {
+              console.log(adminStatus);
+              if (adminStatus) {
+                return lg.getUserIdByUsername(client, recipient)
+                  .then(recipientId => {
+                    return lg.setAdmin(client, recipientId, newStatus)
+                      .then(status => {
+                        if (status == true) {
+                          client.release();
+                          return "Admin status updated successfully";
+                        }
+                      })
+                      .catch(err => {
+                        client.release();
+                        return "Error in updating admin status";
+                      })
+                  })
+                  .catch(err => {
+                    io.to(socket.id).emit('updatechat', "Server", "User does not exist");
+                    client.release();
+                    return "User not found";
+                  })
+              } else {
+                console.log("not admin");
                 client.release();
-                return "Error in updating admin status";
-              })
+                return "You do not have admin permissions";
+              }
             })
             .catch(err => {
-              io.to(socket.id).emit('updatechat', "Server", "User does not exist");
               client.release();
-              return "User not found";
+              return "Error in admin check";
             })
-          }
-          else {
-            console.log("not admin");
-            client.release();
-            return "You do not have admin permissions";
-          }
+        })
+        .catch(err => {
+          client.release()
+          console.log(err.stack);
+          return "Error in user id check";
+        })
+    })
+}
+
+function findUserId(socket, username) {
+  console.log(username)
+  pool.connect()
+    .then(client => {
+      return lg.getUserIdByUsername(client, username)
+        .then(userID => {
+          client.release();
+          console.log(userID + " FROM FUI")
+          socket.userId = userID;
         })
         .catch(err => {
           client.release();
-          return "Error in admin check";
+          return -1;
         })
-      })
-      .catch(err => {
-        client.release()
-        console.log(err.stack);
-        return "Error in user id check";
-      })
     })
-  }
-
-function findUserId(socket, username) {
-
-  console.log(username)
-  pool.connect()
-  .then(client => {
-    return lg.getUserIdByUsername(client, username)
-    .then(userID => {
-      client.release();
-      console.log(userID + " FROM FUI")
-      socket.userId = userID;
-    })
-    .catch(err => {
-      client.release();
-      return -1;
-    })
-  })
 }
 
 function executeBan(sender, recipient, reason, expiry, type) {
   pool.connect()
-  .then(client => {
-    return lg.getUserIdByUsername(client, sender)
-    .then(userId => {
-      console.log(userId);
-        return lg.isAdmin(client, userId)
-        .then(adminStatus => {
-          console.log(adminStatus);
-          if (adminStatus) {
-            return lg.getUserIdByUsername(client, recipient)
-            .then(recipientId => {
-              return lg.banUser(client, userId, recipientId, reason, expiry, type)
-              .then(status => {
-                if (status == true) {
-                  client.release();
-                  return "Admin status updated successfully";
-                }
-              })
-              .catch(err => {
+    .then(client => {
+      return lg.getUserIdByUsername(client, sender)
+        .then(userId => {
+          console.log(userId);
+          return lg.isAdmin(client, userId)
+            .then(adminStatus => {
+              console.log(adminStatus);
+              if (adminStatus) {
+                return lg.getUserIdByUsername(client, recipient)
+                  .then(recipientId => {
+                    return lg.banUser(client, userId, recipientId, reason, expiry, type)
+                      .then(status => {
+                        if (status == true) {
+                          client.release();
+                          return "Admin status updated successfully";
+                        }
+                      })
+                      .catch(err => {
+                        client.release();
+                        return "Error in updating admin status";
+                      })
+                  })
+                  .catch(err => {
+                    client.release();
+                    return "User not found";
+                  })
+              } else {
+                console.log("not admin");
                 client.release();
-                return "Error in updating admin status";
-              })
+                return "You do not have admin permissions";
+              }
             })
             .catch(err => {
               client.release();
-              return "User not found";
+              return "Error in admin check";
             })
-          }
-          else {
-            console.log("not admin");
-            client.release();
-            return "You do not have admin permissions";
-          }
         })
         .catch(err => {
-          client.release();
-          return "Error in admin check";
+          client.release()
+          console.log(err.stack);
+          return "Error in user id check";
         })
-      })
-      .catch(err => {
-        client.release()
-        console.log(err.stack);
-        return "Error in user id check";
-      })
     })
 }
 
@@ -1100,50 +1128,60 @@ function checkAdminStatus(userId) {
 function grantChips(sender, recipient, amount) {
   console.log("inWrapper");
   pool.connect()
-  .then(client => {
-    return lg.getUserIdByUsername(client, sender)
-    .then(userId => {
-      console.log(userId);
-        return lg.isAdmin(client, userId)
-        .then(adminStatus => {
-          console.log(adminStatus);
-          if (adminStatus) {
-            return lg.getUserIdByUsername(client, recipient)
-            .then(recipientId => {
-              return lg.updateChips(client, recipientId, amount)
-              .then(status => {
-                if (status == true) {
-                  client.release();
-                  return "Admin status updated successfully";
-                }
-              })
-              .catch(err => {
+    .then(client => {
+      return lg.getUserIdByUsername(client, sender)
+        .then(userId => {
+          console.log(userId);
+          return lg.isAdmin(client, userId)
+            .then(adminStatus => {
+              console.log(adminStatus);
+              if (adminStatus) {
+                return lg.getUserIdByUsername(client, recipient)
+                  .then(recipientId => {
+                    return lg.updateChips(client, recipientId, amount)
+                      .then(status => {
+                        if (status == true) {
+                          client.release();
+                          return "Admin status updated successfully";
+                        }
+                      })
+                      .catch(err => {
+                        client.release();
+                        return "Error in updating admin status";
+                      })
+                  })
+                  .catch(err => {
+                    client.release();
+                    return "User not found";
+                  })
+              } else {
+                console.log("not admin");
                 client.release();
-                return "Error in updating admin status";
-              })
+                return "You do not have admin permissions";
+              }
             })
             .catch(err => {
               client.release();
-              return "User not found";
+              return "Error in admin check";
             })
-          }
-          else {
-            console.log("not admin");
-            client.release();
-            return "You do not have admin permissions";
-          }
         })
         .catch(err => {
-          client.release();
-          return "Error in admin check";
+          client.release()
+          console.log(err.stack);
+          return "Error in user id check";
         })
-      })
-      .catch(err => {
-        client.release()
-        console.log(err.stack);
-        return "Error in user id check";
-      })
     })
+}
+
+function setMute(sender, recipient, value) {
+  (async function() {
+    let client = await pool.connect();
+    try {
+      lg.setMuteName(client, sender, recipient, value);
+    } finally {
+      client.release();
+    }
+  })().catch(console.log);
 }
 
 function grantAdmin(id, val) {
@@ -1166,24 +1204,24 @@ function updateHistory(userID, chips, winFlag) {
   console.log("GAME SECTION");
   console.log(userID);
   pool.connect()
-  .then(client => {
-    return lg.updateGameNum(client, userID)
-    .then(newGameNum => {
-      client.release();
+    .then(client => {
+      return lg.updateGameNum(client, userID)
+        .then(newGameNum => {
+          client.release();
+        })
     })
-  })
   console.log("CHIP SECTION");
   pool.connect()
-  .then(client => {
-    return lg.updateChips(client, userID, chips)
-      .then(updatedChips => {
-        client.release()
-      })
-      .catch(err => {
-        client.release()
-        console.log(err.stack);
-      })
-  })
+    .then(client => {
+      return lg.updateChips(client, userID, chips)
+        .then(updatedChips => {
+          client.release()
+        })
+        .catch(err => {
+          client.release()
+          console.log(err.stack);
+        })
+    })
   console.log("WINS SECTION")
   if (winFlag) {
     pool.connect()
@@ -1200,7 +1238,6 @@ function updateHistory(userID, chips, winFlag) {
       })
   }
 }
-
 //Gets the array index of the room given the string of the room name
 function findRoom(roomName) {
   for (let i = 0; i < rooms.length; i++) {
@@ -1211,8 +1248,6 @@ function findRoom(roomName) {
   }
   return "ERR";
 }
-
-
 
 function addPlayer(currRoom, socket) {
   currRoom = room.addPlayer(currRoom, socket);
@@ -1246,12 +1281,10 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (player.isAI == 1 || player.isAI == 3) {
     aiDecision = botSimpleMedium.bot_decision(player.isAI, currRoom);
     console.log(aiDecision);
-  }
-  else if (player.isAI == 2 || player.isAI == 4) {
+  } else if (player.isAI == 2 || player.isAI == 4) {
     if (player.isAI == 2) {
       aiDecision = botEasy.easyAI(currRoom);
-    }
-    else if (player.isAI == 4) {
+    } else if (player.isAI == 4) {
       aiDecision = botHard.hardAI(currRoom);
     }
   }
@@ -1265,7 +1298,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
         counter++;
       }
     }
-    if (counter == currRoom.players.length-1) {
+    if (counter == currRoom.players.length - 1) {
       currRoom.gameState = 3;
       progressGame(socket);
     }
@@ -1290,7 +1323,6 @@ function executeAiDecision(currRoom, playerIndex, socket) {
     console.log("RAISE");
     player.state = "READY";
     aiDecision[1] = Math.floor(aiDecision[1]);
-
     currRoom = aiPlayerRaise(currRoom, socket, aiDecision[1]);
   }
   if (aiDecision[0] == 4) {
@@ -1300,32 +1332,25 @@ function executeAiDecision(currRoom, playerIndex, socket) {
 }
 
 function aiPlayerRaise(currRoom, socket, raiseTo) {
-
-
   console.log(raiseTo);
   //checks if it is the current players turn
   //start raise logic
   var currPlayer = currRoom.players[currRoom.currentPlayer];
   //var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
   //if the raise failed / they do not have enough chips
-
   //make the current room equal to the output of the raise logic
   // Added: If some prior player was all-in, divert amount to main pot and side pot
-
   let margin = raiseTo - currPlayer.lastBet;
   currPlayer.chips -= margin;
   currPlayer.state = "READY";
   currPlayer.lastBet = raiseTo;
-
-  for (var i = 0; i < currRoom.players.length; i++)
-  {
+  for (var i = 0; i < currRoom.players.length; i++) {
     if (currRoom.players[i].state == "ALLIN") {
-      currRoom.sidePot += (retArray[1]-mainPot);
+      currRoom.sidePot += (retArray[1] - mainPot);
       mainPot += mainPot;
       break;
     }
   }
-
   for (var i = 0; i < currRoom.players.length; i++) {
     if (currRoom.players[i].state == "READY") {
       currRoom.players[i].state = "NOTREADY";
@@ -1340,9 +1365,7 @@ function aiPlayerRaise(currRoom, socket, raiseTo) {
   */
   io.sockets.in(socket.room).emit('updatechat', "Server", "AI raised" + ". The Pot is now " + currRoom.currentPot + ".");
   let roomIndex = findRoom(socket.room);
-
   io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-
   rooms[roomIndex] = currRoom;
   checkReadyState(socket)
 }
@@ -1361,40 +1384,52 @@ function aiPlayerCall(currRoom, socket, margin) {
     console.log("CHIPS DURING CALL: " + currPlayer.chips);
     currPlayer.chips -= margin;
     console.log("CHIPS DURING CALL: " + currPlayer.chips);
-
     currPlayer.state = "READY";
     currPlayer.lastBet = currRoom.currentBet;
-
-    for (var i = 0; i < currRoom.players.length; i++)
-    {
+    for (var i = 0; i < currRoom.players.length; i++) {
       if (currRoom.players[i].state == "ALLIN") {
-        currRoom.sidePot += (retArray[2]-currRoom.mainPot);
+        currRoom.sidePot += (retArray[2] - currRoom.mainPot);
         currRoom.mainPot += currRoom.mainPot;
         break;
-     }
+      }
     }
     currRoom.currentPot += margin;
     currRoom.players[currRoom.currentPlayer] = currPlayer;
   }
-
-      //LOGS
+  //LOGS
   io.sockets.in(socket.room).emit('updatechat', "Server", "AI called " + ". The Pot is now " + currRoom.currentPot + ".");
   //console.dir(currRoom.players[currRoom.currentPlayer]);
-
   io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
   let roomIndex = findRoom(socket.room);
   rooms[roomIndex] = currRoom;
   checkReadyState(socket)
 }
 
-
+function setCurrentPlayer(socket, room, i) {
+  console.log(`setting the current player to ${i}`);
+  room.currentPlayer = i;
+  if (room.idleTimeout !== null) clearTimeout(room.idleTimeout);
+  room.idleTimeout = setTimeout(function() {
+    let player = room.players[room.currentPlayer];
+    ++player.idleTurns;
+    console.log("waited too long: " + player.idleTurns);
+    if (player.idleTurns >= 5) {
+      io.sockets.in(socket.room).emit('updatechat', "Server",
+        "A player has been kicked for being idle for too long");
+      disconnect(socket);
+    } else {
+      fold(socket, room);
+    }
+  }, 30000);
+  console.log("set callback");
+}
 //Starts the logic of the game
 function startGame(socket, currRoom) {
   currRoom.isGameStarted = true;
   currRoom.gameState = Phase.PREFLOP;
   currRoom.smallBlindPlacement = 0;
   currRoom.bigBlindPlacement = 1;
-  currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+  setCurrentPlayer(socket, currRoom, (currRoom.bigBlindPlacement + 1) % currRoom.players.length);
   currRoom = beginRound(socket, currRoom);
   io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
   return currRoom;
@@ -1414,17 +1449,7 @@ function checkReadyState(socket) {
       i = 0;
     }
     if (currRoom.players[i].state == "NOTREADY") {
-      currRoom.currentPlayer = i;
-      if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
-      currRoom.idleTimeout = setTimeout(function () {
-        let player = currRoom.players[currRoom.currentPlayer];
-        ++player.idleTurns;
-        if (player.idleTurns >= 5) {
-          disconnect(socket);
-        } else {
-          fold(socket);
-        }
-      }, 60000);
+      setCurrentPlayer(socket, currRoom, i);
       break;
     }
     k++;
@@ -1440,21 +1465,19 @@ function checkReadyState(socket) {
   for (let i = 0; i < currRoom.players.length; i++) {
     if (currRoom.players[i].isAI == 0) {
       if (currRoom.players[prevLastPlayer].isAI != undefined) {
-      if (currRoom.players[prevLastPlayer].isAI != 0) {
-        console.log("HELLO");
-        io.to(currRoom.players[i].playerID).emit('updateScreenAI', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-      }
-      else {
-        io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-      }
+        if (currRoom.players[prevLastPlayer].isAI != 0) {
+          console.log("HELLO");
+          io.to(currRoom.players[i].playerID).emit('updateScreenAI', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+        } else {
+          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+        }
       }
     }
   }
   //LOGS
   if (currplayer_ai_check(currRoom)) {
     executeAiDecision(currRoom, currRoom.currentPlayer, socket);
-  }
-  else {
+  } else {
     io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "SERVER", "It is your turn");
   }
   //io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updateTurn");
@@ -1482,7 +1505,6 @@ function beginRound(socket, currGame) {
   }
   // Small blind
   //newGame = game.blind(newGame, newGame.players[newGame.smallBlindPlacement].playerID, newGame.smallBlind);
-
   newGame = game.blind(newGame, newGame.smallBlindPlacement, newGame.smallBlind);
   newGame.currentPot += newGame.smallBlind;
   //game.players[smallBlindPlacement] = temp;
@@ -1498,8 +1520,8 @@ function beginRound(socket, currGame) {
     if (newGame.players[i].isAI == 0) {
       console.log("HERE: " + io.sockets.connected[newGame.players[i].playerID].username)
       sanatizedPlayers.push({
-          username: io.sockets.connected[newGame.players[i].playerID].username,
-          chips: newGame.players[i].chips
+        username: io.sockets.connected[newGame.players[i].playerID].username,
+        chips: newGame.players[i].chips
       });
     }
   }
@@ -1507,8 +1529,7 @@ function beginRound(socket, currGame) {
   io.sockets.in(socket.room).emit('renderBoardState', newGame.bigBlindPlacement, newGame.smallBlindPlacement, sanatizedPlayers);
   for (let i = 0; i < newGame.players.length; i++) {
     if (newGame.players[i].isAI == 0) {
-      io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i],i);
-
+      io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i], i);
       io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
     }
   }
@@ -1549,7 +1570,7 @@ function progressGame(socket) {
     */
     currRoom.gameState++;
     currRoom.currentBet = 0;
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     for (let i = 0; i < currRoom.players.length; i++) {
       if (currRoom.players[i].state == "NOTREADY") {
         currRoom.players[i].lastBet = 0;
@@ -1565,7 +1586,7 @@ function progressGame(socket) {
         k++;
       }
     }
-    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+    if (k == currRoom.players.length || k == currRoom.players.length - 1) {
       currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
@@ -1586,7 +1607,7 @@ function progressGame(socket) {
     */
     currRoom.gameState++;
     currRoom.currentBet = 0;
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     rooms[roomIndex] = currRoom;
     console.log("THIS IS RIGHT BEFORE THE SECOND CHECK READY STATE");
     console.dir(rooms[roomIndex]);
@@ -1597,7 +1618,7 @@ function progressGame(socket) {
         k++;
       }
     }
-    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+    if (k == currRoom.players.length || k == currRoom.players.length - 1) {
       currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
@@ -1618,7 +1639,7 @@ function progressGame(socket) {
     */
     currRoom.gameState++;
     currRoom.currentBet = 0;
-    currRoom.currentPlayer = (currRoom.currentPlayer + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.currentPlayer + 1) % currRoom.players.length);
     rooms[roomIndex] = currRoom;
     console.log("THIS IS RIGHT BEFORE THE SECOND CHECK READY STATE");
     console.dir(rooms[roomIndex]);
@@ -1629,13 +1650,12 @@ function progressGame(socket) {
         k++;
       }
     }
-    if (k == currRoom.players.length || k == currRoom.players.length-1) {
+    if (k == currRoom.players.length || k == currRoom.players.length - 1) {
       currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
     }
     checkReadyState(socket);
-
     io.sockets.in(socket.room).emit('river', currRoom.fixedTCards[4])
     return currRoom;
   } else if (currRoom.gameState == Phase.RIVER) {
@@ -1657,7 +1677,6 @@ function progressGame(socket) {
         }
       }
     }
-
     console.log(playerHandRanks);
     //console.log("WINNER HAS BEEN CALCULATED")
     let winnerArray = hf.findWinner(playerHandRanks);
@@ -1676,7 +1695,6 @@ function progressGame(socket) {
         }
       }
     }
-
     io.sockets.in(socket.room).emit('winner', "Hello");
     for (var i = 0; i < currRoom.players.length; i++) {
       //for (var j = 0; j < winnersArr.length; j++) {
@@ -1714,36 +1732,23 @@ function progressGame(socket) {
     currRoom.currentBet = 0;
     currRoom.smallBlindPlacement = currRoom.bigBlindPlacement;
     currRoom.bigBlindPlacement = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
-    currRoom.currentPlayer = (currRoom.bigBlindPlacement + 1) % currRoom.players.length;
+    setCurrentPlayer(socket, currRoom, (currRoom.bigBlindPlacement + 1) % currRoom.players.length);
     // Begin new round
     for (let i = 0; i < currRoom.playerQueue.length; i++) {
       if (currRoom.players.length == currRoom.maxPlayers) {
         break;
-      }
-      else {
+      } else {
         let newPlayer = currRoom.playerQueue.shift();
         currRoom.players.push(newPlayer);
       }
     }
     currRoom = beginRound(socket, currRoom);
-
   } // end of last else chunk
   return currRoom;
 } // end of progressGame()
-
-function fold(socket) {
+function fold(socket, currRoom) {
+  console.log(`fold: player ${currRoom.currentPlayer}`);
   io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
-  console.log("Registered fold click");
-  console.log(socket.username);
-  let roomIndex = findRoom(socket.room);
-  let currRoom = rooms[roomIndex];
-  if (!currRoom.isGameStarted) {
-    return;
-  }
-  if (!validatePlayer(socket)) {
-    console.log("not this players turn");
-    return;
-  }
   currRoom.players[currRoom.currentPlayer].state = "FOLDED";
   // Checking if there is only one other player that is not folded in the hand because they win if they are.
   var counter = 0;
@@ -1762,7 +1767,6 @@ function fold(socket) {
   rooms[roomIndex] = currRoom;
   checkReadyState(socket);
 }
-
 
 function disconnect(socket) {
   let userSaveIndex;
@@ -1785,11 +1789,15 @@ function disconnect(socket) {
   //console.log(loggedUsers);
   let roomIndex = findRoom(socket.room);
   let currRoom = rooms[roomIndex];
+  if (currRoom === undefined) {
+    console.error("Current room named " + room + " is undefined!");
+    return;
+  }
   for (let i = 0; i < currRoom.playerQueue.length; i++) {
     if (socket.id == currRoom.playerQueue[i].playerID) {
       currRoom.playerQueue.splice(i, 1);
       socket.leave(currRoom.roomName);
-      delete socket.room
+      delete socket.room;
       return;
     }
   }
@@ -1806,14 +1814,14 @@ function disconnect(socket) {
     }
   }
   if (currRoom.players.length == 0 || currRoom.players.numAI - currRoom.players.length == 0) {
+    if (currRoom.idleTimeout !== null) clearTimeout(currRoom.idleTimeout);
     if (currRoom.isGameStarted) {
       winFlag = 1;
       console.log(chipAmount);
     }
     //updateHistory(userId, chipAmount, winFlag);
     rooms.splice(roomIndex, 1);
-  }
-  else {
+  } else {
     if (currRoom.isGameStarted) {
       if (currRoom.players.length - currRoom.numAI == 0) {
         updateHistory(socket.userId, chipAmount, winFlag);
@@ -1849,8 +1857,6 @@ function disconnect(socket) {
   }
   socket.leave(socket.room);
 }
-
-
 
 function printInfo(socket) {
   let fixedCards = display.namePlayerAndTableCards(playerCards, tableCards);

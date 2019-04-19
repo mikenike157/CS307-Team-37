@@ -442,6 +442,14 @@ async function setMute(client, sender, recipient, value) {
   }
 }
 
+async function setMuteName(client, sender, recipient, value) {
+  await setMute(
+    client,
+    await getUserIdByUsername(client, sender),
+    await getUserIdByUsername(client, recipient),
+    value);
+}
+
 async function isMuted(client, sender, recipient) {
   const res = await client.query(
     "SELECT * FROM MuteList WHERE sender = $1 AND recipient = $2;",
@@ -600,5 +608,6 @@ module.exports = {
   isAdmin: isAdmin,
   updateGameNum: updateGameNum,
   getLeaderboardPercentage: getLeaderboardPercentage,
-  updateStatus: updateStatus
+  updateStatus: updateStatus,
+  setMuteName: setMuteName,
 };
