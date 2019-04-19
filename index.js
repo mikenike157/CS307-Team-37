@@ -558,7 +558,6 @@ io.sockets.on('connection', function(socket) {
             (async function() {
               let rid = await lg.getUserIdByUsername(client, recipientName);
               let ignored = await lg.isMuted(client, rid, sid);
-              console.log(`aaa ${senderName} ${recipientName} ${sid} ${rid} ${ignored}`);
               if (!ignored) {
                 socket.emit('updatechat', senderName, newdata);
               }
@@ -719,11 +718,18 @@ async function adminWrapper(sender, recipient) {
 }
 
 function executeBan(sender, recipient, reason, expiry, type) {
-  pool.connect().then(client => {
-    lg.banUser(client, sender, recipient, reason, expiry, type)
-  }).catch(err => {
-    console.log(err.stack);
-  });
+  (async function() {
+    let client = await pool.connect();
+    try {
+      let expiryNum = Date.parse(expiry);
+      if (isNaN(expiryNum)) expiryNum = null;
+      let sid = await lg.getUserIdByUsername(sender);
+      let rid = await lg.getUserIdByUsername(recipient);
+      lg.banUser(client, sid, rid, reason, expiryNum, type);
+    } finally {
+      client.release();
+    }
+  })().catch(console.log);
 }
 
 function checkAdminStatus(userId) {
