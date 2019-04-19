@@ -40,7 +40,13 @@ class gameRoom {
     this.mainPot = 0;
     this.idleTimeout = null;
     
-    this.fileName = "";
+    // .txt file to store game backlog
+    var today = new Date();
+    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    var time = today.getHours() + "-" + today.getMinutes() + "-" + today.getSeconds();
+    var namestr = name.split(" ")
+    this.fileName = date + '_' + time + "_" + namestr[0] + ".txt";
+    this.filePath = "/src/" + this.fileName;
   }
 }
 
