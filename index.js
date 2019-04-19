@@ -1714,7 +1714,8 @@ function progressGame(socket) {
         removeArray.push(i);
       }
     }
-    for (let i = removeArray.length - 1; i <= 0; i--) {
+    console.log(removeArray.length)
+    for (let i = removeArray.length-1; i >= 0; i--) {
       currRoom.players.splice(removeArray[i], 1);
     }
     console.log("LENGTH: " + currRoom.players.length);
