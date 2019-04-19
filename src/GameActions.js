@@ -132,9 +132,12 @@ function getPlayer(playerArray, playerID) {
 } // internal helper method
 
 this.playerRaise = function(game, playerID, currentBet, raiseTo) {
+  console.log("IN RAISE");
   raiseTo = parseInt(raiseTo);
   let playerIndex = getPlayer(game.players, playerID);
   player = game.players[playerIndex];
+  console.log(player.chips);
+  console.log(currentBet);
   if (player.chips >= raiseTo && raiseTo > currentBet) {
     let margin = raiseTo-player.lastBet;
     player.chips -= margin;

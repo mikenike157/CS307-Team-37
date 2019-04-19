@@ -788,11 +788,12 @@ io.sockets.on('connection', function(socket) {
     //make sure not empty
     if (data != "") {
       (async function() {
+        let client = await pool.connect();
         try {
-          let client = await pool.connect();
-          let sid = await lg.getUserIdByUsername(client, senderName);
+          let sid = await lg.getUserIdByUsername(client, socket.username);
           let silenced = await lg.getBans(client, sid, false);
-          if (silenced) {
+          console.log(silenced.length);
+          if (silenced.length != 0) {
             socket.emit('updatechat', "Server",
               `You are silenced: ${silenced[0].reason}`);
             return;
@@ -847,26 +848,6 @@ io.sockets.on('connection', function(socket) {
     //make the current room equal to the output of the raise logic
     currRoom = retArray[0];
     // Added: If some prior player was all-in, divert amount to main pot and side pot
-    for (var i = 0; i < currRoom.players.length; i++) {
-      if (currRoom.players[i].state == "ALLIN") {
-        currRoom.sidePot += (retArray[1] - mainPot);
-        mainPot += mainPot;
-        break;
-      }
-      //checks if it is the current players turn
-      if (!validatePlayer(socket)) {
-        return;
-      }
-      //start raise logic
-      var currPlayer = currRoom.players[currRoom.currentPlayer];
-      var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
-      //if the raise failed / they do not have enough chips
-      if (retArray == -1) {
-        io.sockets.in(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
-        return;
-      }
-      //make the current room equal to the output of the raise logic
-      currRoom = retArray[0];
       // Added: If some prior player was all-in, divert amount to main pot and side pot
       for (var i = 0; i < currRoom.players.length; i++) {
         if (currRoom.players[i].state == "ALLIN") {
@@ -885,9 +866,8 @@ io.sockets.on('connection', function(socket) {
       rooms[roomIndex] = currRoom;
       checkReadyState(socket)
       io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-    }
-  });
-  //Call button is clicked
+    });
+      //Call button is clicked
   socket.on('playerCall', function() {
     //Get index and room object
     let roomIndex = findRoom(socket.room);
@@ -1747,6 +1727,7 @@ function progressGame(socket) {
   return currRoom;
 } // end of progressGame()
 function fold(socket, currRoom) {
+  let roomIndex = findRoom(currRoom.name);
   console.log(`fold: player ${currRoom.currentPlayer}`);
   io.sockets.to(socket.room).emit('updatechat', "Server", socket.username + " folded");
   currRoom.players[currRoom.currentPlayer].state = "FOLDED";
