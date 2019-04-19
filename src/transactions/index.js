@@ -124,10 +124,7 @@ async function updateChips(client, userid, chips) {
   if (res.rowCount == 0) {
     throw "user not found";
   }
-  console.log(res.rows[0]["chips"])
-  return {
-    newChips: res.rows[0]["chips"]
-  };
+  console.log(res);
 }
 
 /*
@@ -334,8 +331,8 @@ async function getLeaderboardWins(client) {
 
 async function getLeaderboardPercentage(client) {
   const res = await client.query(
-    "SELECT (user_id, username, numWins, gamesPlayed) FROM Users\n" +
-    "ORDER BY chips DESC\n" +
+    "SELECT (user_id, username, ROUND(CAST(num_wins as decimal)/games_played, 2)) FROM Users\n" +
+    "WHERE games_played != 0 ORDER BY (num_wins/games_played) * 100 DESC\n" +
     "LIMIT 100;"
   );
   return res.rows;
@@ -560,6 +557,14 @@ async function removeBan(client, banId) {
   );
 }
 
+async function updateGameNum(client, id) {
+  console.log("FROM TRANSACTION: " + id);
+  const res = await client.query(
+    "UPDATE Users SET games_played = (games_played + 1) WHERE user_id = $1",
+    [id]
+  );
+  console.log(res.rows);
+}
 
 
 module.exports = {
@@ -591,4 +596,6 @@ module.exports = {
   setAdmin: setAdmin,
   removeBan: removeBan,
   isAdmin: isAdmin,
+  updateGameNum: updateGameNum,
+  getLeaderboardPercentage: getLeaderboardPercentage
 };

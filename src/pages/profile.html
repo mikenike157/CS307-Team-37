@@ -3,12 +3,26 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 
 <script>
+let name;
+
+window.onload = function() {
+  $.ajax({
+    async: false,
+    type: 'GET',
+    //url: 'http://pokeruniversity.herokuapp.com/getRooms',
+    url: '/update_username',
+    success: function(data) {
+        name=data;
+    }
+  })
+}
+
   $(function() {
     $('#leader_chips').click( function() {
       $.ajax({
         async: false,
         type: 'GET',
-        url: 'http://localhost/get_leaderboard_chips',
+        url: '/get_leaderboard_chips',
         success: function(data) {
           document.getElementById('board').innerHTML = "";
           for (let i = 0; i < data.length; i++) {
@@ -23,7 +37,7 @@
       $.ajax({
         async: false,
         type: 'GET',
-        url: 'http://localhost/get_leaderboard_percentage',
+        url: '/get_leaderboard_wins',
         success: function(data) {
           document.getElementById('board').innerHTML = "";
           for (let i = 0; i < data.length; i++) {
@@ -31,6 +45,41 @@
           }
         }
       })
+    })
+  })
+  $(function() {
+    $('#leader_percent').click( function() {
+      $.ajax({
+        async: false,
+        type: 'GET',
+        url: '/get_leaderboard_percentage',
+        success: function(data) {
+          document.getElementById('board').innerHTML = "";
+          for (let i = 0; i < data.length; i++) {
+            document.getElementById('board').innerHTML += (data[i] + "</br>")
+          }
+        }
+      })
+    })
+  })
+  $(function() {
+    $('#delete').click( function() {
+      let nameCheck = prompt("Are you sure you want to delete your profile? This cannot be reversed. Type your username if you wish to continue.");
+      if (nameCheck == name) {
+        $.ajax({
+          async: false,
+          type: 'GET',
+          url: '/delete_user',
+          success: function(data) {
+            window.location.replace('/');
+          }
+        })
+      }
+    })
+  })
+  $(function() {
+    $('#friends').click( function() {
+      window.location.replace('/friends.html');
     })
   })
 </script>
@@ -58,6 +107,7 @@
     <input type="button" id="leader_wins" name="leader" value="Leaderboard Wins">
     <input type="button" id="leader_percent" name="leader" value="Leaderboard Percentage">
     <input type="button" id="delete" name="delete" value="Delete Profile">
+    <input type="button" id="friends" name="friends" value="View Friends">
   </div>
 </body>
 </html>
