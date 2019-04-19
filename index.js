@@ -1566,7 +1566,7 @@ function progressGame(socket) {
       }
     }
     if (k == currRoom.players.length || k == currRoom.players.length-1) {
-      currRoom.gameState == Phase.RIVER;
+      currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
     }
@@ -1598,7 +1598,7 @@ function progressGame(socket) {
       }
     }
     if (k == currRoom.players.length || k == currRoom.players.length-1) {
-      currRoom.gameState == Phase.RIVER;
+      currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
     }
@@ -1630,7 +1630,7 @@ function progressGame(socket) {
       }
     }
     if (k == currRoom.players.length || k == currRoom.players.length-1) {
-      currRoom.gameState == Phase.RIVER;
+      currRoom.gameState = Phase.RIVER;
       progressGame(socket);
       return currRoom;
     }
