@@ -559,7 +559,7 @@ io.sockets.on('connection', function(socket) {
       console.log("JOINED ROOM");
       // TODO: FSWRITE (2) 
       var log = username + " has joined room " + room.name;
-      fs.writeFile(currRoom.filePath, log, (err) => {
+      fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
       });
@@ -642,7 +642,7 @@ io.sockets.on('connection', function(socket) {
     */
     // FSWRITE (3.0)
     var log = currRoom.players[currRoom.currentPlayer].state.name + " has raised to " + retArray[1];
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
     });
@@ -670,7 +670,7 @@ io.sockets.on('connection', function(socket) {
       currRoom.players[currRoom.currentPlayer].state = "READY";
       // FSWRITE (3.1)
       var log = currRoom.players[currRoom.currentPlayer].name + " has checked";
-      fs.writeFile(currRoom.filePath, log, (err) => {
+      fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
       });
@@ -689,7 +689,7 @@ io.sockets.on('connection', function(socket) {
         currRoom.players[currRoom.currentPlayer].state = "ALLIN";
         // FSWRITE (3.2)
         var log = currRoom.players[currRoom.currentPlayer].name + " has gone all-in";
-        fs.writeFile(currRoom.filePath, log, (err) => {
+        fs.appendFile(currRoom.filePath, log, function(err, data) {
           if (err) throw err;
           console.log('The file has been saved!');
          });
@@ -709,7 +709,7 @@ io.sockets.on('connection', function(socket) {
         
         // FSWRITE (3.2)
         var log = currRoom.players[currRoom.currentPlayer].name + " called the current bet " + currRoom.currentBet;
-        fs.writeFile(currRoom.filePath, log, (err) => {
+        fs.appendFile(currRoom.filePath, log, function(err, data) {
           if (err) throw err;
           console.log('The file has been saved!');
          });
@@ -728,7 +728,7 @@ io.sockets.on('connection', function(socket) {
   socket.on('playerFold', function() {
   // FSWRITE (3.3)
   var log = currRoom.players[currRoom.currentPlayer].name + " has folded";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
     if (err) throw err;
   console.log('The file has been saved!');
   });
@@ -1017,7 +1017,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 0) {
     // FSWRITE (4.0)
     var log = currRoom.players[currRoom.currentPlayer].name + " has folded";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
      });
@@ -1041,7 +1041,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 1) {
     // FSWRITE (4.1)
     var log = currRoom.players[currRoom.currentPlayer].name + " has checked";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
      });
@@ -1054,7 +1054,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 2) {
     // FSWRITE (4.2)
     var log = currRoom.players[currRoom.currentPlayer].name + " has called the currentBet " + currRoom.currentBet;
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
      });
@@ -1068,7 +1068,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 3) {
     // FSWRITE (4.3)
     var log = currRoom.players[currRoom.currentPlayer].name + " has raised to " + aiDecision[1];
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
         if (err) throw err;
         console.log('The file has been saved!');
      });
@@ -1082,7 +1082,7 @@ function executeAiDecision(currRoom, playerIndex, socket) {
   if (aiDecision[0] == 4) {
     // FSWRITE (4.4)
     var log = currRoom.players[currRoom.currentPlayer].name + " has gone all-in";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
        if (err) throw err;
        console.log('The file has been saved!');
      });
@@ -1193,7 +1193,7 @@ function startGame(socket, currRoom) {
   io.sockets.in(socket.room).emit('updatePlayer', null, null, null, false, true, currRoom.currentPlayer);
     // FSWRITE (5.0)
     var log = "Game " + currRoom.name + " has begun";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
        if (err) throw err;
        console.log('The file has been saved!');
      });
@@ -1461,7 +1461,7 @@ function progressGame(socket) {
     */
     // FSWRITE (6.0)
     var log = "Game " + currRoom.name + " has ended";
-    fs.writeFile(currRoom.filePath, log, (err) => {
+    fs.appendFile(currRoom.filePath, log, function(err, data) {
        if (err) throw err;
        console.log('The file has been saved!');
      });
