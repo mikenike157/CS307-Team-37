@@ -9,7 +9,7 @@ window.onload = function() {
 		async: false,
 		type: 'GET',
 		//url: 'http://pokeruniversity.herokuapp.com/getRooms',
-		url: 'http://localhost/getRooms',
+		url: '/getRooms',
 		success: function(data) {
 				if (data == "") {
 					document.getElementById("roomForm").innerHTML = "There are no open rooms";
@@ -36,7 +36,7 @@ socket.on('connect', function() {
 			async: false,
 			type: 'GET',
 			//url: 'http://pokeruniversity.herokuapp.com/update_username',
-			url: 'http://localhost/update_username',
+			url: '/update_username',
 			success: function(data) {
 				name = data;
 				console.log(name);
@@ -51,7 +51,7 @@ socket.on('joinGame', function() {
 	$.ajax({
 		async: false,
 		type: 'POST',
-		url: 'http://localhost/room_post',
+		url: '/room_post',
 		data: {
 			roomName: x
 		},
@@ -83,7 +83,7 @@ socket.on('givePass', function(password) {
 			data: {
 				roomName: x
 			},
-			url: 'http://localhost/room_post',
+			url: '/room_post',
 			success: function(data) {
 				window.location.replace('/game.html')
 			}

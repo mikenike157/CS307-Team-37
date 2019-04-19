@@ -182,6 +182,12 @@ this. Fold = function(game, playerID) {
 
 this.blind = function(game, playerIndex, amount) {
   console.log(playerIndex);
+  let newChips = game.players[playerIndex].chips - amount;
+  if (newChips <= 0) {
+    newChips = 0;
+    game.players[playerIndex].state="ALLIN";
+  }
+  if (game.players[playerIndex].chips )
   game.players[playerIndex].chips -= amount;
   game.players[playerIndex].lastBet = amount;
   return game;

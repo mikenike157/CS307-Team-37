@@ -474,7 +474,7 @@ var bigBlindPlacement = 1;
 var currentPot = 0;
 var currentBet = 0;
 
-var gameStatus = 0;
+var isGameStarted = 0;
 var smallBlind = 1;
 var bigBlind = 2;
 var gameState = 0;
@@ -514,7 +514,7 @@ is currRoom.players.length. For every player object, player.playerID is the sock
 socket.room gets the current room that the player is in. */
 
 //On any request
-/*
+
 io.sockets.on('connection', function (socket) {
 
     socket.on('checkRoomPass', function(roomName) {
@@ -554,7 +554,7 @@ io.sockets.on('connection', function (socket) {
       let currRoomIndex = findRoom(room);
       console.log(currRoomIndex);
       let currRoom = rooms[currRoomIndex];
-      if (currRoom.gameStatus != 0) {
+      if (currRoom.isGameStarted != 0) {
         socket.join(room);
         currRoom = addPlayerQueue(currRoom, socket);
         rooms[currRoomIndex] = currRoom;
@@ -562,7 +562,6 @@ io.sockets.on('connection', function (socket) {
       }
       else {
         currRoom = addPlayer(currRoom, socket);
-
         socket.join(room);
         if(currRoom.numAI == 0) {
           if (currRoom.players.length == currRoom.maxPlayers) {
@@ -599,7 +598,7 @@ io.sockets.on('connection', function (socket) {
         }
       //add a player to the room, set the returned room to currRoom
       //if room was full
-      /*
+
         if (currRoom == null) {
           return;
         }
@@ -656,7 +655,7 @@ io.sockets.on('connection', function (socket) {
         io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
         return;
       }
-    });
+    })
 
     socket.on('playerRaise', function(amount) {
       console.log(amount);
@@ -666,7 +665,7 @@ io.sockets.on('connection', function (socket) {
 
       //}
       //checks if there is a game running, if not dont do anything
-      if (currRoom.gameStatus == 0) {
+      if (currRoom.isGameStarted == 0) {
         return;
       }
       //checks if it is the current players turn
@@ -699,9 +698,7 @@ io.sockets.on('connection', function (socket) {
         }
       }
       currRoom.players[currRoom.currentPlayer].state = "READY";
-      /*Update the socket emits and checking the ready state
-      io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
-      checkReadyState(socket)
+      //Update the socket emits and checking the ready state
 
 
 
@@ -718,7 +715,7 @@ io.sockets.on('connection', function (socket) {
       let currRoom = rooms[roomIndex];
 
       //If there is not a game in progress
-      if (currRoom.gameStatus == 0) {
+      if (currRoom.isGameStarted == 0) {
         io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
         return;
       }
@@ -761,24 +758,38 @@ io.sockets.on('connection', function (socket) {
           //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
         }
       }
+      checkReadyState(socket)
       console.dir(currRoom.players[currRoom.currentPlayer]);
+    })
+    socket.on('playerFold', function() {
+        console.log("Registered fold click");
+        console.log(socket.username);
+        let roomIndex = findRoom(socket.room);
+        let currRoom = rooms[roomIndex];
+        if (!currRoom.isGameStarted) {
+          return;
+        }
+        if (!validatePlayer(socket)) {
+          console.log("not this players turn");
+          return;
+        }
+        currRoom.players[currRoom.currentPlayer].idleTurns = 0;
+        fold(socket, currRoom);
+      });
+      // Hint button
+      socket.on('playerHint', function() {
+        let roomIndex = findRoom(socket.room);
+        let currRoom = rooms[roomIndex];
+        createHint(currRoom, socket);
+      });
+      // When a player leaves the game and disconnects from the socket
+      socket.on('disconnect', function() {
+        disconnect(socket);
+      });
+    });
 
 // Constants referring to game states
-
-const Phase = {
-  PREFLOP: 0,
-  FLOP: 1,
-  TURN: 2,
-  RIVER: 3,
-};
-
-// For all-in logic
-var sidePot = 0;
-var mainPot = 0; // parallel currentPot
-// rooms which are currently available in chat
-var rooms = ['room1'];
-/* Beginning of client-server communication for socket.io
-
+/*
 
 Important things to note: whenever a request is sent from the client, it is sent in the
 form of a socket. This socket holds the socket id and the room name they are currently in.
@@ -790,211 +801,13 @@ For every game, the number of players currently in the game
 is currRoom.players.length. For every player object, player.playerID is the socket id.
 socket.room gets the current room that the player is in. */
 
-//On any request
-io.sockets.on('connection', function(socket) {
-  socket.on('checkRoomPass', function(roomName) {
-    console.log("ROOM NAME: " + roomName);
-    let roomIndex = findRoom(roomName);
-    let currRoom = rooms[roomIndex];
-    console.log("PASSWORD: " + currRoom.password);
-    if (currRoom.password == "") {
-      io.to(socket.id).emit('joinGame');
-    } else {
-      io.to(socket.id).emit('givePass', currRoom.password);
-      //Do password verification
-    }
-  })
-  socket.on('joinMain', function(username) {
-    socket.username = username;
-    socket.room = "main";
-    socket.join("main");
-    return;
-  })
-  socket.on('gameSelection', function(username) {
-    console.log(socket.username);
-    socket.room = "gameSearch";
-    return;
-  })
-  //addUser is emitted
-  socket.on('adduser', function(username, room) {
-    // get room index and set up socket information
-    console.log(room);
-    socket.username = username;
-    socket.room = room;
-    let currRoomIndex = findRoom(room);
-    console.log(currRoomIndex);
-    let currRoom = rooms[currRoomIndex];
-    if (currRoom.isGameStarted) {
-      socket.join(room);
-      currRoom = addPlayerQueue(currRoom, socket);
-      rooms[currRoomIndex] = currRoom;
-      return;
-    } else {
-      currRoom = addPlayer(currRoom, socket);
-      //add a player to the room, set the returned room to currRoom
-      //if room was full
-      if (currRoom == null) {
-        return;
-      }
-      socket.join(room);
-      console.log(currRoom);
-      // if max number of players have joined
-      if (currRoom.players.length == currRoom.maxPlayers) {
-        currRoom = startGame(socket, currRoom);
-        for (let i = 0; i < currRoom.players.length; i++) {
-          io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
-        }
-      }
-      rooms[currRoomIndex] = currRoom;
-      io.sockets.to(room).emit('updatechat', "Server", "New player has joined");
-      console.log("JOINED ROOM");
-      return;
-    }
-  })
-  socket.on('sendchat', function(data) {
-    let parsed = data.split(" ");
-    //parsed[0] is command, parsed[1] is recipient, parsed[2] is reason, parsed[3] is expiry, parsed[4] is type
-    if (parsed[0] == "/ban") {
-      findUserId(socket.id, function(id) {
-        executeBan(parsed[1], parsed[2], parsed[3], parsed[4]);
-      })
-      return;
-    } else if (parsed[0] == "/backlog") {
-      return;
-    } else if (parsed[0] == "/chips") {
-      grantChips(socket.username, parsed[1], parsed[2]);
-      return;
-    } else if (parsed[0] == "/admin") {
-      if (parsed.length != 2) {
-        io.to(socket.id).emit('updatechat', "SERVER", "Invalid command");
-        return;
-      }
-      let temp = adminWrapper(socket.username);
-      return;
-    }
-    //console.log(data);
-    //make sure not empty
-    if (data != "") {
-      var newdata = validator.escape(data);
-      //
-      io.sockets.in(socket.room).emit('updatechat', socket.username, newdata);
-      return;
-    }
-  });
-  socket.on('playerRaise', function(amount) {
-    console.log(amount);
-    let roomIndex = findRoom(socket.room);
-    let currRoom = rooms[roomIndex];
-    //if (amount == 0) {
-    //}
-    //checks if there is a game running, if not dont do anything
-    if (!currRoom.isGameStarted) {
-      return;
-    }
-    //checks if it is the current players turn
-    if (!validatePlayer(socket)) {
-      return;
-    }
-    //start raise logic
-    var currPlayer = currRoom.players[currRoom.currentPlayer];
-    var retArray = game.playerRaise(currRoom, currPlayer.playerID, currRoom.currentBet, amount);
-    //if the raise failed / they do not have enough chips
-    if (retArray == -1) {
-      io.sockets.in(socket.id).emit('updatechat', "Server", "You cannot raise more than your current chips.")
-      return;
-    }
-    //make the current room equal to the output of the raise logic
-    currRoom = retArray[0];
-    // Added: If some prior player was all-in, divert amount to main pot and side pot
-    for (var i = 0; i < currRoom.players.length; i++) {
-      if (currRoom.players[i].state == "ALLIN") {
-        currRoom.sidePot += (retArray[1] - mainPot);
-        mainPot += mainPot;
-        break;
-      }
-    }
-    for (var i = 0; i < currRoom.players.length; i++) {
-      if (currRoom.players[i].state == "READY") {
-        currRoom.players[i].state = "NOTREADY";
-      }
-    }
-    currRoom.players[currRoom.currentPlayer].state = "READY";
-    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
-    /*Update the socket emits and checking the ready state
-    io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " raised " + raiseTo + ". The Pot is now " + currentPot + ".");
-    checkReadyState(socket)
-    */
-    rooms[roomIndex] = currRoom;
-    checkReadyState(socket);
-    io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-  })
-  //Call button is clicked
-  socket.on('playerCall', function() {
-    //Get index and room object
-    let roomIndex = findRoom(socket.room);
-    let currRoom = rooms[roomIndex];
-    //If there is not a game in progress
-    if (!currRoom.isGameStarted) {
-      io.sockets.in(socket.id).emit('updatechat', "Server", "A game has not started yet");
-      return;
-    }
-    //If it is not the current player making the request (clicking a button)
-    if (!validatePlayer(socket)) {
-      return;
-    }
-    //If it is a check
-    if (currRoom.currentBet == 0) {
-      currRoom.players[currRoom.currentPlayer].state = "READY";
-      //LOGS
-      //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " checked " + ". The Pot is now " + currentPot + ".");
-      //FIX EMITS
-    }
-    //If money is being put in
-    else {
-      var amount = currRoom.currentBet;
-      var retArray = game.playerCall(currRoom, currRoom.players[currRoom.currentPlayer].playerID, currRoom.currentBet);
-      if (retArray == -1) {
-        currRoom.currentPot += currRoom.players[currRoom.currentPlayer].chips;
-        currRoom.players[currRoom.currentPlayer].chips = 0;
-        currRoom.players[currRoom.currentPlayer].state = "ALLIN";
-      } else {
-        // Added: If some prior player was all-in, divert amount to main pot and side pot
-        for (var i = 0; i < currRoom.players.length; i++) {
-          if (currRoom.players[i].state == "ALLIN") {
-            sidePot += (retArray[1] - mainPot);
-            mainPot += mainPot;
-            break;
-          }
-        }
-        currRoom.currentPot += retArray[2];
-        currRoom.players[currRoom.currentPlayer] = retArray[1];
-        rooms[currRoom] = currRoom;
-        //LOGS
-        //io.sockets.in(socket.room).emit('updatechat', "Server", socket.username + " called " + ". The Pot is now " + currentPot + ".");
-      }
-    }
-    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
-    console.dir(currRoom.players[currRoom.currentPlayer]);
-    checkReadyState(socket)
-    io.sockets.in(socket.room).emit('updatePlayer', null, currRoom.players[currRoom.currentPlayer].chips, currRoom.players[currRoom.currentPlayer].lastBet, false, true, currRoom.currentPlayer);
-  });
+const Phase = {
+  PREFLOP: 0,
+  FLOP: 1,
+  TURN: 2,
+  RIVER: 3,
+};
 
-  // On player fold
-  socket.on('playerFold', function() {
-    currRoom.players[currRoom.currentPlayer].idleTurns = 0;
-    fold(socket);
-  });
-  // Hint button
-  socket.on('playerHint', function() {
-    let roomIndex = findRoom(socket.room);
-    let currRoom = rooms[roomIndex];
-    createHint(currRoom, socket);
-  });
-  // When a player leaves the game and disconnects from the socket
-  socket.on('disconnect', function() {
-    disconnect(socket);
-  });
-});
 
 async function updateStatus(userId, status) {
 
@@ -1442,12 +1255,14 @@ function checkReadyState(socket) {
   }
   for (let i = 0; i < currRoom.players.length; i++) {
     if (currRoom.players[i].isAI == 0) {
+      if (currRoom.players[prevLastPlayer].isAI != undefined) {
       if (currRoom.players[prevLastPlayer].isAI != 0) {
         console.log("HELLO");
         io.to(currRoom.players[i].playerID).emit('updateScreenAI', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
       }
       else {
         io.to(currRoom.players[i].playerID).emit('updateScreen', currRoom.currentPot, currRoom.currentBet, currRoom.players[i].chips);
+      }
       }
     }
   }
@@ -1483,6 +1298,7 @@ function beginRound(socket, currGame) {
   }
   // Small blind
   //newGame = game.blind(newGame, newGame.players[newGame.smallBlindPlacement].playerID, newGame.smallBlind);
+
   newGame = game.blind(newGame, newGame.smallBlindPlacement, newGame.smallBlind);
   newGame.currentPot += newGame.smallBlind;
   //game.players[smallBlindPlacement] = temp;
