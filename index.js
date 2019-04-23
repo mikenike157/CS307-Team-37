@@ -1497,21 +1497,29 @@ function beginRound(socket, currGame) {
   //printInfo(socket);
   let sanatizedPlayers = [];
   for (var i = 0; i < newGame.players.length; i++) {
-    if (newGame.players[i].isAI == 0) {
+    //if (newGame.players[i].isAI == 0) {
+    if (newGame.players[i].isAI != 0) {
+      sanatizedPlayers.push({
+        username: "AI " + i,
+        chips: newGame.players[i].chips
+      })
+    }
+    else {
       console.log("HERE: " + io.sockets.connected[newGame.players[i].playerID].username)
       sanatizedPlayers.push({
         username: io.sockets.connected[newGame.players[i].playerID].username,
         chips: newGame.players[i].chips
       });
     }
+    //}
   }
   console.dir(sanatizedPlayers);
   io.sockets.in(socket.room).emit('renderBoardState', newGame.bigBlindPlacement, newGame.smallBlindPlacement, sanatizedPlayers);
   for (let i = 0; i < newGame.players.length; i++) {
-    if (newGame.players[i].isAI == 0) {
+    ///if (newGame.players[i].isAI == 0) {
       io.to(newGame.players[i].playerID).emit('dealCards', newGame.fixedPCards[i], i);
       io.to(newGame.players[i].playerID).emit('updateScreen', newGame.currentPot, newGame.currentBet, newGame.players[i].chips)
-    }
+    //}
   }
   io.to(newGame.players[newGame.currentPlayer].playerID).emit("updatechat", "It is your turn");
   //console.log(newGame.players)

@@ -212,9 +212,7 @@
 		//console.log("raw cards:" + cards);
 		$('#chatDisplay').append("Cards: " + cards + '<br>');
 		cards = cards.toString().split(',');
-
 		drawPlayerCards( true, false, [processCard(cards[0]), processCard(cards[1])], pos );
-
 		let obj = document.getElementById("chatDisplay");
 		obj.scrollTop = obj.scrollHeight;
 	})
@@ -228,32 +226,37 @@
 
 	socket.on('flop', function(data) {
 		//console.log("flop cards:" + data);
-		$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
-		let cards = data.toString().split(',');
-		for (var i = 0; i < cards.length; i++) {
-			let newCard = processCard(cards[i]);
-			console.log("newCard" + newCard);
-			drawTableCard(newCard, i );
-		}
-
-		let obj = document.getElementById("chatDisplay");
-		obj.scrollTop = obj.scrollHeight;
+		setTimeout(function () {
+			$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
+			let cards = data.toString().split(',');
+			for (var i = 0; i < cards.length; i++) {
+				let newCard = processCard(cards[i]);
+				console.log("newCard" + newCard);
+				drawTableCard(newCard, i );
+			}
+			let obj = document.getElementById("chatDisplay");
+			obj.scrollTop = obj.scrollHeight;
+		}, 6000);
 	})
 
 	socket.on('turn', function(data) {
-		//console.log("turn cards:" + data);
-		$('#chatDisplay').append("Turn: " + data.toString() + '<br>');
-		drawTableCard( processCard(data.toString()), 4 );
-		let obj = document.getElementById("chatDisplay");
-		obj.scrollTop = obj.scrollHeight;
+		//console.log("turn cards:" + data
+		setTimeout(function() {
+			$('#chatDisplay').append("Turn: " + data.toString() + '<br>');
+			drawTableCard( processCard(data.toString()), 4 );
+			let obj = document.getElementById("chatDisplay");
+			obj.scrollTop = obj.scrollHeight;
+		}, 6000)
 	})
 
 	socket.on('river', function(data) {
 		//console.log("river cards:" + data);
-		$('#chatDisplay').append("River: " + data.toString() + '<br>');
-		drawTableCard( processCard(data.toString()), 5 );
-		let obj = document.getElementById("chatDisplay");
-		obj.scrollTop = obj.scrollHeight;
+		setTimeout(function() {
+			$('#chatDisplay').append("River: " + data.toString() + '<br>');
+			drawTableCard( processCard(data.toString()), 5 );
+			let obj = document.getElementById("chatDisplay");
+			obj.scrollTop = obj.scrollHeight;
+		}, 6000);
 	})
 
 	$(function() {
@@ -306,7 +309,7 @@
 
 	function processCard(card){
 		//if(card.length <= 2){
-			card = card =card.replace('D','_of_diamonds');
+			card = card.replace('D','_of_diamonds');
 			card = card.replace('H','_of_hearts');
 			card = card.replace('S','_of_spades');
 			card = card.replace('C','_of_clubs');

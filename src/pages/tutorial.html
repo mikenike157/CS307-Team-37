@@ -14,11 +14,11 @@
 
   var tutorialStage = 0;
 
-  var playerHand = ["10C", "KC"];
-  var aiHand = ["2H", "JH"];
-  var flop = ["AC", "7D", "2S"];
-  var turn = "QC";
-  var river = "JC";
+  var playerHand = ["10_of_clubs", "king_of_clubs"];
+  var aiHand = ["2_of_hearts", "jack_of_hearts"];
+  var flop = ["ace_of_clubs", "7_of_diamonds", "2_of_spades"];
+  var turn = "queen_of_clubs";
+  var river = "jack_of_clubs";
 	var pot = "Pot";
 	var amountToCall = "Call Amount";
 	var chips = "Total Chips";
@@ -128,6 +128,7 @@
      $('#chatDisplay').append("You Win");
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
+     drawTableCard(river, 5);
      setTimeout(finalAlert, 1000);
    }
 
@@ -140,7 +141,9 @@
      $('#chatDisplay').append("Flop: " + flop.toString() + '<br>');
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
-     drawPlayerCards(true, false, [processCard(playerCard[0]), processCard(playerCard[1])], 0);
+     for (var i = 0; i < flop.length; i++) {
+       drawTableCard(flop[i], i);
+     }
      updateScreen(pot, 0, chips);
      tutorialStage++;
    }
@@ -149,6 +152,7 @@
      $('#chatDisplay').append("Turn: " + flop.toString() + " " + turn + '<br>');
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
+     drawTableCard(turn, 4);
      updateScreen(pot, 0, chips);
      tutorialStage++;
      setTimeout(turnContinued, 500);
@@ -157,6 +161,7 @@
    function flopContinued() {
      alert("Our flop doesn't look too great. We have no pairs, but there are still some high valued hands we can make.\nWhen the current bet is 0, it is possible to 'check' your opponent. This is the same as\nbetting 0 chips. They can either" +
    "call or raise based off of it. There is\nnever any harm in checking so lets go ahead and try that. Click the call button to check.")
+   tutorialStage++;
    }
 
    function turnContinued() {
@@ -168,7 +173,7 @@
      $('#chatDisplay').append("Your Cards: " + playerHand.toString() + '<br>');
      let obj = document.getElementById("chatDisplay");
      obj.scrollTop = obj.scrollHeight;
-     drawPlayerCards()
+     drawPlayerCards(true, false, [playerHand[0], playerHand[1]], 0);
 
    }
    function doAlert() {
