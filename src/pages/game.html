@@ -226,7 +226,7 @@
 
 	socket.on('flop', function(data) {
 		//console.log("flop cards:" + data);
-		setTimeout(function () {
+		//setTimeout(function () {
 			$('#chatDisplay').append("Flop: " + data.toString() + '<br>');
 			let cards = data.toString().split(',');
 			for (var i = 0; i < cards.length; i++) {
@@ -236,27 +236,27 @@
 			}
 			let obj = document.getElementById("chatDisplay");
 			obj.scrollTop = obj.scrollHeight;
-		}, 6000);
+	//	}, 6000);
 	})
 
 	socket.on('turn', function(data) {
 		//console.log("turn cards:" + data
-		setTimeout(function() {
+		//setTimeout(function() {
 			$('#chatDisplay').append("Turn: " + data.toString() + '<br>');
 			drawTableCard( processCard(data.toString()), 4 );
 			let obj = document.getElementById("chatDisplay");
 			obj.scrollTop = obj.scrollHeight;
-		}, 6000)
+		//}, 6000)
 	})
 
 	socket.on('river', function(data) {
 		//console.log("river cards:" + data);
-		setTimeout(function() {
+		//setTimeout(function() {
 			$('#chatDisplay').append("River: " + data.toString() + '<br>');
 			drawTableCard( processCard(data.toString()), 5 );
 			let obj = document.getElementById("chatDisplay");
 			obj.scrollTop = obj.scrollHeight;
-		}, 6000);
+	//	}, 6000);
 	})
 
 	$(function() {

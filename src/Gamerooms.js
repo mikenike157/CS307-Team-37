@@ -39,6 +39,7 @@ class gameRoom {
     this.sidePot = 0;
     this.mainPot = 0;
     this.idleTimeout = null;
+    this.scriptedHand = 0;
   }
 }
 

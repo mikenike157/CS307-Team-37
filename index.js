@@ -1456,6 +1456,7 @@ function checkReadyState(socket) {
   }
   //LOGS
   if (currplayer_ai_check(currRoom)) {
+    console.log("AI DECISION");
     executeAiDecision(currRoom, currRoom.currentPlayer, socket);
   } else {
     io.to(currRoom.players[currRoom.currentPlayer].playerID).emit("updatechat", "SERVER", "It is your turn");
@@ -1579,7 +1580,7 @@ function progressGame(socket) {
       progressGame(socket);
       return currRoom;
     }
-    checkReadyState(socket);
+    //  checkReadyState(socket);
     io.sockets.in(socket.room).emit('flop', flop);
     return currRoom;
   } else if (currRoom.gameState == Phase.FLOP) {
