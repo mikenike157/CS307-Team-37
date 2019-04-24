@@ -124,16 +124,8 @@ this.startGame = function(game) {
     game.fixedTCards = fixedCards[1];
     game.scriptedHand++;
   }
-  else if (game.scriptedHand == 1) {
-    game.playerCards = [[44, 26], [42, 29], [4, 8], [19, 13]]
-    game.tableCards = [16, 41, 51, 32, 27];
-    let fixedCards = fixCards(game.playerCards, game.tableCards);
-    game.fixedPCards = fixedCards[0];
-    game.fixedTCards = fixedCards[1];
-    game.scriptedHand++;
 
-  }
-  else if (game.scriptedHand == 2) {
+  else if (game.scriptedHand == 1) {
     game.playerCards = [[35, 34], [0, 1], [51, 24], [18,47]]
     game.tableCards = [12, 31, 50, 49, 30];
     let fixedCards = fixCards(game.playerCards, game.tableCards);
@@ -142,15 +134,16 @@ this.startGame = function(game) {
     game.scriptedHand++;
 
   }
-  else if (game.scriptedHand == 3) {
-    game.playerCards = [[33, 6], [44, 18], [0, 13], [49,36]]
-    game.tableCards = [38, 28, 50, 32, 8];
+  else if (game.scriptedHand == 2) {
+    game.playerCards = [[44, 26], [42, 29], [4, 8], [19, 13]]
+    game.tableCards = [16, 41, 51, 32, 27];
     let fixedCards = fixCards(game.playerCards, game.tableCards);
     game.fixedPCards = fixedCards[0];
     game.fixedTCards = fixedCards[1];
     game.scriptedHand++;
 
   }
+
   else if (game.scriptedHand == 4) {
     game.playerCards = [[12, 51], [0, 13], [1, 14], [9, 50]]
     game.tableCards = [11, 29, 22, 38, 25];
