@@ -1684,7 +1684,26 @@ function progressGame(socket) {
         }
       }
     }
-    io.sockets.in(socket.room).emit('winner', "Hello");
+    if (currRoom.scriptedHand == 0) {
+      io.sockets.in(socket.room).emit('winner', "AlexTramm");
+      currRoom.scriptedHand++;
+    }
+    else if (currRoom.scriptedHand == 1) {
+      io.sockets.in(socket.room).emit('winner', "Jimmy");
+      currRoom.scriptedHand++;
+    }
+    else if (currRoom.scriptedHand == 2) {
+      io.sockets.in(socket.room).emit('winner', "teressa");
+      currRoom.scriptedHand++;
+    }
+    else if (currRoom.scriptedHand == 3) {
+      io.sockets.in(socket.room).emit('winner', "Jimmy");
+      currRoom.scriptedHand++;
+    }
+    else if (currRoom.scriptedHand == 4) {
+      io.sockets.in(socket.room).emit('winner', "AlexTramm");
+      currRoom.scriptedHand++;
+    }
     for (var i = 0; i < currRoom.players.length; i++) {
       //for (var j = 0; j < winnersArr.length; j++) {
       //if (currRoom.players[i].playerID == winnersArr[j].playerID) {
