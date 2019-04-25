@@ -70,7 +70,7 @@ this.addAi = function(aiNum, startingChips) {
 ///////////////////////////////////////
 
 this.startGame = function(game) {
-/*
+
   numbers = [];
   playerCards = [];
   tableCards = [];
@@ -114,7 +114,7 @@ this.startGame = function(game) {
   game.fixedPCards = fixedCards[0];
   game.fixedTCards = fixedCards[1];
 
-*/
+/*
 
   if (game.scriptedHand == 0) {
     game.playerCards = [[50, 34], [39, 7], [19, 25], [22, 27]]
@@ -153,7 +153,7 @@ this.startGame = function(game) {
     game.scriptedHand++;
 
   }
-
+*/
   return game;
 }
 
